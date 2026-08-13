@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Agios Nektarios</string>
+    <string name="app_tagline">Our village, in our hands</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_general_id">general</string>
+    <string name="notification_channel_general">General</string>
+    <string name="notification_channel_issues">Issue activity</string>
+    <string name="notification_channel_chat">Messages</string>
+    <string name="notification_channel_announcements">Announcements</string>
+
+    <!-- Common -->
+    <string name="action_continue">Continue</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_close">Close</string>
+    <string name="action_send">Send</string>
+    <string name="action_create">Create</string>
+    <string name="action_back">Back</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_no_network">No internet connection.</string>
+
+    <!-- Auth -->
+    <string name="sign_in">Sign in</string>
+    <string name="sign_up">Create account</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_in_welcome">Welcome back</string>
+    <string name="sign_in_subtitle">Sign in to report and follow what happens in the village.</string>
+    <string name="sign_up_title">Join the village</string>
+    <string name="sign_up_subtitle">A few details so neighbours know who is reporting.</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="password_confirm">Confirm password</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="phone">Phone number</string>
+    <string name="address">Address in Agios Nektarios</string>
+    <string name="block">Neighbourhood</string>
+    <string name="block_select">Select your neighbourhood</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="or">or</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="reset_password">Reset password</string>
+    <string name="reset_password_subtitle">We will email you a link to set a new password.</string>
+    <string name="reset_password_sent">Reset link sent. Check your inbox.</string>
+    <string name="have_account">Already have an account? Sign in</string>
+    <string name="no_account">New here? Create an account</string>
+    <string name="accept_terms">I agree that my reports are visible to other residents.</string>
+    <string name="error_email_invalid">Enter a valid email address.</string>
+    <string name="error_password_short">Password must be at least 8 characters.</string>
+    <string name="error_password_mismatch">Passwords do not match.</string>
+    <string name="error_field_required">This field is required.</string>
+    <string name="error_phone_invalid">Enter a valid phone number.</string>
+    <string name="error_terms_required">Please accept before continuing.</string>
+
+    <!-- Navigation -->
+    <string name="nav_map">Map</string>
+    <string name="nav_issues">Issues</string>
+    <string name="nav_announcements">News</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Map -->
+    <string name="map_title">Village map</string>
+    <string name="map_add_issue">Report an issue</string>
+    <string name="map_tap_to_place">Tap the map to place the pin</string>
+    <string name="map_my_location">My location</string>
+    <string name="map_filter">Filter</string>
+    <string name="map_filters_title">Filters</string>
+    <string name="map_filter_categories">Categories</string>
+    <string name="map_filter_statuses">Status</string>
+    <string name="map_filter_clear">Clear all</string>
+    <string name="map_legend">Legend</string>
+    <string name="map_blocks_layer">Show neighbourhoods</string>
+    <string name="map_location_permission_rationale">Location access lets the app centre the map where you are. You can still report issues without it.</string>
+    <string name="map_grouped_issues">%1$d similar reports here</string>
+    <string name="block_issue_count">%1$d open</string>
+
+    <!-- Issue categories -->
+    <string name="category_vegetation">Uncleaned vegetation</string>
+    <string name="category_road">Broken road</string>
+    <string name="category_fallen_tree">Fallen tree</string>
+    <string name="category_danger">Dangerous situation</string>
+    <string name="category_water">Water supply problem</string>
+    <string name="category_lighting">Street lighting</string>
+    <string name="category_garbage">Rubbish collection</string>
+    <string name="category_illegal_dumping">Illegal dumping</string>
+    <string name="category_sewage">Sewage / drainage</string>
+    <string name="category_stray_animals">Stray animals</string>
+    <string name="category_power">Power outage</string>
+    <string name="category_signage">Signage / traffic</string>
+    <string name="category_playground">Playground / public space</string>
+    <string name="category_fire_risk">Fire risk</string>
+    <string name="category_suggestion">Suggestion</string>
+    <string name="category_other">Other</string>
+
+    <!-- Issue statuses -->
+    <string name="status_open">Open</string>
+    <string name="status_acknowledged">Acknowledged</string>
+    <string name="status_in_progress">In progress</string>
+    <string name="status_resolved">Resolved</string>
+    <string name="status_wont_do">Won\'t do</string>
+
+    <!-- Issue list / detail -->
+    <string name="issues_title">Issues</string>
+    <string name="issues_search">Search reports</string>
+    <string name="issues_empty">No reports yet. Be the first to add one.</string>
+    <string name="issues_empty_filtered">No reports match these filters.</string>
+    <string name="issue_new">New report</string>
+    <string name="issue_edit">Edit report</string>
+    <string name="issue_title_label">Title</string>
+    <string name="issue_title_hint">Short summary, e.g. \"Fallen branch on Marathonos St\"</string>
+    <string name="issue_description_label">Description</string>
+    <string name="issue_description_hint">What is wrong, since when, how urgent?</string>
+    <string name="issue_category_label">Category</string>
+    <string name="issue_photos_label">Photos</string>
+    <string name="issue_add_photo">Add photo</string>
+    <string name="issue_location_label">Location</string>
+    <string name="issue_submit">Submit report</string>
+    <string name="issue_submitted">Report submitted. Thank you!</string>
+    <string name="issue_updated">Report updated.</string>
+    <string name="issue_deleted">Report deleted.</string>
+    <string name="issue_delete_confirm_title">Delete this report?</string>
+    <string name="issue_delete_confirm_body">This cannot be undone. Comments and votes are removed too.</string>
+    <string name="issue_comments">Comments</string>
+    <string name="issue_comment_hint">Add a comment…</string>
+    <string name="issue_comments_empty">No comments yet.</string>
+    <string name="issue_upvote">Upvote</string>
+    <string name="issue_downvote">Downvote</string>
+    <string name="issue_mark_resolved">Mark resolved</string>
+    <string name="issue_mark_wont_do">Mark won\'t do</string>
+    <string name="issue_change_status">Change status</string>
+    <string name="issue_resolution_note">Resolution note (optional)</string>
+    <string name="issue_reported_by">Reported by %1$s</string>
+    <string name="issue_nearby_similar">Similar reports nearby</string>
+    <string name="issue_group_hint">%1$d reports of this type were grouped in this spot.</string>
+    <string name="issue_error_title_required">Give the report a title.</string>
+    <string name="issue_error_category_required">Pick a category.</string>
+    <string name="issue_error_location_required">Place the pin on the map.</string>
+    <string name="issue_sort">Sort</string>
+    <string name="issue_sort_newest">Newest</string>
+    <string name="issue_sort_top">Most upvoted</string>
+    <string name="issue_sort_discussed">Most discussed</string>
+
+    <!-- Announcements -->
+    <string name="announcements_title">Announcements</string>
+    <string name="announcements_empty">No announcements yet.</string>
+    <string name="announcement_new">New announcement</string>
+    <string name="announcement_body_label">Message</string>
+    <string name="announcement_pinned">Pinned</string>
+    <string name="announcement_pin">Pin to top</string>
+    <string name="announcement_published">Announcement published.</string>
+
+    <!-- Chat -->
+    <string name="chat_title">Messages</string>
+    <string name="chat_empty">No conversations yet.</string>
+    <string name="chat_new">New conversation</string>
+    <string name="chat_new_direct">Direct message</string>
+    <string name="chat_new_group">Group chat</string>
+    <string name="chat_group_name">Group name</string>
+    <string name="chat_members">Members</string>
+    <string name="chat_select_people">Select people</string>
+    <string name="chat_message_hint">Write a message…</string>
+    <string name="chat_search_people">Search residents</string>
+    <string name="chat_leave">Leave conversation</string>
+    <string name="chat_you">You</string>
+    <string name="chat_group_created">%1$s created this group</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_edit">Edit details</string>
+    <string name="profile_my_issues">My reports</string>
+    <string name="profile_my_comments">My comments</string>
+    <string name="profile_stats_reports">Reports</string>
+    <string name="profile_stats_resolved">Resolved</string>
+    <string name="profile_stats_upvotes">Upvotes</string>
+    <string name="profile_saved">Profile saved.</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="profile_role_admin">Administrator</string>
+    <string name="profile_role_moderator">Moderator</string>
+    <string name="profile_role_user">Resident</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_el">Ελληνικά</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notif_comments">Comments on my reports</string>
+    <string name="settings_notif_status">Status changes on my reports</string>
+    <string name="settings_notif_votes">Upvotes on my reports</string>
+    <string name="settings_notif_announcements">New announcements</string>
+    <string name="settings_notif_chat">New messages</string>
+    <string name="settings_notif_permission_needed">Allow notifications to receive updates.</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_change_password">Change password</string>
+    <string name="settings_delete_account">Delete my account</string>
+    <string name="settings_delete_account_confirm">Delete your account and all your reports? This cannot be undone.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- Admin -->
+    <string name="admin_title">Administration</string>
+    <string name="admin_users">Residents</string>
+    <string name="admin_issues">All reports</string>
+    <string name="admin_announcements">Announcements</string>
+    <string name="admin_search_users">Search residents</string>
+    <string name="admin_set_role">Change role</string>
+    <string name="admin_reset_password">Send password reset</string>
+    <string name="admin_reset_password_sent">Password reset email sent.</string>
+    <string name="admin_rename_user">Change name</string>
+    <string name="admin_disable_user">Suspend account</string>
+    <string name="admin_enable_user">Reactivate account</string>
+    <string name="admin_delete_user">Delete account</string>
+    <string name="admin_delete_user_confirm">Delete %1$s and all their content?</string>
+    <string name="admin_only">Administrators only</string>
+
+    <!-- Time -->
+    <string name="time_just_now">just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
+
+    <!-- Push notification bodies the app words itself; the server sends a key. -->
+    <string name="notif_upvotes">%1$s people support this report</string>
+    <string name="notif_status_resolved">Marked as resolved</string>
+    <string name="notif_status_wont_do">Marked as won\'t do</string>
+    <string name="notif_status_changed">The status changed</string>
+    <string name="notif_new_announcement">New announcement</string>
+</resources>

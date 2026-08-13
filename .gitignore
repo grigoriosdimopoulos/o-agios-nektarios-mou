@@ -1,0 +1,28 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+captures/
+.cxx/
+
+# Firebase config — project-specific and contains client identifiers.
+# Every developer supplies their own; see docs/SETUP.md.
+google-services.json
+!app/google-services.json.example
+.firebase/
+firebase-debug.log
+*-debug.log
+
+# Cloud Functions
+firebase/functions/node_modules/
+firebase/functions/lib/
+node_modules/
+
+# IDE
+.idea/
+*.iml
+.DS_Store

@@ -1,0 +1,48 @@
+{
+  "_comment": [
+    "Template only. Download the real file from the Firebase console:",
+    "Project settings -> Your apps -> Android app -> google-services.json,",
+    "and save it as app/google-services.json (git-ignored).",
+    "",
+    "For Google sign-in the project must also have an OAuth 2.0 *Web* client;",
+    "its id is what the google-services plugin turns into the generated",
+    "default_web_client_id string resource that GoogleCredentialClient reads."
+  ],
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "agios-nektarios-example",
+    "storage_bucket": "agios-nektarios-example.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "gr.agiosnektarios.village"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "000000000000-example.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "REPLACE_WITH_YOUR_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "000000000000-example.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

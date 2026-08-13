@@ -1,0 +1,176 @@
+rules_version = '2';
+
+// Security model in one line: authorship and membership are enforced here, not
+// in the app. Every counter the UI displays (votes, comment totals, unread
+// badges) is written by Cloud Functions, so clients can never forge them.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------------------- helpers
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // Role lives in a custom claim so it can be checked without an extra read.
+    // The claim is set by the adminSetRole function, never by a client.
+    function role() {
+      return isSignedIn() ? request.auth.token.get('role', 'USER') : 'USER';
+    }
+
+    function isAdmin() {
+      return role() == 'ADMIN';
+    }
+
+    function isModerator() {
+      return role() == 'ADMIN' || role() == 'MODERATOR';
+    }
+
+    function isActiveResident() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(uid()))
+        && get(/databases/$(database)/documents/users/$(uid())).data.get('disabled', false) == false;
+    }
+
+    /** Fields present in the incoming write that differ from the stored document. */
+    function changed(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ----------------------------------------------------------------- users
+
+    match /users/{userId} {
+      // The resident directory is readable by residents: starting a chat or
+      // seeing who filed a report requires it. It is not public.
+      allow read: if isActiveResident() || uid() == userId;
+
+      // Self-registration only, and never with a role or moderation counters
+      // of your own choosing.
+      allow create: if isSignedIn()
+        && uid() == userId
+        && request.resource.data.get('role', 'USER') == 'USER'
+        && request.resource.data.get('disabled', false) == false;
+
+      // Residents edit their own contact details. Role, suspension and the
+      // denormalised counters are function-owned, so a client write touching
+      // them is rejected outright.
+      allow update: if isSignedIn()
+        && uid() == userId
+        && !changed([
+          'role', 'disabled', 'issueCount', 'resolvedCount', 'upvotesReceived', 'createdAt'
+        ]);
+
+      // Deleting an account cascades an auth record and every document the
+      // resident wrote; only the deleteMyAccount / adminDeleteUser functions
+      // (which run with admin credentials) may do it.
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------- issues
+
+    match /issues/{issueId} {
+      allow read: if isActiveResident();
+
+      allow create: if isActiveResident()
+        && request.resource.data.authorId == uid()
+        && request.resource.data.statusId == 'OPEN'
+        && request.resource.data.get('upvotes', 0) == 0
+        && request.resource.data.get('downvotes', 0) == 0
+        && request.resource.data.get('score', 0) == 0
+        && request.resource.data.get('commentCount', 0) == 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.get('description', '').size() <= 4000
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number;
+
+      // Author or moderator may edit. Vote and comment tallies stay
+      // function-owned regardless of who is writing, and authorship is
+      // immutable so a report cannot be reassigned.
+      allow update: if isActiveResident()
+        && (resource.data.authorId == uid() || isModerator())
+        && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
+
+      allow delete: if isActiveResident()
+        && (resource.data.authorId == uid() || isModerator());
+
+      // ------------------------------------------------------------ votes
+
+      match /votes/{voterId} {
+        allow read: if isActiveResident();
+        // One document per resident, at a path keyed by their own uid: the
+        // structure itself makes double-voting impossible.
+        allow create, update: if isActiveResident()
+          && uid() == voterId
+          && request.resource.data.userId == voterId
+          && request.resource.data.value in [1, -1];
+        allow delete: if isActiveResident() && uid() == voterId;
+      }
+
+      // --------------------------------------------------------- comments
+
+      match /comments/{commentId} {
+        allow read: if isActiveResident();
+        allow create: if isActiveResident()
+          && request.resource.data.authorId == uid()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+        // Comments are not editable: an edited comment under a reply thread
+        // changes what other people appear to have responded to.
+        allow update: if false;
+        allow delete: if isActiveResident()
+          && (resource.data.authorId == uid() || isModerator());
+      }
+    }
+
+    // --------------------------------------------------------- announcements
+
+    match /announcements/{announcementId} {
+      allow read: if isActiveResident();
+      allow create, update, delete: if isActiveResident() && isAdmin();
+    }
+
+    // ----------------------------------------------------------------- chats
+
+    match /chats/{chatId} {
+      function isMember() {
+        return isSignedIn() && uid() in resource.data.memberIds;
+      }
+
+      allow read: if isMember();
+
+      // You may only create a conversation you are part of.
+      allow create: if isActiveResident()
+        && uid() in request.resource.data.memberIds
+        && request.resource.data.memberIds.size() >= 2
+        && request.resource.data.memberIds.size() <= 100;
+
+      // Members may add people, mark their own conversation read, or leave.
+      // The preview fields are written by onMessageCreated.
+      allow update: if isMember()
+        && !changed(['createdById', 'createdAt', 'lastMessage', 'lastMessageSenderId', 'lastMessageAt']);
+
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        function inChat() {
+          return isSignedIn()
+            && uid() in get(/databases/$(database)/documents/chats/$(chatId)).data.memberIds;
+        }
+
+        allow read: if inChat();
+        allow create: if inChat()
+          && request.resource.data.senderId == uid()
+          && request.resource.data.get('text', '').size() <= 4000;
+        allow update: if false;
+        allow delete: if inChat() && resource.data.senderId == uid();
+      }
+    }
+  }
+}

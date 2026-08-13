@@ -1,0 +1,62 @@
+{
+  "indexes": [
+    {
+      "//": "issuesByAuthor: profile page and admin user detail",
+      "collectionGroup": "issues",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "findSimilarNearby: equality on category plus a geohash prefix range",
+      "collectionGroup": "issues",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoryId", "order": "ASCENDING" },
+        { "fieldPath": "geohash", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "purgeUser: every vote a departing resident ever cast",
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "purgeUser: every comment a departing resident ever wrote",
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "authorId", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "chat list: conversations I am a member of, most recent first",
+      "collectionGroup": "chats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memberIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "lastMessageAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "//": "Nothing queries these large arrays; skipping the index saves write cost.",
+      "collectionGroup": "users",
+      "fieldPath": "fcmTokens",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "issues",
+      "fieldPath": "photoUrls",
+      "indexes": []
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Uploads are namespaced by uid so a resident can only write under their own
+// prefix, and every path caps size and content type — the app downscales before
+// uploading, so anything larger is either a bug or an abuse attempt.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Direct field access rather than Map.get(): the Storage rules language is
+    // a subset of the Firestore one and does not offer a defaulted getter. An
+    // absent claim reads as null, which simply fails the comparison.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'ADMIN';
+    }
+
+    function isValidImage(maxBytes) {
+      return request.resource.size < maxBytes
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /issues/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidImage(8 * 1024 * 1024);
+    }
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidImage(3 * 1024 * 1024);
+    }
+
+    match /announcements/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin()
+        && request.auth.uid == userId
+        && isValidImage(8 * 1024 * 1024);
+    }
+
+    // Chat attachments are readable by any signed-in resident because Storage
+    // rules cannot check Firestore membership. The download URL is an
+    // unguessable token, and nothing sensitive is meant to live here.
+    match /chats/{chatId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidImage(8 * 1024 * 1024);
+    }
+  }
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <include
+        domain="sharedpref"
+        path="." />
+    <!-- Settings live in DataStore; auth tokens must never be backed up. -->
+    <exclude
+        domain="sharedpref"
+        path="com.google.firebase.auth.api.Store.xml" />
+</full-backup-content>

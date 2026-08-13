@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  android:
+    name: Android build & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The real google-services.json is not in the repository. The template
+      # carries the same structure, which is all the plugin needs in order to
+      # compile; a build made this way cannot reach a real Firebase project.
+      - name: Provide Firebase config
+        run: cp app/google-services.json.example app/google-services.json
+
+      - name: Assemble debug
+        run: ./gradlew assembleDebug --no-daemon
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+
+  functions:
+    name: Cloud Functions typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: firebase/functions/package.json
+
+      - run: npm install
+        working-directory: firebase/functions
+
+      - run: npx tsc --noEmit
+        working-directory: firebase/functions

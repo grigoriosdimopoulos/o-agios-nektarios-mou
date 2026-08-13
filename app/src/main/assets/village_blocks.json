@@ -1,0 +1,282 @@
+{
+  "_comment": "PLACEHOLDER GEOMETRY. A uniform grid over the approximate extent of the village, so the map, the block counters and the neighbourhood picker are all functional out of the box. Replace with the real neighbourhood outlines (any polygon, any vertex count) before release; ids must stay stable once residents have addresses attached to them.",
+  "version": 1,
+  "blocks": [
+    {
+      "id": "block-01",
+      "nameEl": "Κέντρο",
+      "nameEn": "Village Centre",
+      "polygon": [
+        {
+          "lat": 37.8355,
+          "lng": 23.904
+        },
+        {
+          "lat": 37.8355,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.904
+        }
+      ]
+    },
+    {
+      "id": "block-02",
+      "nameEl": "Άνω Συνοικία",
+      "nameEn": "Upper Quarter",
+      "polygon": [
+        {
+          "lat": 37.8355,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.8355,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.912
+        }
+      ]
+    },
+    {
+      "id": "block-03",
+      "nameEl": "Κάτω Συνοικία",
+      "nameEn": "Lower Quarter",
+      "polygon": [
+        {
+          "lat": 37.8355,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.8355,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.92
+        }
+      ]
+    },
+    {
+      "id": "block-04",
+      "nameEl": "Πλατεία",
+      "nameEn": "Main Square",
+      "polygon": [
+        {
+          "lat": 37.8355,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.8355,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.928
+        }
+      ]
+    },
+    {
+      "id": "block-05",
+      "nameEl": "Σχολείο",
+      "nameEn": "School District",
+      "polygon": [
+        {
+          "lat": 37.843833,
+          "lng": 23.904
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.904
+        }
+      ]
+    },
+    {
+      "id": "block-06",
+      "nameEl": "Εκκλησία",
+      "nameEn": "Church District",
+      "polygon": [
+        {
+          "lat": 37.843833,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.912
+        }
+      ]
+    },
+    {
+      "id": "block-07",
+      "nameEl": "Αμπέλια",
+      "nameEn": "Vineyards",
+      "polygon": [
+        {
+          "lat": 37.843833,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.92
+        }
+      ]
+    },
+    {
+      "id": "block-08",
+      "nameEl": "Ελαιώνας",
+      "nameEn": "Olive Grove",
+      "polygon": [
+        {
+          "lat": 37.843833,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.843833,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.928
+        }
+      ]
+    },
+    {
+      "id": "block-09",
+      "nameEl": "Λόφος",
+      "nameEn": "Hillside",
+      "polygon": [
+        {
+          "lat": 37.852167,
+          "lng": 23.904
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.904
+        }
+      ]
+    },
+    {
+      "id": "block-10",
+      "nameEl": "Ρέμα",
+      "nameEn": "Riverside",
+      "polygon": [
+        {
+          "lat": 37.852167,
+          "lng": 23.912
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.912
+        }
+      ]
+    },
+    {
+      "id": "block-11",
+      "nameEl": "Παλιό Χωριό",
+      "nameEn": "Old Village",
+      "polygon": [
+        {
+          "lat": 37.852167,
+          "lng": 23.92
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.92
+        }
+      ]
+    },
+    {
+      "id": "block-12",
+      "nameEl": "Νέος Οικισμός",
+      "nameEn": "New Settlement",
+      "polygon": [
+        {
+          "lat": 37.852167,
+          "lng": 23.928
+        },
+        {
+          "lat": 37.852167,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.936
+        },
+        {
+          "lat": 37.8605,
+          "lng": 23.928
+        }
+      ]
+    }
+  ]
+}

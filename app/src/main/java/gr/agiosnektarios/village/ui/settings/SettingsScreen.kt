@@ -1,0 +1,275 @@
+package gr.agiosnektarios.village.ui.settings
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import gr.agiosnektarios.village.BuildConfig
+import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.data.settings.AppLanguage
+import gr.agiosnektarios.village.data.settings.SettingsRepository
+import gr.agiosnektarios.village.data.settings.ThemeMode
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onChangePassword: () -> Unit,
+    showSnackbar: suspend (String) -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val events by viewModel.events.collectAsStateWithLifecycle()
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(events.errorMessage) {
+        events.errorMessage?.let {
+            showSnackbar(it)
+            viewModel.consumeError()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 32.dp),
+        ) {
+            SectionHeader(stringResource(R.string.settings_appearance))
+
+            Column(modifier = Modifier.selectableGroup()) {
+                ThemeMode.entries.forEach { mode ->
+                    RadioRow(
+                        label = stringResource(
+                            when (mode) {
+                                ThemeMode.SYSTEM -> R.string.settings_theme_system
+                                ThemeMode.LIGHT -> R.string.settings_theme_light
+                                ThemeMode.DARK -> R.string.settings_theme_dark
+                            },
+                        ),
+                        selected = settings.themeMode == mode,
+                        onSelect = { viewModel.setTheme(mode) },
+                    )
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(stringResource(R.string.settings_language))
+
+            Column(modifier = Modifier.selectableGroup()) {
+                AppLanguage.entries.forEach { language ->
+                    RadioRow(
+                        label = when (language) {
+                            AppLanguage.SYSTEM -> stringResource(R.string.settings_theme_system)
+                            AppLanguage.GREEK -> stringResource(R.string.settings_language_el)
+                            AppLanguage.ENGLISH -> stringResource(R.string.settings_language_en)
+                        },
+                        selected = settings.language == language,
+                        onSelect = { viewModel.setLanguage(language) },
+                    )
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(stringResource(R.string.settings_notifications))
+
+            SwitchRow(
+                label = stringResource(R.string.settings_notif_comments),
+                checked = settings.notifyComments,
+                onCheckedChange = {
+                    viewModel.setNotificationPref(SettingsRepository.NotificationPref.COMMENTS, it)
+                },
+            )
+            SwitchRow(
+                label = stringResource(R.string.settings_notif_status),
+                checked = settings.notifyStatus,
+                onCheckedChange = {
+                    viewModel.setNotificationPref(SettingsRepository.NotificationPref.STATUS, it)
+                },
+            )
+            SwitchRow(
+                label = stringResource(R.string.settings_notif_votes),
+                checked = settings.notifyVotes,
+                onCheckedChange = {
+                    viewModel.setNotificationPref(SettingsRepository.NotificationPref.VOTES, it)
+                },
+            )
+            SwitchRow(
+                label = stringResource(R.string.settings_notif_announcements),
+                checked = settings.notifyAnnouncements,
+                onCheckedChange = {
+                    viewModel.setNotificationPref(
+                        SettingsRepository.NotificationPref.ANNOUNCEMENTS,
+                        it,
+                    )
+                },
+            )
+            SwitchRow(
+                label = stringResource(R.string.settings_notif_chat),
+                checked = settings.notifyChat,
+                onCheckedChange = {
+                    viewModel.setNotificationPref(SettingsRepository.NotificationPref.CHAT, it)
+                },
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(stringResource(R.string.settings_account))
+
+            if (viewModel.canChangePassword) {
+                ActionRow(
+                    label = stringResource(R.string.settings_change_password),
+                    onClick = onChangePassword,
+                )
+            }
+            ActionRow(
+                label = stringResource(R.string.settings_delete_account),
+                onClick = { showDeleteDialog = true },
+                tint = MaterialTheme.colorScheme.error,
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(stringResource(R.string.settings_about))
+            Text(
+                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.settings_delete_account)) },
+            text = { Text(stringResource(R.string.settings_delete_account_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteAccount()
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+    )
+}
+
+@Composable
+private fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun ActionRow(
+    label: String,
+    onClick: () -> Unit,
+    tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        color = tint,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    )
+}
