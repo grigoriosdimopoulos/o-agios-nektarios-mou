@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.toObjectSafe
@@ -50,7 +51,7 @@ class UserRepository @Inject constructor(
         blockId: String,
         photoUrl: String = "",
     ): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             val payload = mapOf(
                 "firstName" to firstName.trim(),
                 "lastName" to lastName.trim(),
@@ -82,7 +83,7 @@ class UserRepository @Inject constructor(
         address: String,
         blockId: String,
     ): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             users.document(userId).update(
                 mapOf(
                     "firstName" to firstName.trim(),
@@ -98,7 +99,7 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun updatePhoto(userId: String, photoUrl: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             users.document(userId)
                 .update("photoUrl", photoUrl, "updatedAt", FieldValue.serverTimestamp())
                 .await()
@@ -107,7 +108,7 @@ class UserRepository @Inject constructor(
 
     suspend fun updateNotificationPrefs(userId: String, prefs: NotificationPrefs): Result<Unit> =
         withContext(io) {
-            runCatching {
+            runCatchingUnit {
                 users.document(userId).update(
                     mapOf(
                         "notificationPrefs" to prefs.toMap(),
@@ -119,13 +120,13 @@ class UserRepository @Inject constructor(
 
     /** Tokens are a set: adding is idempotent, and stale ones are pruned server-side. */
     suspend fun addFcmToken(userId: String, token: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             users.document(userId).update("fcmTokens", FieldValue.arrayUnion(token)).await()
         }
     }
 
     suspend fun removeFcmToken(userId: String, token: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             users.document(userId).update("fcmTokens", FieldValue.arrayRemove(token)).await()
         }
     }
@@ -144,7 +145,7 @@ class UserRepository @Inject constructor(
         } else {
             users.orderBy("nameLower")
                 .startAt(normalized)
-                .endAt(normalized + '')
+                .endAt(normalized + '\uf8ff')
         }
         return base.limit(limit).asFlow().map { it.toObjectsSafe<UserProfile>() }
     }

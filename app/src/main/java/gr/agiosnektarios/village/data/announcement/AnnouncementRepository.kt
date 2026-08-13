@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.toObjectSafe
@@ -79,7 +80,7 @@ class AnnouncementRepository @Inject constructor(
         imageUrl: String,
         pinned: Boolean,
     ): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             announcements.document(id).update(
                 mapOf(
                     "title" to title.trim(),
@@ -93,6 +94,6 @@ class AnnouncementRepository @Inject constructor(
     }
 
     suspend fun delete(id: String): Result<Unit> = withContext(io) {
-        runCatching { announcements.document(id).delete().await() }
+        runCatchingUnit { announcements.document(id).delete().await() }
     }
 }

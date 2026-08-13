@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.toObjectSafe
@@ -140,7 +141,7 @@ class ChatRepository @Inject constructor(
         text: String,
         imageUrl: String = "",
     ): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             require(text.isNotBlank() || imageUrl.isNotBlank()) { "Empty message" }
             chats.document(chatId).collection(Collections.MESSAGES).add(
                 mapOf(
@@ -158,14 +159,14 @@ class ChatRepository @Inject constructor(
 
     /** Clears the viewer's own unread badge; other members' counters are untouched. */
     suspend fun markRead(chatId: String, userId: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             chats.document(chatId).update("unreadCounts.$userId", 0).await()
         }
     }
 
     suspend fun addMembers(chatId: String, members: List<UserProfile>): Result<Unit> =
         withContext(io) {
-            runCatching {
+            runCatchingUnit {
                 val updates = mutableMapOf<String, Any>(
                     "memberIds" to FieldValue.arrayUnion(*members.map { it.id }.toTypedArray()),
                 )
@@ -179,7 +180,7 @@ class ChatRepository @Inject constructor(
         }
 
     suspend fun leaveChat(chatId: String, userId: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             chats.document(chatId).update(
                 mapOf(
                     "memberIds" to FieldValue.arrayRemove(userId),

@@ -20,8 +20,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       # The real google-services.json is not in the repository. The template
-      # carries the same structure, which is all the plugin needs in order to
-      # compile; a build made this way cannot reach a real Firebase project.
+      # carries the same structure — including a client for the debug variant's
+      # '.debug' applicationId, which the plugin insists on — and that is all
+      # that is needed to compile. A build made this way cannot reach a real
+      # Firebase project.
       - name: Provide Firebase config
         run: cp app/google-services.json.example app/google-services.json
 
@@ -32,6 +34,14 @@ jobs:
 
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
+
+      # Exercises R8 shrinking against the ProGuard rules and lint's fatal
+      # checks — neither of which the debug build touches, and both of which
+      # have caught real bugs here.
+      - name: Assemble release
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
       - uses: actions/upload-artifact@v4
         if: failure()

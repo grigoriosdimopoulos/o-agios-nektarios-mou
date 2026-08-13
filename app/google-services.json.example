@@ -4,6 +4,12 @@
     "Project settings -> Your apps -> Android app -> google-services.json,",
     "and save it as app/google-services.json (git-ignored).",
     "",
+    "TWO clients are listed because debug builds use the applicationId suffix",
+    "'.debug'. The google-services plugin fails the build if the variant's",
+    "applicationId has no matching client, so a real project needs both package",
+    "names registered as Android apps — or drop the applicationIdSuffix from",
+    "app/build.gradle.kts and keep only the release one.",
+    "",
     "For Google sign-in the project must also have an OAuth 2.0 *Web* client;",
     "its id is what the google-services plugin turns into the generated",
     "default_web_client_id string resource that GoogleCredentialClient reads."
@@ -19,6 +25,35 @@
         "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
           "package_name": "gr.agiosnektarios.village"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "000000000000-example.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "REPLACE_WITH_YOUR_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "000000000000-example.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:1111111111111111111111",
+        "android_client_info": {
+          "package_name": "gr.agiosnektarios.village.debug"
         }
       },
       "oauth_client": [

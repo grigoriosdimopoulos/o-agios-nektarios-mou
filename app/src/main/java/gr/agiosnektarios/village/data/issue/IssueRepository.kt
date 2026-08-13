@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.toObjectSafe
@@ -94,7 +95,7 @@ class IssueRepository @Inject constructor(
             issues.whereEqualTo("categoryId", category.id)
                 .orderBy("geohash")
                 .startAt(prefix)
-                .endAt(prefix + '')
+                .endAt(prefix + '\uf8ff')
                 .limit(60)
                 .get()
                 .await()
@@ -140,7 +141,7 @@ class IssueRepository @Inject constructor(
         }
 
     suspend fun updateIssue(issueId: String, draft: IssueDraft): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             issueDoc(issueId).update(
                 mapOf(
                     "title" to draft.title.trim(),
@@ -163,7 +164,7 @@ class IssueRepository @Inject constructor(
      * subcollection, and pretending otherwise would leave orphans.
      */
     suspend fun deleteIssue(issueId: String): Result<Unit> = withContext(io) {
-        runCatching { issueDoc(issueId).delete().await() }
+        runCatchingUnit { issueDoc(issueId).delete().await() }
     }
 
     suspend fun setStatus(
@@ -172,7 +173,7 @@ class IssueRepository @Inject constructor(
         actor: UserProfile,
         note: String = "",
     ): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             val terminal = status.isTerminal
             issueDoc(issueId).update(
                 mapOf(
@@ -203,7 +204,7 @@ class IssueRepository @Inject constructor(
      */
     suspend fun castVote(issueId: String, userId: String, value: Int): Result<Unit> =
         withContext(io) {
-            runCatching {
+            runCatchingUnit {
                 require(value in -1..1) { "Vote must be -1, 0 or 1" }
                 val voteDoc = issueDoc(issueId).collection(Collections.VOTES).document(userId)
                 if (value == 0) {
@@ -230,7 +231,7 @@ class IssueRepository @Inject constructor(
 
     suspend fun addComment(issueId: String, author: UserProfile, text: String): Result<Unit> =
         withContext(io) {
-            runCatching {
+            runCatchingUnit {
                 issueDoc(issueId).collection(Collections.COMMENTS).add(
                     mapOf(
                         "issueId" to issueId,
@@ -245,7 +246,7 @@ class IssueRepository @Inject constructor(
         }
 
     suspend fun deleteComment(issueId: String, commentId: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             issueDoc(issueId).collection(Collections.COMMENTS).document(commentId).delete().await()
         }
     }

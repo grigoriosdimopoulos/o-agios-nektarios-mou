@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.userProfileChangeRequest
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -77,7 +78,7 @@ class AuthRepository @Inject constructor(
         }
 
     suspend fun sendPasswordReset(email: String): Result<Unit> = withContext(io) {
-        runCatching { auth.sendPasswordResetEmail(email.trim()).await() }
+        runCatchingUnit { auth.sendPasswordResetEmail(email.trim()).await() }
     }
 
     /**
@@ -87,7 +88,7 @@ class AuthRepository @Inject constructor(
      */
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
         withContext(io) {
-            runCatching {
+            runCatchingUnit {
                 val user = requireNotNull(auth.currentUser) { "Not signed in" }
                 val email = requireNotNull(user.email) { "Account has no email" }
                 user.reauthenticate(EmailAuthProvider.getCredential(email, currentPassword)).await()
@@ -96,14 +97,14 @@ class AuthRepository @Inject constructor(
         }
 
     suspend fun updateDisplayName(name: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             val user = requireNotNull(auth.currentUser) { "Not signed in" }
             user.updateProfile(userProfileChangeRequest { displayName = name }).await()
         }
     }
 
     suspend fun updatePhotoUrl(url: String): Result<Unit> = withContext(io) {
-        runCatching {
+        runCatchingUnit {
             val user = requireNotNull(auth.currentUser) { "Not signed in" }
             user.updateProfile(
                 userProfileChangeRequest { photoUri = android.net.Uri.parse(url) },

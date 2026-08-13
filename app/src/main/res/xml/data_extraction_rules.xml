@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
+    <!--
+      An <exclude> only means something inside a domain that is also included,
+      so the sharedpref domain is included here in order for the Firebase auth
+      credential store to be excluded from it. Settings travel; sessions do not.
+    -->
     <cloud-backup>
         <include
             domain="file"
             path="datastore" />
+        <include
+            domain="sharedpref"
+            path="." />
         <exclude
             domain="sharedpref"
             path="com.google.firebase.auth.api.Store.xml" />
@@ -12,5 +20,11 @@
         <include
             domain="file"
             path="datastore" />
+        <include
+            domain="sharedpref"
+            path="." />
+        <exclude
+            domain="sharedpref"
+            path="com.google.firebase.auth.api.Store.xml" />
     </device-transfer>
 </data-extraction-rules>

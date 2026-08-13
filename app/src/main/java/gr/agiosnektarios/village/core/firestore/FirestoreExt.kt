@@ -11,7 +11,11 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-private const val TAG = "Firestore"
+/**
+ * Not private: the deserialisation helpers below are `inline` and public, so
+ * anything they reference has to be visible at every call site too.
+ */
+const val FIRESTORE_TAG = "Firestore"
 
 /** Live query results. The listener is torn down when the collector goes away. */
 fun Query.asFlow(): Flow<QuerySnapshot> = callbackFlow {
@@ -45,7 +49,7 @@ fun DocumentReference.asFlow(): Flow<DocumentSnapshot?> = callbackFlow {
 inline fun <reified T : Any> QuerySnapshot.toObjectsSafe(): List<T> =
     documents.mapNotNull { document ->
         runCatching { document.toObject(T::class.java) }
-            .onFailure { Log.w(TAG, "Skipping unreadable document ${document.reference.path}", it) }
+            .onFailure { Log.w(FIRESTORE_TAG, "Skipping unreadable document ${document.reference.path}", it) }
             .getOrNull()
     }
 
@@ -53,6 +57,6 @@ inline fun <reified T : Any> DocumentSnapshot?.toObjectSafe(): T? {
     val snapshot = this ?: return null
     if (!snapshot.exists()) return null
     return runCatching { snapshot.toObject(T::class.java) }
-        .onFailure { Log.w(TAG, "Unreadable document ${snapshot.reference.path}", it) }
+        .onFailure { Log.w(FIRESTORE_TAG, "Unreadable document ${snapshot.reference.path}", it) }
         .getOrNull()
 }

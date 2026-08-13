@@ -64,32 +64,45 @@ fun PrimaryButton(
         shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(),
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            AnimatedVisibility(
-                visible = loading,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+        // Extracted rather than written inline: a Button's content lambda is
+        // `RowScope.() -> Unit`, so RowScope stays an implicit receiver inside
+        // any nested Box and captures the AnimatedVisibility call. A plain
+        // function body has no such receiver, so the unscoped overload applies.
+        PrimaryButtonContent(text = text, loading = loading, icon = icon)
+    }
+}
+
+@Composable
+private fun PrimaryButtonContent(
+    text: String,
+    loading: Boolean,
+    icon: ImageVector?,
+) {
+    Box(contentAlignment = Alignment.Center) {
+        AnimatedVisibility(
+            visible = loading,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        AnimatedVisibility(
+            visible = !loading,
+            enter = fadeIn() + scaleIn(initialScale = 0.9f),
+            exit = fadeOut() + scaleOut(targetScale = 0.9f),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
-            AnimatedVisibility(
-                visible = !loading,
-                enter = fadeIn() + scaleIn(initialScale = 0.9f),
-                exit = fadeOut() + scaleOut(targetScale = 0.9f),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (icon != null) {
-                        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-                    }
-                    Text(text, style = MaterialTheme.typography.labelLarge)
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
+                Text(text, style = MaterialTheme.typography.labelLarge)
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.exifinterface.media.ExifInterface
 import com.google.firebase.storage.FirebaseStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.runCatchingUnit
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import javax.inject.Inject
@@ -54,7 +55,7 @@ class MediaRepository @Inject constructor(
         }
 
     suspend fun delete(downloadUrl: String): Result<Unit> = withContext(io) {
-        runCatching { storage.getReferenceFromUrl(downloadUrl).delete().await() }
+        runCatchingUnit { storage.getReferenceFromUrl(downloadUrl).delete().await() }
     }
 
     private fun compress(uri: Uri, maxEdge: Int): ByteArray {

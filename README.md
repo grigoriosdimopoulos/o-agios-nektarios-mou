@@ -9,10 +9,12 @@ backlog is the place people live in.
 Greek and English throughout, light and dark, with push notifications, direct
 and group messaging, and an announcements channel for the community council.
 
-> **Status.** The application is complete and the Cloud Functions typecheck
-> clean. It has **not been compiled or run** — the environment it was written in
-> has no Android SDK. Before anything else, follow [docs/SETUP.md](docs/SETUP.md)
-> and run `./gradlew assembleDebug testDebugUnitTest`.
+> **Status.** Builds clean: debug and release APKs both assemble, R8 shrinking
+> and lint pass, all 37 unit tests are green, and the Cloud Functions typecheck.
+> What has *not* happened is a run against a real backend — no Firebase project,
+> no device, no emulator — so everything past "it compiles" (sign-in, the map
+> tiles, live queries, push delivery) is unverified. Follow
+> [docs/SETUP.md](docs/SETUP.md) to point it at a project of your own.
 
 ---
 
@@ -142,7 +144,8 @@ git-ignored.
 ## Tests
 
 ```bash
-./gradlew testDebugUnitTest            # geohashing, clustering, validation, permissions
+./gradlew testDebugUnitTest            # 37 tests: geohashing, clustering, validation, permissions
+./gradlew assembleRelease              # also runs R8 and lint's fatal checks
 cd firebase/functions && npx tsc --noEmit   # Cloud Functions typecheck
 ```
 
