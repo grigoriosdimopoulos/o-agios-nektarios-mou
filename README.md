@@ -152,8 +152,16 @@ git-ignored.
 ./gradlew testDebugUnitTest            # 37 tests: geohashing, clustering, validation, permissions
 ./gradlew assembleRelease              # also runs R8 and lint's fatal checks
 cd firebase/functions && npx tsc --noEmit   # Cloud Functions typecheck
+npm --prefix firebase/functions run test:rules  # 30 security-rule tests, in the emulator
 ```
 
 The unit tests cover the parts where a subtle mistake would be invisible in the
 UI: geohash encoding, the clustering rules, phone and password validation, and
 who is allowed to edit what.
+
+`firebase/rules.test.mjs` runs the security rules against the Firestore
+emulator using the exact payloads the repositories write. It asserts both
+halves: that an ordinary resident can sign up, file a report, vote and comment —
+and that nobody can promote themselves to admin, forge a vote tally, write under
+someone else's name, or read a conversation they are not in. Rules are the one
+place where a mistake is silent in development and serious in production.
