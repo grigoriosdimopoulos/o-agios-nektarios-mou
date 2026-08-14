@@ -142,3 +142,62 @@ Roles live in a Firebase custom claim that no client can write, so this needs
 either a Cloud Function or the service account. Once you have signed up, ask and
 it can be set for you — after which sign out and back in, because the claim is
 baked into the session token.
+
+---
+
+## Appendix: a prompt for Gemini
+
+Gemini cannot press the buttons — no assistant can drive the Firebase console
+for you. What it is good at is walking you through one screen at a time and
+reading back error messages. It does not know this project, though, so a bare
+"help me set up Firebase" gets generic advice that drifts from what this app
+actually needs.
+
+Paste this instead. Every project-specific fact it needs is included.
+
+```text
+I'm setting up a Firebase backend for an Android app. I have ONLY an Android
+phone — no computer, no terminal, no Android Studio. Someone else compiles the
+app for me; my job is only the Firebase console in Chrome.
+
+Walk me through it ONE STEP AT A TIME. Wait for me to say "done" before the next
+step. Assume I am not a developer: tell me exactly what to tap and what to type,
+and warn me when a button is easy to miss on a phone screen.
+
+These are the exact settings. Do not substitute your own:
+
+- Two Android apps must be registered in the SAME Firebase project:
+    gr.agiosnektarios.village
+    gr.agiosnektarios.village.debug
+  Both are required. The build fails if the .debug one is missing.
+- SHA-1 fingerprint to add to the .debug app:
+    95:AD:51:7D:8D:DD:60:F3:63:7F:96:54:0E:15:D9:EA:93:CD:F3:25
+- Authentication: enable Email/Password. Also Google if it's easy.
+- Firestore Database: Native mode, location europe-west1, Production mode.
+- I need to download google-services.json, but ONLY after BOTH apps are
+  registered — the copy offered right after the first app has only one app in
+  it and breaks the build. Tell me the exact path to download the complete one.
+- I also need a Google Maps API key with "Maps SDK for Android" enabled, in the
+  same project, from the Google Cloud console.
+
+Do NOT tell me to:
+- install the Firebase CLI, npm, Node, or run any terminal command
+- open Android Studio or edit any code
+- set up Cloud Functions or Cloud Storage (they need paid billing; I'm skipping
+  them for now)
+
+Start by telling me how to make the Firebase console usable on a phone, then
+give me step 1.
+
+If I paste an error message, explain what it means in plain language and what to
+tap to fix it.
+```
+
+**What to do with the results.** Two things come back to the person building the
+app: the `google-services.json` file, and the Maps API key string. Nothing else
+from the console is needed.
+
+**One thing Gemini cannot help with**: deploying the Firestore security rules.
+Until they are published the app signs in and then fails every read and write.
+See step 6 above — either paste `firebase/firestore.rules` into the console's
+Rules tab yourself, or hand a service account key to whoever builds the app.
