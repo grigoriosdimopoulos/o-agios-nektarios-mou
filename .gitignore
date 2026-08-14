@@ -6,6 +6,10 @@ local.properties
 *.aab
 *.jks
 *.keystore
+# ...except the shared debug key, which is deliberately committed so every
+# build installs as an update and matches one Firebase fingerprint. It signs
+# nothing that ships; a release keystore must never be committed.
+!keystore/debug.keystore
 captures/
 .cxx/
 

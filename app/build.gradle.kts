@@ -43,10 +43,34 @@ android {
         resourceConfigurations += setOf("en", "el")
     }
 
+    signingConfigs {
+        /**
+         * A debug key committed to the repository on purpose.
+         *
+         * The default is a per-machine key in ~/.android, so an APK built on one
+         * machine refuses to install over one built on another — signature
+         * mismatch — and its SHA-1 differs too, which breaks the Google sign-in
+         * fingerprint registered in Firebase. Pinning it here means any build,
+         * from anyone, installs as an update and matches one registered
+         * fingerprint.
+         *
+         * This is a *debug* key: the password is public, it signs nothing that
+         * reaches a store, and it is not a security boundary. Release builds
+         * must use a real keystore that is never committed.
+         */
+        getByName("debug") {
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = true

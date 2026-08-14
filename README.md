@@ -119,6 +119,10 @@ else in the app hardcodes a coordinate.
 
 ## Getting started
 
+**No computer? [docs/PHONE-SETUP.md](docs/PHONE-SETUP.md)** covers doing the
+whole thing from an Android phone, where the browser steps are yours and the
+terminal steps are someone else's.
+
 Most of the Firebase setup is scripted:
 
 ```bash

@@ -1,0 +1,144 @@
+# Setting this up with only an Android phone
+
+No computer needed. The work splits cleanly: you do the parts that require a
+browser and a Google account, and the build machine does everything that
+requires a terminal.
+
+| You, in the phone browser | The build machine |
+| --- | --- |
+| Create the Firebase project | Build and sign the APK |
+| Register the two Android apps | Deploy the security rules and indexes |
+| Turn on Email/Password sign-in | Deploy the Cloud Functions (optional) |
+| Create the Firestore database | |
+| Download `google-services.json` and send it | |
+
+**Turn on "Desktop site" in Chrome** before opening the Firebase console. The
+mobile layout hides most of the settings you need. Chrome menu (⋮) → *Desktop
+site*.
+
+---
+
+## 1. Create the project
+
+<https://console.firebase.google.com> → *Create a project*. Any name. Google
+Analytics can be off.
+
+## 2. Register two Android apps
+
+Gear icon → *Project settings* → *Your apps* → the Android icon. Do it twice:
+
+- `gr.agiosnektarios.village`
+- `gr.agiosnektarios.village.debug`
+
+Two, because debug builds carry a `.debug` suffix and the build fails outright
+if that package has no matching client.
+
+While registering the second one, paste this into **SHA-1 certificate
+fingerprint** — it is the app's committed debug key, and Google sign-in will not
+work without it:
+
+```
+95:AD:51:7D:8D:DD:60:F3:63:7F:96:54:0E:15:D9:EA:93:CD:F3:25
+```
+
+(You can also add it later: *Project settings* → *Your apps* → *Add
+fingerprint*. Email/password sign-in works without it.)
+
+## 3. Download `google-services.json` — after both apps exist
+
+Do **not** take the download Firebase offers right after the first app: that
+copy has only one client and fails the build. Instead:
+
+*Project settings* → *General* → scroll to *Your apps* → **google-services.json**
+
+It lands in your Downloads folder. **Send that file in the chat.**
+
+Nothing in it is secret — it ships inside every copy of the app — but it is
+specific to your project.
+
+## 4. Turn on sign-in
+
+*Build* → *Authentication* → *Get started* → *Sign-in method*:
+
+- **Email/Password** → enable. This alone is enough to use the app.
+- **Google** → enable, if you want that button. It also creates the OAuth client
+  the app needs, so without it the Google button reports "not configured".
+
+## 5. Create the database
+
+*Build* → *Firestore Database* → *Create database* → **Native mode** →
+location **europe-west1** → **Production mode**.
+
+Production mode's starting rules deny everything, which is correct — the real
+rules go on in the next step. Until they do, the app will sign in and then show
+only permission errors.
+
+## 6. Get the rules deployed
+
+The rules and indexes are the difference between "signs in, then everything
+fails" and a working app. Two ways, pick one.
+
+### Option A — paste them yourself (no credentials shared)
+
+*Firestore Database* → *Rules* tab. Tap into the editor, select all, delete, and
+paste the contents of
+[`firebase/firestore.rules`](../firebase/firestore.rules). *Publish*.
+
+Then *Indexes* → *Composite* → *Add index*, five times, from
+[`firebase/firestore.indexes.json`](../firebase/firestore.indexes.json). This
+part is genuinely tedious on a phone — about ten minutes of form filling.
+
+### Option B — send a service account key and it gets done for you
+
+*Project settings* → *Service accounts* → *Generate new private key*. Send the
+downloaded JSON in the chat.
+
+**Understand what this is.** Unlike `google-services.json`, this one *is* a
+credential: it grants administrative access to the project — all data, all
+settings. Only do this for a project that holds nothing you care about, and
+revoke it when setup is done: *Service accounts* → the key → delete. Option A
+shares nothing.
+
+## 7. Maps key (optional)
+
+Without it the app works but the map is a grey rectangle.
+
+<https://console.cloud.google.com> → same project → *APIs & Services* →
+*Library* → search **Maps SDK for Android** → *Enable*. Then *Credentials* →
+*Create credentials* → *API key*. Send the key (`AIza…`) in the chat.
+
+Restrict it afterwards to Android apps, with package name
+`gr.agiosnektarios.village.debug` and the SHA-1 above.
+
+## 8. Install the APK
+
+You get back an `app-debug.apk`. Tap it; Android will ask permission to install
+from that source. It installs alongside anything else — the package is
+`gr.agiosnektarios.village.debug`.
+
+Because the signing key is committed to the repo, later builds install straight
+over the top as updates.
+
+---
+
+## What still will not work
+
+**Cloud Functions and Storage need the Blaze plan** (a card on file, though
+village-scale usage sits inside the free allowance). Without them:
+
+- sign-up, sign-in, the map, filing reports, comments, chat and announcements
+  all work;
+- vote and comment counters stay at zero — they are written by the server, not
+  the client;
+- push notifications never arrive;
+- photo upload is unavailable;
+- the admin actions (delete a resident, change a role) fail.
+
+That is a reasonable way to see the app running before deciding about billing.
+
+## Becoming the administrator
+
+Roles live in a Firebase custom claim that no client can write, so this needs
+either a Cloud Function or the service account. Once you have signed up, ask and
+it can be set for you — after which sign out and back in, because the claim is
+baked into the session token.
