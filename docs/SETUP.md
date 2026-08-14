@@ -47,15 +47,21 @@ for Firebase.
 
 Create a project at <https://console.firebase.google.com>, then:
 
-**Add an Android app** with package name `gr.agiosnektarios.village`.
+**Add TWO Android apps**, with package names `gr.agiosnektarios.village` and
+`gr.agiosnektarios.village.debug`. Debug builds carry the `.debug` applicationId
+suffix, and the google-services plugin fails the build outright when a variant's
+applicationId has no matching client. (The alternative is dropping
+`applicationIdSuffix` from `app/build.gradle.kts` and registering only the
+first — but then a debug build shares a Firebase app with your release one.)
 
-> Debug builds use the applicationId `gr.agiosnektarios.village.debug`. Either
-> register that as a second Android app in the same Firebase project, or drop
-> the `applicationIdSuffix` from `app/build.gradle.kts`. Without one of the two,
-> debug builds cannot reach Firebase.
+> **Register both before downloading anything.** Firebase offers you
+> `google-services.json` the moment the first app is registered, and *that* copy
+> contains only one client. Downloading it there is the single most common way to
+> end up with a file that fails the build. Add both apps, then take the file from
+> Project settings → General → "Your apps" → `google-services.json`.
 
-Download `google-services.json` and save it to `app/google-services.json`. It is
-git-ignored; `app/google-services.json.example` shows the shape.
+Save it to `app/google-services.json`. It is git-ignored;
+`app/google-services.json.example` shows the shape.
 
 **Enable Authentication** → Sign-in method → **Email/Password** and **Google**.
 Enabling Google creates the OAuth *web* client that Google sign-in on Android
@@ -74,7 +80,16 @@ without it:
 **Create Firestore** in Native mode, in a region near the village
 (`europe-west1` matches the region the functions are pinned to).
 
+> Pick **production mode** when asked, then deploy this repo's rules in step 4.
+> Production mode's starting rules deny every read and write, so until that
+> deploy the app will sign in and then show nothing but permission errors —
+> which looks exactly like a broken configuration. Test mode instead allows
+> everything for 30 days and then starts denying everything, which is a worse
+> surprise later. Either way, **the rules deploy is not optional.**
+
 **Enable Storage** and **Cloud Messaging** (Messaging needs no configuration).
+Storage is only used for photo uploads; on projects created after October 2024
+it requires the Blaze plan, and the app runs fine without it.
 
 ---
 
