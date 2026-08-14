@@ -1,5 +1,32 @@
 # Setup
 
+## The short way
+
+Most of this is automated. Install the Firebase CLI, then run the script:
+
+```bash
+npm install -g firebase-tools
+./scripts/setup-firebase.sh
+```
+
+It creates the project, registers both Android apps, downloads
+`google-services.json`, creates the Firestore database, deploys the rules and
+indexes, and prints your debug SHA-1. Three things it cannot do — enabling the
+sign-in providers, registering that SHA-1, and creating a Maps key — are printed
+at the end with direct links. It is safe to re-run.
+
+**Cloud Functions are deliberately left out**, because they require the Blaze
+billing plan. The app runs without them: you can sign up, browse the map, file
+reports and comment. What breaks is everything server-owned — vote and comment
+counters stay at zero, push notifications never arrive, and the admin actions
+fail. That is a fine way to see the app working before deciding about billing.
+
+The rest of this document is the same thing done by hand, plus troubleshooting.
+
+---
+
+## The long way
+
 Everything needed to get the app building, running and talking to a real
 backend. Expect the first pass to take about half an hour, most of it waiting
 for Firebase.

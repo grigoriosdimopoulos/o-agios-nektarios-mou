@@ -119,24 +119,25 @@ else in the app hardcodes a coordinate.
 
 ## Getting started
 
-Full instructions, including the Firebase project, the Maps key, deploying rules
-and functions, and making yourself the first administrator, are in
-**[docs/SETUP.md](docs/SETUP.md)**. The short version:
+Most of the Firebase setup is scripted:
 
 ```bash
-# 1. Firebase config
-cp app/google-services.json.example app/google-services.json   # then replace it
-                                                               # with the real download
-
-# 2. Google Maps key
-echo "MAPS_API_KEY=your-key-here" >> local.properties
-
-# 3. Build and test
-./gradlew assembleDebug testDebugUnitTest
-
-# 4. Backend
-cd firebase && firebase deploy --only firestore,storage,functions
+npm install -g firebase-tools
+./scripts/setup-firebase.sh
 ```
+
+That creates the project, registers both Android apps, downloads
+`google-services.json`, creates the Firestore database, deploys rules and
+indexes, and prints the three things you have to click in a browser. Then:
+
+```bash
+./gradlew assembleDebug
+```
+
+Cloud Functions are left out of the script because they need the Blaze billing
+plan — the app runs without them, minus the server-owned counters and push
+notifications. Full instructions, troubleshooting, and how to make yourself the
+first administrator are in **[docs/SETUP.md](docs/SETUP.md)**.
 
 Neither `google-services.json` nor `local.properties` is committed; both are
 git-ignored.
