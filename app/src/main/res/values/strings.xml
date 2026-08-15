@@ -248,4 +248,8 @@
     <string name="crash_body">Sorry about that. Copy the details below and send them over so it can be fixed.</string>
     <string name="crash_copy">Copy details</string>
     <string name="error_google_unavailable">No Google account is available. Add one to the phone in Android Settings, or sign in with email and password.</string>
+    <string name="chat_no_residents_yet">No neighbours signed up yet</string>
+    <string name="chat_no_residents_yet_hint">You are the first here. As soon as another resident creates an account they will appear in this list.</string>
+    <string name="chat_no_residents_match">Nobody by that name</string>
+    <string name="chat_no_residents_match_hint">Try part of a first or last name.</string>
 </resources>

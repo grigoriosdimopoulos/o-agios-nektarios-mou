@@ -161,8 +161,14 @@ fun VillageMap(
             }
             mapView
         },
-        update = {
-            state.styleDark = darkTheme
+        update = { view ->
+            // Switching between the light and dark village means loading a
+            // different tile style, which throws away every source and layer
+            // with it — so the style is re-applied, not merely recorded, and
+            // the render below runs against whatever it rebuilds.
+            if (state.styleDark != darkTheme) {
+                state.applyStyle(view, darkTheme)
+            }
             state.render(
                 clusters = clusters,
                 blocks = blocks,
@@ -184,7 +190,11 @@ fun VillageMap(
  */
 private class VillageMapState {
     var map: MapLibreMap? = null
-    var styleDark: Boolean = false
+
+    /** Which style is loaded, or null before the first one has been applied. */
+    var styleDark: Boolean? = null
+        private set
+
     private var style: Style? = null
     private var pending: (() -> Unit)? = null
     private val registeredBadges = mutableSetOf<String>()
@@ -194,6 +204,12 @@ private class VillageMapState {
 
     fun applyStyle(mapView: MapView, dark: Boolean) {
         val map = map ?: return
+        styleDark = dark
+        // The outgoing style's sources, layers and images die with it, so
+        // nothing may be added to it while the replacement loads. Dropping the
+        // reference makes render() queue its work instead of writing into a
+        // style that is on its way out.
+        style = null
         val url = if (dark) VillageConfig.MAP_STYLE_DARK else VillageConfig.MAP_STYLE_LIGHT
         metrics = mapView.resources.displayMetrics
         map.setStyle(Style.Builder().fromUri(url)) { loaded ->
@@ -216,8 +232,8 @@ private class VillageMapState {
             loaded.addLayer(
                 LineLayer(LAYER_BLOCK_LINE, SOURCE_BLOCKS).withProperties(
                     PropertyFactory.lineColor(Expression.get("fill")),
-                    PropertyFactory.lineWidth(1.6f),
-                    PropertyFactory.lineOpacity(0.7f),
+                    PropertyFactory.lineWidth(2.4f),
+                    PropertyFactory.lineOpacity(0.9f),
                 ),
             )
             loaded.addLayer(
@@ -309,8 +325,11 @@ private class VillageMapState {
                 addStringProperty("badge", badgeId)
                 addStringProperty("fill", colorToHex(tint))
                 // Fill opacity scales with activity, so a busy neighbourhood is
-                // visible before you read any number.
-                addNumberProperty("opacity", if (summary.openCount > 0) 0.13 else 0.04)
+                // visible before you read any number — but a quiet one still has
+                // to be visible at all. At 4% it was not, which made turning the
+                // layer on and off look like a dead button in a village that has
+                // not been reported in yet.
+                addNumberProperty("opacity", if (summary.openCount > 0) 0.22 else 0.10)
             }
         }
         source.setGeoJson(FeatureCollection.fromFeatures(features))

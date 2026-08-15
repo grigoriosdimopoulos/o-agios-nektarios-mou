@@ -150,31 +150,45 @@ same way.
 
 ---
 
-## 6. Replace the placeholder geography
+## 6. Adjusting the geography
 
-Two files, and nothing else in the app hardcodes a coordinate:
+The app is set up for Άγιος Νεκτάριος Αττικής — the settlement in the Vilia
+municipal unit of Mandra-Eidyllia, West Attica, tagged `place=village` in
+OpenStreetMap at 38.16304 N, 23.28997 E. The extent is taken from the
+OpenStreetMap road network rather than estimated: 1240 m north-south by
+1139 m east-west.
+
+Two files hold all of it, and nothing else in the app hardcodes a coordinate:
 
 **`app/src/main/java/gr/agiosnektarios/village/core/VillageConfig.kt`** — the
-village centre and the camera bounds.
+settlement extent, the camera fence around it, and the zoom range.
 
 **`app/src/main/assets/village_blocks.json`** — the neighbourhood outlines:
 
 ```json
 {
-  "version": 1,
   "blocks": [
     {
-      "id": "block-01",
+      "id": "sector-mc",
       "nameEl": "Κέντρο",
-      "nameEn": "Village Centre",
+      "nameEn": "Village centre",
       "polygon": [
-        { "lat": 37.8355, "lng": 23.9040 },
-        { "lat": 37.8355, "lng": 23.9120 }
+        { "lat": 38.162115, "lng": 23.289995 },
+        { "lat": 38.162115, "lng": 23.294333 }
       ]
     }
   ]
 }
 ```
+
+The nine shipped sectors are named by compass direction because OpenStreetMap
+records no named roads or quarters here. They are meant to be replaced with the
+divisions residents actually use — see the header comment in the asset.
+
+`VillageGeographyTest` fails the build if the two files stop describing the same
+place: every polygon vertex must fall inside the camera bounds, and the mapped
+area must stay village-sized. That test exists because they once did not, and
+the app opened 40 km away.
 
 Polygons may have any number of vertices and need not be rectangles. **Keep the
 ids stable** once residents have neighbourhoods attached to their profiles —

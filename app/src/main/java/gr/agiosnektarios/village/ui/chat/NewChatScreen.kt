@@ -37,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.Avatar
+import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 
@@ -113,40 +114,60 @@ fun NewChatScreen(
                 )
             }
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(state.results, key = { it.id }) { profile ->
-                    val checked = state.selected.any { it.id == profile.id }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.toggleSelection(profile) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Avatar(
-                            photoUrl = profile.photoUrl,
-                            initials = profile.initials,
-                            seed = profile.id,
-                            size = 42.dp,
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = profile.displayName,
-                                style = MaterialTheme.typography.titleSmall,
+            // An empty picker is the normal state of a village that has just
+            // opened its app, not a fault — but a blank list above a button
+            // that refuses to press is indistinguishable from a broken screen,
+            // so it says which of the two is happening.
+            if (state.results.isEmpty()) {
+                val searching = state.query.isNotBlank()
+                EmptyState(
+                    emoji = if (searching) "🔍" else "👋",
+                    title = stringResource(
+                        if (searching) R.string.chat_no_residents_match
+                        else R.string.chat_no_residents_yet,
+                    ),
+                    subtitle = stringResource(
+                        if (searching) R.string.chat_no_residents_match_hint
+                        else R.string.chat_no_residents_yet_hint,
+                    ),
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(state.results, key = { it.id }) { profile ->
+                        val checked = state.selected.any { it.id == profile.id }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.toggleSelection(profile) }
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Avatar(
+                                photoUrl = profile.photoUrl,
+                                initials = profile.initials,
+                                seed = profile.id,
+                                size = 42.dp,
                             )
-                            if (profile.address.isNotBlank()) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = profile.address,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = profile.displayName,
+                                    style = MaterialTheme.typography.titleSmall,
                                 )
+                                if (profile.address.isNotBlank()) {
+                                    Text(
+                                        text = profile.address,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = { viewModel.toggleSelection(profile) },
+                            )
                         }
-                        Checkbox(
-                            checked = checked,
-                            onCheckedChange = { viewModel.toggleSelection(profile) },
-                        )
                     }
                 }
             }

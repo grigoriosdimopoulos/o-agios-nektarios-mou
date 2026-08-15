@@ -1,280 +1,227 @@
 {
-  "_comment": "PLACEHOLDER GEOMETRY. A uniform grid over the approximate extent of the village, so the map, the block counters and the neighbourhood picker are all functional out of the box. Replace with the real neighbourhood outlines (any polygon, any vertex count) before release; ids must stay stable once residents have addresses attached to them.",
-  "version": 1,
+  "//": [
+    "Neighbourhood outlines for Άγιος Νεκτάριος Αττικής (Vilia, Mandra-Eidyllia,",
+    "West Attica) — the settlement at 38.16304 N, 23.28997 E, tagged place=village",
+    "in OpenStreetMap.",
+    "",
+    "The extent is surveyed, not guessed: it is the bounding box of every",
+    "residential, living_street and service way OpenStreetMap records inside the",
+    "settlement — 1240 m north-south by 1139 m east-west. That rectangle is split",
+    "into a 3x3 grid, and each of the nine cells was checked to contain real",
+    "streets before being kept.",
+    "",
+    "The names are compass directions on purpose. OpenStreetMap records no named",
+    "roads and no named quarters here, and this is a real place of 46 residents:",
+    "inventing plausible-sounding Greek quarter names would put words in the",
+    "village's mouth. 'Νοτιοδυτικός τομέας' describes where the area is and claims",
+    "nothing more. Replace these with the divisions residents actually use — the",
+    "app reads names and outlines only from this file."
+  ],
   "blocks": [
     {
-      "id": "block-01",
+      "id": "sector-sw",
+      "nameEl": "Νοτιοδυτικός τομέας",
+      "nameEn": "South-west sector",
+      "polygon": [
+        {
+          "lat": 38.158395,
+          "lng": 23.285657
+        },
+        {
+          "lat": 38.158395,
+          "lng": 23.289995
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.289995
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.285657
+        }
+      ]
+    },
+    {
+      "id": "sector-sc",
+      "nameEl": "Νότιος τομέας",
+      "nameEn": "South sector",
+      "polygon": [
+        {
+          "lat": 38.158395,
+          "lng": 23.289995
+        },
+        {
+          "lat": 38.158395,
+          "lng": 23.294333
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.294333
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.289995
+        }
+      ]
+    },
+    {
+      "id": "sector-se",
+      "nameEl": "Νοτιοανατολικός τομέας",
+      "nameEn": "South-east sector",
+      "polygon": [
+        {
+          "lat": 38.158395,
+          "lng": 23.294333
+        },
+        {
+          "lat": 38.158395,
+          "lng": 23.298671
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.298671
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.294333
+        }
+      ]
+    },
+    {
+      "id": "sector-mw",
+      "nameEl": "Δυτικός τομέας",
+      "nameEn": "West sector",
+      "polygon": [
+        {
+          "lat": 38.162114,
+          "lng": 23.285657
+        },
+        {
+          "lat": 38.162114,
+          "lng": 23.289995
+        },
+        {
+          "lat": 38.165834,
+          "lng": 23.289995
+        },
+        {
+          "lat": 38.165834,
+          "lng": 23.285657
+        }
+      ]
+    },
+    {
+      "id": "sector-mc",
       "nameEl": "Κέντρο",
-      "nameEn": "Village Centre",
+      "nameEn": "Village centre",
       "polygon": [
         {
-          "lat": 37.8355,
-          "lng": 23.904
+          "lat": 38.162114,
+          "lng": 23.289995
         },
         {
-          "lat": 37.8355,
-          "lng": 23.912
+          "lat": 38.162114,
+          "lng": 23.294333
         },
         {
-          "lat": 37.843833,
-          "lng": 23.912
+          "lat": 38.165834,
+          "lng": 23.294333
         },
         {
-          "lat": 37.843833,
-          "lng": 23.904
+          "lat": 38.165834,
+          "lng": 23.289995
         }
       ]
     },
     {
-      "id": "block-02",
-      "nameEl": "Άνω Συνοικία",
-      "nameEn": "Upper Quarter",
+      "id": "sector-me",
+      "nameEl": "Ανατολικός τομέας",
+      "nameEn": "East sector",
       "polygon": [
         {
-          "lat": 37.8355,
-          "lng": 23.912
+          "lat": 38.162114,
+          "lng": 23.294333
         },
         {
-          "lat": 37.8355,
-          "lng": 23.92
+          "lat": 38.162114,
+          "lng": 23.298671
         },
         {
-          "lat": 37.843833,
-          "lng": 23.92
+          "lat": 38.165834,
+          "lng": 23.298671
         },
         {
-          "lat": 37.843833,
-          "lng": 23.912
+          "lat": 38.165834,
+          "lng": 23.294333
         }
       ]
     },
     {
-      "id": "block-03",
-      "nameEl": "Κάτω Συνοικία",
-      "nameEn": "Lower Quarter",
+      "id": "sector-nw",
+      "nameEl": "Βορειοδυτικός τομέας",
+      "nameEn": "North-west sector",
       "polygon": [
         {
-          "lat": 37.8355,
-          "lng": 23.92
+          "lat": 38.165834,
+          "lng": 23.285657
         },
         {
-          "lat": 37.8355,
-          "lng": 23.928
+          "lat": 38.165834,
+          "lng": 23.289995
         },
         {
-          "lat": 37.843833,
-          "lng": 23.928
+          "lat": 38.169553,
+          "lng": 23.289995
         },
         {
-          "lat": 37.843833,
-          "lng": 23.92
+          "lat": 38.169553,
+          "lng": 23.285657
         }
       ]
     },
     {
-      "id": "block-04",
-      "nameEl": "Πλατεία",
-      "nameEn": "Main Square",
+      "id": "sector-nc",
+      "nameEl": "Βόρειος τομέας",
+      "nameEn": "North sector",
       "polygon": [
         {
-          "lat": 37.8355,
-          "lng": 23.928
+          "lat": 38.165834,
+          "lng": 23.289995
         },
         {
-          "lat": 37.8355,
-          "lng": 23.936
+          "lat": 38.165834,
+          "lng": 23.294333
         },
         {
-          "lat": 37.843833,
-          "lng": 23.936
+          "lat": 38.169553,
+          "lng": 23.294333
         },
         {
-          "lat": 37.843833,
-          "lng": 23.928
+          "lat": 38.169553,
+          "lng": 23.289995
         }
       ]
     },
     {
-      "id": "block-05",
-      "nameEl": "Σχολείο",
-      "nameEn": "School District",
+      "id": "sector-ne",
+      "nameEl": "Βορειοανατολικός τομέας",
+      "nameEn": "North-east sector",
       "polygon": [
         {
-          "lat": 37.843833,
-          "lng": 23.904
+          "lat": 38.165834,
+          "lng": 23.294333
         },
         {
-          "lat": 37.843833,
-          "lng": 23.912
+          "lat": 38.165834,
+          "lng": 23.298671
         },
         {
-          "lat": 37.852167,
-          "lng": 23.912
+          "lat": 38.169553,
+          "lng": 23.298671
         },
         {
-          "lat": 37.852167,
-          "lng": 23.904
-        }
-      ]
-    },
-    {
-      "id": "block-06",
-      "nameEl": "Εκκλησία",
-      "nameEn": "Church District",
-      "polygon": [
-        {
-          "lat": 37.843833,
-          "lng": 23.912
-        },
-        {
-          "lat": 37.843833,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.912
-        }
-      ]
-    },
-    {
-      "id": "block-07",
-      "nameEl": "Αμπέλια",
-      "nameEn": "Vineyards",
-      "polygon": [
-        {
-          "lat": 37.843833,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.843833,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.92
-        }
-      ]
-    },
-    {
-      "id": "block-08",
-      "nameEl": "Ελαιώνας",
-      "nameEn": "Olive Grove",
-      "polygon": [
-        {
-          "lat": 37.843833,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.843833,
-          "lng": 23.936
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.936
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.928
-        }
-      ]
-    },
-    {
-      "id": "block-09",
-      "nameEl": "Λόφος",
-      "nameEn": "Hillside",
-      "polygon": [
-        {
-          "lat": 37.852167,
-          "lng": 23.904
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.912
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.912
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.904
-        }
-      ]
-    },
-    {
-      "id": "block-10",
-      "nameEl": "Ρέμα",
-      "nameEn": "Riverside",
-      "polygon": [
-        {
-          "lat": 37.852167,
-          "lng": 23.912
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.912
-        }
-      ]
-    },
-    {
-      "id": "block-11",
-      "nameEl": "Παλιό Χωριό",
-      "nameEn": "Old Village",
-      "polygon": [
-        {
-          "lat": 37.852167,
-          "lng": 23.92
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.92
-        }
-      ]
-    },
-    {
-      "id": "block-12",
-      "nameEl": "Νέος Οικισμός",
-      "nameEn": "New Settlement",
-      "polygon": [
-        {
-          "lat": 37.852167,
-          "lng": 23.928
-        },
-        {
-          "lat": 37.852167,
-          "lng": 23.936
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.936
-        },
-        {
-          "lat": 37.8605,
-          "lng": 23.928
+          "lat": 38.169553,
+          "lng": 23.294333
         }
       ]
     }

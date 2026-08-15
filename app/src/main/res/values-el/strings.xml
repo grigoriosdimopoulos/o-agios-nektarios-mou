@@ -225,4 +225,8 @@
     <string name="crash_body">Ζητούμε συγγνώμη. Αντιγράψτε τις παρακάτω λεπτομέρειες και στείλτε τις για να διορθωθεί.</string>
     <string name="crash_copy">Αντιγραφή λεπτομερειών</string>
     <string name="error_google_unavailable">Δεν υπάρχει διαθέσιμος λογαριασμός Google. Προσθέστε έναν στις Ρυθμίσεις του τηλεφώνου ή συνδεθείτε με email και κωδικό.</string>
+    <string name="chat_no_residents_yet">Δεν έχει εγγραφεί ακόμη κανένας γείτονας</string>
+    <string name="chat_no_residents_yet_hint">Είστε ο πρώτος εδώ. Μόλις δημιουργήσει λογαριασμό άλλος κάτοικος, θα εμφανιστεί σε αυτή τη λίστα.</string>
+    <string name="chat_no_residents_match">Κανείς με αυτό το όνομα</string>
+    <string name="chat_no_residents_match_hint">Δοκιμάστε μέρος του ονόματος ή του επωνύμου.</string>
 </resources>

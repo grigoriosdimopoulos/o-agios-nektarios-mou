@@ -29,8 +29,22 @@ data class GeoBounds(
         point.lat in south..north && point.lng in west..east
 
     /** Grows the rectangle by [degrees] on every side. */
-    fun expanded(degrees: Double): GeoBounds =
-        GeoBounds(south - degrees, west - degrees, north + degrees, east + degrees)
+    fun expanded(degrees: Double): GeoBounds = expanded(degrees, degrees)
+
+    /**
+     * Grows the rectangle by a different amount on each axis.
+     *
+     * A degree of longitude is shorter than a degree of latitude everywhere but
+     * the equator — at the village's 38°N it is about 79% as long — so a margin
+     * meant to be an even distance in metres is not an even number of degrees.
+     */
+    fun expanded(latDegrees: Double, lngDegrees: Double): GeoBounds =
+        GeoBounds(
+            south = south - latDegrees,
+            west = west - lngDegrees,
+            north = north + latDegrees,
+            east = east + lngDegrees,
+        )
 
     companion object {
         /** Smallest rectangle containing every point; null for an empty list. */
