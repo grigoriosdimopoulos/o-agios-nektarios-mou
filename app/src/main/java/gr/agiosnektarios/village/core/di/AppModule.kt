@@ -6,13 +6,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.functions.FirebaseFunctions
-import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.ktx.messaging
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.ktx.storage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -56,15 +52,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideStorage(): FirebaseStorage = Firebase.storage
-
-    @Provides
-    @Singleton
     fun provideMessaging(): FirebaseMessaging = Firebase.messaging
-
-    @Provides
-    @Singleton
-    fun provideFunctions(): FirebaseFunctions = Firebase.functions("europe-west1")
 
     @Provides
     @IoDispatcher

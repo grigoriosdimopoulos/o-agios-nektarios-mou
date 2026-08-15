@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -46,12 +47,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import gr.agiosnektarios.village.R
 import androidx.compose.foundation.isSystemInDarkTheme
 import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.ui.map.VillageMap
 import gr.agiosnektarios.village.core.model.IssueCategory
+import gr.agiosnektarios.village.ui.components.BytesImage
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.InlineSpinner
 import gr.agiosnektarios.village.ui.components.IssueRow
@@ -262,30 +263,17 @@ fun IssueComposeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
-                    items(state.photoUrls) { url ->
-                        Box {
-                            AsyncImage(
-                                model = url,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(96.dp)
-                                    .clip(MaterialTheme.shapes.medium),
-                                contentScale = ContentScale.Crop,
-                            )
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.action_delete),
-                                tint = MaterialTheme.colorScheme.onError,
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp)
-                                    .size(20.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.error)
-                                    .clickable { viewModel.removePhoto(url) }
-                                    .padding(2.dp),
-                            )
-                        }
+                    items(state.existingPhotos, key = { it.id }) { photo ->
+                        PhotoThumb(
+                            bytes = photo.bytes,
+                            onRemove = { viewModel.removeExistingPhoto(photo.id) },
+                        )
+                    }
+                    itemsIndexed(state.newPhotos) { index, bytes ->
+                        PhotoThumb(
+                            bytes = bytes,
+                            onRemove = { viewModel.removeNewPhoto(index) },
+                        )
                     }
                     item {
                         Box(
@@ -325,5 +313,32 @@ fun IssueComposeScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+/** One picked photo with a remove affordance, shared by the kept and new strips. */
+@Composable
+private fun PhotoThumb(bytes: ByteArray?, onRemove: () -> Unit) {
+    Box {
+        BytesImage(
+            bytes = bytes,
+            contentDescription = null,
+            modifier = Modifier
+                .size(96.dp)
+                .clip(MaterialTheme.shapes.medium),
+        )
+        Icon(
+            imageVector = Icons.Filled.Close,
+            contentDescription = stringResource(R.string.action_delete),
+            tint = MaterialTheme.colorScheme.onError,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(20.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.error)
+                .clickable(onClick = onRemove)
+                .padding(2.dp),
+        )
     }
 }

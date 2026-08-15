@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.data.chat
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -84,15 +85,10 @@ class ChatRepository @Inject constructor(
                         mapOf(
                             "type" to ChatType.DIRECT.id,
                             "title" to "",
-                            "photoUrl" to "",
                             "memberIds" to listOf(me.id, other.id).sorted(),
                             "memberNames" to mapOf(
                                 me.id to me.displayName,
                                 other.id to other.displayName,
-                            ),
-                            "memberPhotos" to mapOf(
-                                me.id to me.photoUrl,
-                                other.id to other.photoUrl,
                             ),
                             "createdById" to me.id,
                             "lastMessage" to "",
@@ -120,10 +116,8 @@ class ChatRepository @Inject constructor(
                 mapOf(
                     "type" to ChatType.GROUP.id,
                     "title" to title.trim(),
-                    "photoUrl" to "",
                     "memberIds" to everyone.map { it.id },
                     "memberNames" to everyone.associate { it.id to it.displayName },
-                    "memberPhotos" to everyone.associate { it.id to it.photoUrl },
                     "createdById" to creator.id,
                     "lastMessage" to "",
                     "lastMessageSenderId" to "",
@@ -136,9 +130,7 @@ class ChatRepository @Inject constructor(
                 mapOf(
                     "senderId" to creator.id,
                     "senderName" to creator.displayName,
-                    "senderPhotoUrl" to creator.photoUrl,
                     "text" to "",
-                    "imageUrl" to "",
                     "systemEvent" to "GROUP_CREATED",
                     "createdAt" to FieldValue.serverTimestamp(),
                 ),
@@ -159,10 +151,10 @@ class ChatRepository @Inject constructor(
         chatId: String,
         sender: UserProfile,
         text: String,
-        imageUrl: String = "",
+        image: ByteArray? = null,
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
-            require(text.isNotBlank() || imageUrl.isNotBlank()) { "Empty message" }
+            require(text.isNotBlank() || image != null) { "Empty message" }
             val chatRef = chats.document(chatId)
             val members = chatRef.get().await().get("memberIds") as? List<*> ?: emptyList<Any>()
 
@@ -172,9 +164,8 @@ class ChatRepository @Inject constructor(
                 mapOf(
                     "senderId" to sender.id,
                     "senderName" to sender.displayName,
-                    "senderPhotoUrl" to sender.photoUrl,
                     "text" to text.trim(),
-                    "imageUrl" to imageUrl,
+                    "image" to image?.let(Blob::fromBytes),
                     "systemEvent" to "",
                     "createdAt" to FieldValue.serverTimestamp(),
                 ),
@@ -210,7 +201,6 @@ class ChatRepository @Inject constructor(
                 )
                 members.forEach {
                     updates["memberNames.${it.id}"] = it.displayName
-                    updates["memberPhotos.${it.id}"] = it.photoUrl
                     updates["unreadCounts.${it.id}"] = 0
                 }
                 chats.document(chatId).update(updates).await()

@@ -39,9 +39,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.Announcement
+import gr.agiosnektarios.village.ui.components.BytesImage
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.TagPill
@@ -133,9 +133,9 @@ private fun AnnouncementCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column {
-            if (announcement.imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = announcement.imageUrl,
+            if (announcement.image != null) {
+                BytesImage(
+                    bytes = announcement.image.toBytes(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(160.dp),
                     contentScale = ContentScale.Crop,

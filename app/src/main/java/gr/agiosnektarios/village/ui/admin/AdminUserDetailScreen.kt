@@ -98,7 +98,7 @@ fun AdminUserDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Avatar(
-                        photoUrl = profile?.photoUrl.orEmpty(),
+                        bytes = profile?.avatarBytes,
                         initials = profile?.initials.orEmpty(),
                         seed = profile?.id.orEmpty(),
                         size = 84.dp,

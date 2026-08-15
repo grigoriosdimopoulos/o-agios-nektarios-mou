@@ -7,7 +7,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.model.Announcement
 import gr.agiosnektarios.village.data.announcement.AnnouncementRepository
-import gr.agiosnektarios.village.data.media.MediaRepository
+import gr.agiosnektarios.village.data.media.ImageCodec
+import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.data.session.SessionRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +44,7 @@ data class AnnouncementComposeUiState(
     val isEditing: Boolean = false,
     val title: String = "",
     val body: String = "",
-    val imageUrl: String = "",
+    val image: ByteArray? = null,
     val pinned: Boolean = false,
     val uploading: Boolean = false,
     val saving: Boolean = false,
@@ -57,7 +58,7 @@ data class AnnouncementComposeUiState(
 class AnnouncementComposeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: AnnouncementRepository,
-    private val mediaRepository: MediaRepository,
+    private val imageCodec: ImageCodec,
     private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
@@ -79,7 +80,7 @@ class AnnouncementComposeViewModel @Inject constructor(
                                 it.copy(
                                     title = announcement.title,
                                     body = announcement.body,
-                                    imageUrl = announcement.imageUrl,
+                                    image = announcement.image?.toBytes(),
                                     pinned = announcement.pinned,
                                 )
                             }
@@ -97,18 +98,18 @@ class AnnouncementComposeViewModel @Inject constructor(
         val userId = sessionRepository.currentUserId ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(uploading = true) }
-            val result = mediaRepository.uploadAnnouncementImage(userId, uri)
+            val result = imageCodec.encode(uri, ImageSpec.ANNOUNCEMENT)
             _uiState.update {
                 it.copy(
                     uploading = false,
-                    imageUrl = result.getOrNull() ?: it.imageUrl,
+                    image = result.getOrNull() ?: it.image,
                     errorMessage = result.exceptionOrNull()?.localizedMessage,
                 )
             }
         }
     }
 
-    fun clearImage() = _uiState.update { it.copy(imageUrl = "") }
+    fun clearImage() = _uiState.update { it.copy(image = null) }
 
     fun submit() {
         val author = sessionRepository.currentProfile ?: return
@@ -129,7 +130,7 @@ class AnnouncementComposeViewModel @Inject constructor(
                     id = announcementId,
                     title = state.title,
                     body = state.body,
-                    imageUrl = state.imageUrl,
+                    image = state.image,
                     pinned = state.pinned,
                 )
             } else {
@@ -137,7 +138,7 @@ class AnnouncementComposeViewModel @Inject constructor(
                     author = author,
                     title = state.title,
                     body = state.body,
-                    imageUrl = state.imageUrl,
+                    image = state.image,
                     pinned = state.pinned,
                 ).map { }
             }

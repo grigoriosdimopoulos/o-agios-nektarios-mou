@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.data.announcement
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -56,7 +57,7 @@ class AnnouncementRepository @Inject constructor(
         author: UserProfile,
         title: String,
         body: String,
-        imageUrl: String,
+        image: ByteArray?,
         pinned: Boolean,
     ): Result<String> = withContext(io) {
         runCatching {
@@ -65,7 +66,7 @@ class AnnouncementRepository @Inject constructor(
                 mapOf(
                     "title" to title.trim(),
                     "body" to body.trim(),
-                    "imageUrl" to imageUrl,
+                    "image" to image?.let(Blob::fromBytes),
                     "authorId" to author.id,
                     "authorName" to author.displayName,
                     "pinned" to pinned,
@@ -81,7 +82,7 @@ class AnnouncementRepository @Inject constructor(
         id: String,
         title: String,
         body: String,
-        imageUrl: String,
+        image: ByteArray?,
         pinned: Boolean,
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
@@ -89,7 +90,7 @@ class AnnouncementRepository @Inject constructor(
                 mapOf(
                     "title" to title.trim(),
                     "body" to body.trim(),
-                    "imageUrl" to imageUrl,
+                    "image" to image?.let(Blob::fromBytes),
                     "pinned" to pinned,
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),

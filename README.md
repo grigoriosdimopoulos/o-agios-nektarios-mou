@@ -38,7 +38,9 @@ into one counter. Tapping a cluster opens the reports it contains.
 have picked a category and a location, any similar reports already filed at that
 spot appear inline — before you have typed the description.
 
-**Reports.** Title, description, category, photos, a pin. Upvote and downvote,
+**Reports.** Title, description, category, photos, a pin. Photos are stored as
+bytes inside Firestore documents rather than in Cloud Storage, which would need
+a billing account — free, at the cost of a 500 KB ceiling per picture. Upvote and downvote,
 comment, and a lifecycle of Open → Acknowledged → In progress → Resolved /
 Won't do. The author and moderators can edit, delete and change status; a
 resident sees only the states that make sense for their own report, while

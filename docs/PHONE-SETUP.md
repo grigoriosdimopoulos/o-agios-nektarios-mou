@@ -124,14 +124,16 @@ The app is built to run on the free Spark plan, so almost everything works with
 no billing at all: sign-up, the map, filing reports, **vote and comment counts**,
 chat with unread badges, announcements, and the whole administration screen.
 
-Two things need the Blaze plan (a card on file, though village-scale usage sits
+One thing needs the Blaze plan (a card on file, though village-scale usage sits
 inside the free allowance):
 
 - **Push notifications.** Sending them requires a credential that cannot ship
   inside an app, so it needs a server. Deploy `firebase/functions` when you want
   them; nothing else changes.
-- **Photo upload.** Cloud Storage requires Blaze on projects created after
-  October 2024.
+
+Photos are *not* on that list any more. Cloud Storage would need Blaze, so
+pictures are stored as bytes inside Firestore documents instead — which is free,
+at the cost of the size limits described in the README.
 
 One thing has no workaround at all: deleting a resident removes their profile
 and everything they wrote, but **not their login**. Only the Admin SDK can

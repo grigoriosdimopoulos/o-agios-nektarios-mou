@@ -177,7 +177,7 @@ private fun MessageBubble(
     ) {
         if (!isMine && isGroup) {
             Avatar(
-                photoUrl = message.senderPhotoUrl,
+                bytes = null,
                 initials = message.senderName.take(2).uppercase(),
                 seed = message.senderId,
                 size = 28.dp,

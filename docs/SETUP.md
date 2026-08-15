@@ -18,7 +18,8 @@ at the end with direct links. It is safe to re-run.
 **Cloud Functions are deliberately left out**, and the app no longer needs them:
 counters, chat badges, cascading deletes and administration are all client
 transactions constrained by the security rules. Functions add push notifications
-and nothing else, and they require the Blaze billing plan.
+and nothing else, and they require the Blaze billing plan. Photos do not need
+them either: they live in Firestore rather than Cloud Storage.
 
 The rest of this document is the same thing done by hand, plus troubleshooting.
 
@@ -37,7 +38,7 @@ for Firebase.
 - Node.js 20 (only for the optional Cloud Functions and the rules tests)
 - `firebase-tools` (`npm install -g firebase-tools`)
 - A Google account. **No billing needed** — the app is built to run on the free
-  Spark plan. Blaze buys push notifications and photo upload, nothing else.
+  Spark plan. Blaze buys push notifications and nothing else.
 
 ---
 
@@ -85,9 +86,11 @@ without it:
 > everything for 30 days and then starts denying everything, which is a worse
 > surprise later. Either way, **the rules deploy is not optional.**
 
-**Enable Storage** and **Cloud Messaging** (Messaging needs no configuration).
-Storage is only used for photo uploads; on projects created after October 2024
-it requires the Blaze plan, and the app runs fine without it.
+**Enable Cloud Messaging** (it needs no configuration).
+
+**Cloud Storage is not used at all.** It requires the Blaze plan on projects
+created after October 2024, so photos are stored as bytes inside Firestore
+documents instead — see *How photos are stored* below.
 
 ---
 
@@ -120,8 +123,9 @@ npm --prefix functions install
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-That is the whole backend. `storage` and `functions` are optional extras that
-need Blaze — add them to the list once you have it.
+That is the whole backend. `functions` is an optional extra that needs Blaze —
+add it to the list once you have it. There is no `storage` target: the app does
+not use Cloud Storage.
 
 There are no composite indexes to wait on: the app only issues queries
 Firestore indexes automatically, so the rules deploy is the whole story. The
@@ -149,6 +153,34 @@ so the village cannot be locked out by a mis-tap; undo it in the console the
 same way.
 
 ---
+
+## How photos are stored
+
+There is no Cloud Storage bucket. Cloud Storage requires the Blaze plan on
+projects created after October 2024, so every picture in this app is stored as
+bytes inside a Firestore document — as a native `Blob` field rather than base64
+text, which would add a third to the size for nothing.
+
+Firestore hard-caps a document at **1 MiB**, and that shapes the whole design:
+
+| Picture | Where it lives | Ceiling |
+| --- | --- | --- |
+| Report photo | `issues/{id}/photos/{photoId}`, one per document | 500 KB |
+| Report card thumbnail | `thumbnail` on the report itself | 7 KB |
+| Avatar | `avatar` on the user document | 12 KB |
+| Announcement image | `image` on the announcement | 90 KB |
+| Chat image | `image` on the message | 90 KB |
+
+The split matters more than the numbers. The map reads **every** report in the
+village on every launch, so anything living on a report document is multiplied
+by the number of reports — a 100 KB thumbnail would mean tens of megabytes per
+open. Full photos are therefore their own documents, read only when somebody
+opens that report.
+
+`ImageCodec` enforces the ceilings by stepping quality down and then dimensions
+down until the encoded image fits, so a large photo is never rejected — only
+made smaller. The rules enforce them again server-side, because a client is not
+the right place for the only copy of a limit.
 
 ## 6. Adjusting the geography
 
@@ -209,7 +241,7 @@ firebase emulators:start
 
 The app points at production Firebase by default. To use the emulator suite, add
 the connection calls in `AppModule` — `useEmulator("10.0.2.2", 8080)` on
-Firestore, `9099` on Auth, `9199` on Storage, `5001` on Functions — guarded by
+Firestore, `9099` on Auth, `5001` on Functions — guarded by
 `BuildConfig.DEBUG`.
 
 ---

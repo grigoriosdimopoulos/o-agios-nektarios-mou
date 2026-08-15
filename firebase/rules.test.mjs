@@ -6,8 +6,11 @@ import {
 import { readFileSync } from "fs";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, serverTimestamp,
-  writeBatch, increment, query, where, getDocs, limit,
+  writeBatch, increment, query, where, getDocs, limit, Bytes,
 } from "firebase/firestore";
+
+/** Stand-in for JPEG bytes; only the length matters to the rules. */
+const image = (n) => Bytes.fromUint8Array(new Uint8Array(n));
 
 const env = await initializeTestEnvironment({
   projectId: "demo-rules-check",
@@ -235,6 +238,38 @@ await check("outsider cannot send into the conversation",
       senderId: "maria", senderName: "Maria", senderPhotoUrl: "",
       text: "γεια", imageUrl: "", systemEvent: "", createdAt: serverTimestamp(),
     })));
+}
+
+// ---- photos, which live in documents because there is no Storage bucket
+{
+  await check("a report may carry a small inline thumbnail",
+    assertSucceeds(setDoc(doc(maria, "issues/withthumb"), {
+      ...issue, thumbnail: image(5_000),
+    })));
+  await check("but not a full photo smuggled into the report itself",
+    assertFails(setDoc(doc(maria, "issues/fatthumb"), {
+      ...issue, thumbnail: image(400_000),
+    })));
+
+  await check("the author attaches a photo",
+    assertSucceeds(addDoc(collection(maria, "issues/withthumb/photos"), {
+      data: image(200_000), authorId: "maria", createdAt: serverTimestamp(),
+    })));
+  await check("a photo over the document budget is refused",
+    assertFails(addDoc(collection(maria, "issues/withthumb/photos"), {
+      data: image(900_000), authorId: "maria", createdAt: serverTimestamp(),
+    })));
+  await check("nobody may attach a photo in someone else's name",
+    assertFails(addDoc(collection(giorgos, "issues/withthumb/photos"), {
+      data: image(1_000), authorId: "maria", createdAt: serverTimestamp(),
+    })));
+  await check("any resident may look at the photos",
+    assertSucceeds(getDocs(collection(giorgos, "issues/withthumb/photos"))));
+
+  await check("an avatar must stay small enough to ride in the user document",
+    assertFails(updateDoc(doc(maria, "users/maria"), { avatar: image(200_000) })));
+  await check("a reasonable avatar is fine",
+    assertSucceeds(updateDoc(doc(maria, "users/maria"), { avatar: image(10_000) })));
 }
 
 // ---- counters the client now owns, which the rules have to police

@@ -99,9 +99,9 @@ fun EditProfileScreen(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Avatar(
-                        photoUrl = state.photoUrl,
+                        bytes = state.avatar,
                         initials = "${state.firstName.take(1)}${state.lastName.take(1)}",
-                        seed = state.photoUrl.ifBlank { state.firstName },
+                        seed = state.firstName,
                         size = 96.dp,
                     )
                     if (state.uploadingPhoto) InlineSpinner()

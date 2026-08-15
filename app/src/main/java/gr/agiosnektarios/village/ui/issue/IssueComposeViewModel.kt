@@ -13,7 +13,9 @@ import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.data.issue.IssueDraft
 import gr.agiosnektarios.village.data.issue.IssueRepository
-import gr.agiosnektarios.village.data.media.MediaRepository
+import gr.agiosnektarios.village.core.model.IssuePhoto
+import gr.agiosnektarios.village.data.media.ImageCodec
+import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
@@ -32,7 +34,12 @@ data class IssueComposeUiState(
     /** Both languages, since the view model has no business knowing the locale. */
     val blockNameEl: String = "",
     val blockNameEn: String = "",
-    val photoUrls: List<String> = emptyList(),
+    /** Photos already saved with the report, shown so they can be removed. */
+    val existingPhotos: List<IssuePhoto> = emptyList(),
+    /** Newly picked photos, already encoded and waiting to be written. */
+    val newPhotos: List<ByteArray> = emptyList(),
+    val removedPhotoIds: List<String> = emptyList(),
+    val thumbnail: ByteArray? = null,
     val uploadingPhoto: Boolean = false,
     @StringRes val titleError: Int? = null,
     @StringRes val categoryError: Int? = null,
@@ -43,13 +50,16 @@ data class IssueComposeUiState(
     val saving: Boolean = false,
     val savedIssueId: String? = null,
     val errorMessage: String? = null,
-)
+) {
+    /** Photos the report will have once saved, kept and new together. */
+    val photoCount: Int get() = existingPhotos.size + newPhotos.size
+}
 
 @HiltViewModel
 class IssueComposeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val issueRepository: IssueRepository,
-    private val mediaRepository: MediaRepository,
+    private val imageCodec: ImageCodec,
     private val blockRepository: VillageBlockRepository,
     private val sessionRepository: SessionRepository,
 ) : ViewModel() {
@@ -88,7 +98,10 @@ class IssueComposeViewModel @Inject constructor(
                     description = issue.description,
                     category = issue.category,
                     position = GeoPoint(issue.lat, issue.lng),
-                    photoUrls = issue.photoUrls,
+                    existingPhotos = issueRepository.getPhotos(issueId).getOrDefault(emptyList()),
+                    // Carried forward so editing the title does not silently
+                    // strip the card's picture.
+                    thumbnail = issue.thumbnail?.toBytes(),
                 )
             }
             refreshBlockName(GeoPoint(issue.lat, issue.lng))
@@ -139,29 +152,52 @@ class IssueComposeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Encodes a picked photo and holds it in memory until the report is saved.
+     *
+     * Nothing is written yet on purpose: a resident who backs out of composing
+     * should not leave photos behind in the database, and there is no storage
+     * bucket to sweep them from.
+     */
     fun addPhoto(uri: Uri) {
-        val userId = sessionRepository.currentUserId ?: return
+        if (_uiState.value.photoCount >= MAX_PHOTOS) return
         viewModelScope.launch {
-            _uiState.update { it.copy(uploadingPhoto = true) }
-            val result = mediaRepository.uploadIssuePhoto(userId, uri)
+            _uiState.update { it.copy(uploadingPhoto = true, errorMessage = null) }
+            val result = imageCodec.encode(uri, ImageSpec.ISSUE_PHOTO)
             _uiState.update { state ->
                 state.copy(
                     uploadingPhoto = false,
-                    photoUrls = result.getOrNull()
-                        ?.let { state.photoUrls + it }
-                        ?: state.photoUrls,
+                    newPhotos = result.getOrNull()?.let { state.newPhotos + it }
+                        ?: state.newPhotos,
                     errorMessage = result.exceptionOrNull()?.localizedMessage,
                 )
             }
+            // The card thumbnail is cut from whatever is now first.
+            refreshThumbnail(uri)
         }
     }
 
-    fun removePhoto(url: String) {
-        _uiState.update { it.copy(photoUrls = it.photoUrls - url) }
-        // The upload is already in Storage; drop it so abandoned photos do not
-        // accumulate. Failure is not worth surfacing — the report is what matters.
-        viewModelScope.launch { mediaRepository.delete(url) }
+    /** Kept separate so removing the first photo re-cuts the stamp. */
+    private suspend fun refreshThumbnail(uri: Uri) {
+        val thumb = imageCodec.encode(uri, ImageSpec.ISSUE_THUMBNAIL).getOrNull()
+        _uiState.update { if (it.thumbnail == null) it.copy(thumbnail = thumb) else it }
     }
+
+    fun removeExistingPhoto(photoId: String) = _uiState.update {
+        it.copy(
+            existingPhotos = it.existingPhotos.filterNot { photo -> photo.id == photoId },
+            removedPhotoIds = it.removedPhotoIds + photoId,
+        ).withoutOrphanThumbnail()
+    }
+
+    fun removeNewPhoto(index: Int) = _uiState.update {
+        it.copy(newPhotos = it.newPhotos.filterIndexed { i, _ -> i != index })
+            .withoutOrphanThumbnail()
+    }
+
+    /** A card thumbnail for a report with no photos left is a picture of nothing. */
+    private fun IssueComposeUiState.withoutOrphanThumbnail(): IssueComposeUiState =
+        if (photoCount == 0) copy(thumbnail = null) else this
 
     fun submit() {
         val state = _uiState.value
@@ -197,11 +233,18 @@ class IssueComposeViewModel @Inject constructor(
                 category = state.category!!,
                 position = position,
                 blockId = block?.id.orEmpty(),
-                photoUrls = state.photoUrls,
+                photos = state.newPhotos,
+                thumbnail = state.thumbnail,
             )
 
             val result = if (state.isEditing) {
-                issueRepository.updateIssue(editingIssueId, draft).map { editingIssueId }
+                issueRepository.updateIssue(
+                    issueId = editingIssueId,
+                    draft = draft,
+                    authorId = author.id,
+                    keptPhotoCount = state.existingPhotos.size,
+                    removedPhotoIds = state.removedPhotoIds,
+                ).map { editingIssueId }
             } else {
                 issueRepository.createIssue(draft, author)
             }
@@ -217,4 +260,12 @@ class IssueComposeViewModel @Inject constructor(
     }
 
     fun consumeError() = _uiState.update { it.copy(errorMessage = null) }
+
+    private companion object {
+        /**
+         * Each photo is a document of its own, so this is a courtesy to the
+         * person on village mobile data rather than a storage limit.
+         */
+        const val MAX_PHOTOS = 4
+    }
 }

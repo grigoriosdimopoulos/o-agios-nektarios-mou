@@ -146,7 +146,7 @@ fun NewChatScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Avatar(
-                                photoUrl = profile.photoUrl,
+                                bytes = profile.avatarBytes,
                                 initials = profile.initials,
                                 seed = profile.id,
                                 size = 42.dp,

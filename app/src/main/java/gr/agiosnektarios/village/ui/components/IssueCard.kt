@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import gr.agiosnektarios.village.core.model.Issue
 
 /**
@@ -67,9 +66,9 @@ fun IssueCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column {
-            if (showPhoto && issue.photoUrls.isNotEmpty()) {
-                AsyncImage(
-                    model = issue.photoUrls.first(),
+            if (showPhoto && issue.thumbnail != null) {
+                BytesImage(
+                    bytes = issue.thumbnail.toBytes(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()

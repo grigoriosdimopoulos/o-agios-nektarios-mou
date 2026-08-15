@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.data.user
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -50,7 +51,6 @@ class UserRepository @Inject constructor(
         phone: String,
         address: String,
         blockId: String,
-        photoUrl: String = "",
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             val payload = mapOf(
@@ -61,7 +61,6 @@ class UserRepository @Inject constructor(
                 "phone" to phone.trim(),
                 "address" to address.trim(),
                 "blockId" to blockId,
-                "photoUrl" to photoUrl,
                 "role" to Role.USER.id,
                 "disabled" to false,
                 "notificationPrefs" to NotificationPrefs().toMap(),
@@ -96,10 +95,14 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun updatePhoto(userId: String, photoUrl: String): Result<Unit> = withContext(io) {
+    /** Sets or clears the resident's picture. Null removes it. */
+    suspend fun updateAvatar(userId: String, bytes: ByteArray?): Result<Unit> = withContext(io) {
         runCatchingUnit {
             users.document(userId)
-                .update("photoUrl", photoUrl, "updatedAt", FieldValue.serverTimestamp())
+                .update(
+                    "avatar", bytes?.let(Blob::fromBytes),
+                    "updatedAt", FieldValue.serverTimestamp(),
+                )
                 .await()
         }
     }

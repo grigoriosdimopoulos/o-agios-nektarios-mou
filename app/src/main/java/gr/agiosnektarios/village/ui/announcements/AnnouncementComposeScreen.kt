@@ -39,8 +39,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.ui.components.BytesImage
 import gr.agiosnektarios.village.ui.components.InlineSpinner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
@@ -111,10 +111,10 @@ fun AnnouncementComposeScreen(
                 imeAction = ImeAction.Default,
             )
 
-            if (state.imageUrl.isNotBlank()) {
+            if (state.image != null) {
                 Box {
-                    AsyncImage(
-                        model = state.imageUrl,
+                    BytesImage(
+                        bytes = state.image,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()

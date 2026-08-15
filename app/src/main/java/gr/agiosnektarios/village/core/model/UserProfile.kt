@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.core.model
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
@@ -18,7 +19,16 @@ data class UserProfile(
     val phone: String = "",
     val address: String = "",
     val blockId: String = "",
-    val photoUrl: String = "",
+    /**
+     * The resident's own picture, as JPEG bytes.
+     *
+     * Held here and nowhere else. Earlier versions copied an avatar URL onto
+     * every report, comment and message the person wrote; with the image itself
+     * in the document that would mean carrying a copy of their face on every
+     * line of every conversation. Places that show an author without loading
+     * their profile draw the initials monogram instead.
+     */
+    val avatar: Blob? = null,
     /** Lower-cased "first last", kept in sync on write to support prefix search. */
     val nameLower: String = "",
     val role: String = Role.USER.id,
@@ -44,6 +54,8 @@ data class UserProfile(
             ).ifEmpty { listOfNotNull(displayName.firstOrNull()) }
             return letters.joinToString("").uppercase()
         }
+
+    val avatarBytes: ByteArray? get() = avatar?.toBytes()
 
     val roleType: Role get() = Role.fromId(role)
 

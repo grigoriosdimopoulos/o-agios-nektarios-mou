@@ -3,6 +3,7 @@ package gr.agiosnektarios.village.data.issue
 import gr.agiosnektarios.village.core.firestore.orEmptyOnError
 import gr.agiosnektarios.village.core.firestore.orNullOnError
 import gr.agiosnektarios.village.core.geo.GeoPoint
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -18,6 +19,7 @@ import gr.agiosnektarios.village.core.geo.distanceMeters
 import gr.agiosnektarios.village.core.geo.geohash
 import gr.agiosnektarios.village.core.model.Comment
 import gr.agiosnektarios.village.core.model.Issue
+import gr.agiosnektarios.village.core.model.IssuePhoto
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.core.model.UserProfile
@@ -34,14 +36,21 @@ import kotlinx.coroutines.withContext
 /** How the issue list is ordered. */
 enum class IssueSort { NEWEST, TOP, MOST_DISCUSSED }
 
-/** Draft of a report, shared by the create and edit screens. */
+/**
+ * Draft of a report, shared by the create and edit screens.
+ *
+ * [photos] are already-encoded JPEG bytes, sized by
+ * [gr.agiosnektarios.village.data.media.ImageCodec] before they get here, and
+ * [thumbnail] is the postage stamp cut from the first of them.
+ */
 data class IssueDraft(
     val title: String,
     val description: String,
     val category: IssueCategory,
     val position: GeoPoint,
     val blockId: String,
-    val photoUrls: List<String>,
+    val photos: List<ByteArray> = emptyList(),
+    val thumbnail: ByteArray? = null,
 )
 
 @Singleton
@@ -90,6 +99,15 @@ class IssueRepository @Inject constructor(
                     .sortedByDescending { it.createdAt?.time ?: 0L }
             }
             .orEmptyOnError("issues by $authorId")
+
+    /** One-shot read for the edit screen, which needs the photos it already has. */
+    suspend fun getPhotos(issueId: String): Result<List<IssuePhoto>> = withContext(io) {
+        runCatching {
+            issueDoc(issueId).collection(Collections.PHOTOS)
+                .orderBy("createdAt", Query.Direction.ASCENDING)
+                .get().await().toObjectsSafe<IssuePhoto>()
+        }
+    }
 
     suspend fun getIssue(issueId: String): Result<Issue?> = withContext(io) {
         runCatching { issueDoc(issueId).get().await().toObjectSafe<Issue>() }
@@ -145,10 +163,10 @@ class IssueRepository @Inject constructor(
                         "lng" to draft.position.lng,
                         "geohash" to geohash(draft.position.lat, draft.position.lng),
                         "blockId" to draft.blockId,
-                        "photoUrls" to draft.photoUrls,
+                        "photoCount" to draft.photos.size,
+                        "thumbnail" to draft.thumbnail?.let(Blob::fromBytes),
                         "authorId" to author.id,
                         "authorName" to author.displayName,
-                        "authorPhotoUrl" to author.photoUrl,
                         "upvotes" to 0,
                         "downvotes" to 0,
                         "score" to 0,
@@ -160,11 +178,56 @@ class IssueRepository @Inject constructor(
                         "updatedAt" to FieldValue.serverTimestamp(),
                     ),
                 ).await()
+                writePhotos(doc.id, draft.photos, author.id)
                 doc.id
             }
         }
 
-    suspend fun updateIssue(issueId: String, draft: IssueDraft): Result<Unit> = withContext(io) {
+    /**
+     * Writes each photo as its own document under the report.
+     *
+     * One batch: a report that shows "3 photos" and then cannot produce the
+     * third is worse than one that failed outright.
+     */
+    private suspend fun writePhotos(issueId: String, photos: List<ByteArray>, authorId: String) {
+        if (photos.isEmpty()) return
+        val batch = firestore.batch()
+        val collection = issueDoc(issueId).collection(Collections.PHOTOS)
+        photos.forEach { bytes ->
+            batch.set(
+                collection.document(),
+                mapOf(
+                    "data" to Blob.fromBytes(bytes),
+                    "authorId" to authorId,
+                    "createdAt" to FieldValue.serverTimestamp(),
+                ),
+            )
+        }
+        batch.commit().await()
+    }
+
+    /** The full photos of one report, read only when someone opens it. */
+    fun observePhotos(issueId: String): Flow<List<IssuePhoto>> =
+        issueDoc(issueId).collection(Collections.PHOTOS)
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .asFlow()
+            .map { it.toObjectsSafe<IssuePhoto>() }
+            .orEmptyOnError("photos of $issueId")
+
+    /**
+     * Applies an edit, including whichever photos were added or taken away.
+     *
+     * Photos are passed as a delta rather than a whole new set: re-uploading
+     * the pictures a resident did not touch would cost them their data
+     * allowance to change a typo in the title.
+     */
+    suspend fun updateIssue(
+        issueId: String,
+        draft: IssueDraft,
+        authorId: String,
+        keptPhotoCount: Int = 0,
+        removedPhotoIds: List<String> = emptyList(),
+    ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             issueDoc(issueId).update(
                 mapOf(
@@ -175,10 +238,19 @@ class IssueRepository @Inject constructor(
                     "lng" to draft.position.lng,
                     "geohash" to geohash(draft.position.lat, draft.position.lng),
                     "blockId" to draft.blockId,
-                    "photoUrls" to draft.photoUrls,
+                    "photoCount" to keptPhotoCount + draft.photos.size,
+                    "thumbnail" to draft.thumbnail?.let(Blob::fromBytes),
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
             ).await()
+
+            if (removedPhotoIds.isNotEmpty()) {
+                val batch = firestore.batch()
+                val photos = issueDoc(issueId).collection(Collections.PHOTOS)
+                removedPhotoIds.forEach { batch.delete(photos.document(it)) }
+                batch.commit().await()
+            }
+            writePhotos(issueId, draft.photos, authorId)
         }
     }
 
@@ -195,6 +267,7 @@ class IssueRepository @Inject constructor(
             val doc = issueDoc(issueId)
             deleteAll(doc.collection(Collections.VOTES))
             deleteAll(doc.collection(Collections.COMMENTS))
+            deleteAll(doc.collection(Collections.PHOTOS))
             doc.delete().await()
         }
     }
@@ -318,7 +391,6 @@ class IssueRepository @Inject constructor(
                         "issueId" to issueId,
                         "authorId" to author.id,
                         "authorName" to author.displayName,
-                        "authorPhotoUrl" to author.photoUrl,
                         "text" to text.trim(),
                         "createdAt" to FieldValue.serverTimestamp(),
                     ),

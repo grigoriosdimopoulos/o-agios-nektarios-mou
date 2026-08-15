@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.model.Comment
+import gr.agiosnektarios.village.core.model.IssuePhoto
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.core.model.UserProfile
@@ -28,6 +29,8 @@ import kotlinx.coroutines.launch
 data class IssueDetailUiState(
     val issue: Issue? = null,
     val comments: List<Comment> = emptyList(),
+    /** Loaded only for this screen: full photos are far too large to carry in a list. */
+    val photos: List<IssuePhoto> = emptyList(),
     val myVote: Int = 0,
     val viewer: UserProfile? = null,
     val loading: Boolean = true,
@@ -65,16 +68,23 @@ class IssueDetailViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    /** Paired so the five-argument combine below still fits. */
+    private val commentsAndPhotos = combine(
+        issueRepository.observeComments(issueId),
+        issueRepository.observePhotos(issueId),
+    ) { comments, photos -> comments to photos }
+
     val uiState: StateFlow<IssueDetailUiState> = combine(
         issueRepository.observeIssue(issueId),
-        issueRepository.observeComments(issueId),
+        commentsAndPhotos,
         vote,
         sessionRepository.profile,
         local,
-    ) { issue, comments, myVote, viewer, localState ->
+    ) { issue, (comments, photos), myVote, viewer, localState ->
         IssueDetailUiState(
             issue = issue,
             comments = comments,
+            photos = photos,
             // An optimistic vote is shown until the server's value arrives, so
             // the button never appears to ignore the tap on a slow connection.
             myVote = localState.optimisticVote ?: myVote,

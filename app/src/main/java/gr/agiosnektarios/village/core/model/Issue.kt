@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.core.model
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
@@ -11,8 +12,8 @@ import java.util.Date
  * enums so a document written by a newer build never fails to deserialise on an
  * older one — unknown ids degrade to [IssueCategory.OTHER] / [IssueStatus.OPEN].
  *
- * Vote and comment totals are denormalised counters maintained by Cloud
- * Functions; clients only ever write their own vote document.
+ * Vote and comment totals are denormalised counters the client maintains under
+ * rules that police them; nobody writes anyone else's vote document.
  */
 data class Issue(
     @DocumentId val id: String = "",
@@ -25,10 +26,25 @@ data class Issue(
     /** Geohash prefix used for the cheap "same area" query before precise filtering. */
     val geohash: String = "",
     val blockId: String = "",
-    val photoUrls: List<String> = emptyList(),
+    /**
+     * How many photos live in `issues/{id}/photos`.
+     *
+     * Denormalised so a card can say "3 photos" without reading them: the
+     * photos themselves are hundreds of kilobytes each and are fetched only
+     * when someone opens the report.
+     */
+    val photoCount: Int = 0,
+    /**
+     * A postage-stamp copy of the first photo, at most a few kilobytes.
+     *
+     * This one is inline because the list and the map already read every issue
+     * document, and a card with no picture at all reads as a bug. Anything
+     * bigger than a stamp would make that same read enormous — see
+     * [gr.agiosnektarios.village.data.media.ImageSpec.ISSUE_THUMBNAIL].
+     */
+    val thumbnail: Blob? = null,
     val authorId: String = "",
     val authorName: String = "",
-    val authorPhotoUrl: String = "",
     val upvotes: Int = 0,
     val downvotes: Int = 0,
     /** upvotes - downvotes, denormalised so Firestore can order by popularity. */
@@ -74,10 +90,28 @@ data class Comment(
     val issueId: String = "",
     val authorId: String = "",
     val authorName: String = "",
-    val authorPhotoUrl: String = "",
     val text: String = "",
     @ServerTimestamp val createdAt: Date? = null,
 ) {
     fun canDelete(viewer: UserProfile?): Boolean =
         viewer != null && (viewer.id == authorId || viewer.canModerate)
+}
+
+/**
+ * One full-size photo attached to a report, at `issues/{issueId}/photos/{id}`.
+ *
+ * A document of its own rather than a field on the report, because the map and
+ * the issue list read every report in the village and must not pay for pictures
+ * nobody has asked to see. Opening a report is what fetches these.
+ */
+data class IssuePhoto(
+    @DocumentId val id: String = "",
+    /** JPEG bytes. Firestore stores them natively, so nothing is base64-inflated. */
+    val data: Blob? = null,
+    val width: Int = 0,
+    val height: Int = 0,
+    val authorId: String = "",
+    @ServerTimestamp val createdAt: Date? = null,
+) {
+    val bytes: ByteArray? get() = data?.toBytes()
 }

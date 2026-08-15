@@ -103,15 +103,6 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun updatePhotoUrl(url: String): Result<Unit> = withContext(io) {
-        runCatchingUnit {
-            val user = requireNotNull(auth.currentUser) { "Not signed in" }
-            user.updateProfile(
-                userProfileChangeRequest { photoUri = android.net.Uri.parse(url) },
-            ).await()
-        }
-    }
-
     fun signOut() = auth.signOut()
 
     /** True when the account signed in with Google and has no password to change. */

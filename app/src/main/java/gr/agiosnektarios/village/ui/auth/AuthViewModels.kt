@@ -349,7 +349,6 @@ class CompleteProfileViewModel @Inject constructor(
                 phone = state.phone,
                 address = state.address,
                 blockId = state.blockId,
-                photoUrl = user.photoUrl?.toString().orEmpty(),
             )
             _uiState.update {
                 it.copy(

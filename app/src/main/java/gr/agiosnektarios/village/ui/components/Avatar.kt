@@ -16,7 +16,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import kotlin.math.absoluteValue
 
 /**
@@ -28,7 +27,7 @@ import kotlin.math.absoluteValue
  */
 @Composable
 fun Avatar(
-    photoUrl: String,
+    bytes: ByteArray?,
     initials: String,
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
@@ -41,12 +40,11 @@ fun Avatar(
             .background(monogramBrush(seed)),
         contentAlignment = Alignment.Center,
     ) {
-        if (photoUrl.isNotBlank()) {
-            AsyncImage(
-                model = photoUrl,
+        if (bytes != null && bytes.isNotEmpty()) {
+            BytesImage(
+                bytes = bytes,
                 contentDescription = null,
                 modifier = Modifier.size(size).clip(CircleShape),
-                contentScale = ContentScale.Crop,
             )
         } else {
             Text(

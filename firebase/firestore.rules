@@ -64,6 +64,19 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
 
+    /**
+     * Images live inside documents rather than in Cloud Storage, which needs a
+     * billing account this village does not have. Firestore hard-caps a
+     * document at 1 MiB, so every image field is bounded here as well as in the
+     * app: a client is not the right place for the only copy of a limit.
+     */
+    function imageWithin(field, maxBytes) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] == null
+        || (request.resource.data[field] is bytes
+            && request.resource.data[field].size() <= maxBytes);
+    }
+
     /** A counter that moved by at most one in either direction, and never below zero. */
     function movedByOne(field) {
       return request.resource.data[field] is int
@@ -81,15 +94,18 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && uid() == userId
         && request.resource.data.get('role', 'USER') == 'USER'
-        && request.resource.data.get('disabled', false) == false;
+        && request.resource.data.get('disabled', false) == false
+        && imageWithin('avatar', 30000);
 
       // Residents edit their own contact details but never their own standing.
       // Administrators may edit anyone — including role and suspension — except
       // themselves, so the last admin cannot lock the village out by accident.
-      allow update: if isSignedIn() && (
-        (uid() == userId && !changed(['role', 'disabled', 'createdAt']))
-        || (isAdmin() && uid() != userId && !changed(['createdAt']))
-      );
+      allow update: if isSignedIn()
+        && imageWithin('avatar', 30000)
+        && (
+          (uid() == userId && !changed(['role', 'disabled', 'createdAt']))
+          || (isAdmin() && uid() != userId && !changed(['createdAt']))
+        );
 
       // Residents may close their own account; administrators may remove a
       // resident. Neither can delete the underlying login — that needs the
@@ -114,7 +130,8 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 140
         && request.resource.data.get('description', '').size() <= 4000
         && request.resource.data.lat is number
-        && request.resource.data.lng is number;
+        && request.resource.data.lng is number
+        && imageWithin('thumbnail', 20000);
 
       // Any resident may nudge the vote tally by one, because casting a vote is
       // a two-document transaction and this is its second half. The invariant
@@ -144,10 +161,35 @@ service cloud.firestore {
           && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
       }
 
-      allow update: if isContentEdit() || isVoteTallyWrite() || isCommentCountWrite();
+      allow update: if imageWithin('thumbnail', 20000)
+        && (isContentEdit() || isVoteTallyWrite() || isCommentCountWrite());
 
       allow delete: if isActiveResident()
         && (resource.data.authorId == uid() || isModerator());
+
+      // ----------------------------------------------------------- photos
+
+      /**
+       * A report's full-size pictures, one per document.
+       *
+       * They are kept out of the report itself because the map reads every
+       * report in the village on every launch, and half a megabyte apiece
+       * would make that read enormous. Opening a report is what fetches these.
+       */
+      match /photos/{photoId} {
+        allow read: if isActiveResident();
+        allow create: if isActiveResident()
+          && request.resource.data.authorId == uid()
+          && request.resource.data.data is bytes
+          && request.resource.data.data.size() <= 600000;
+        // A picture is replaced by deleting it and adding another, so that an
+        // edit cannot quietly swap the evidence under a report.
+        allow update: if false;
+        allow delete: if isActiveResident()
+          && (resource.data.authorId == uid()
+              || get(/databases/$(database)/documents/issues/$(issueId)).data.authorId == uid()
+              || isModerator());
+      }
 
       // ------------------------------------------------------------ votes
 
@@ -190,7 +232,8 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       allow read: if isActiveResident();
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin() && imageWithin('image', 150000);
+      allow delete: if isAdmin();
     }
 
     // ----------------------------------------------------------------- chats
@@ -249,7 +292,8 @@ service cloud.firestore {
         allow read: if inChat();
         allow create: if inChat()
           && request.resource.data.senderId == uid()
-          && request.resource.data.get('text', '').size() <= 4000;
+          && request.resource.data.get('text', '').size() <= 4000
+          && imageWithin('image', 150000);
         allow update: if false;
         allow delete: if inChat() && resource.data.senderId == uid();
       }

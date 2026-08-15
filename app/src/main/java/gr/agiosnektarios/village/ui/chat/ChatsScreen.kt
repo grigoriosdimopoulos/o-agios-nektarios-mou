@@ -117,7 +117,7 @@ private fun ChatRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Avatar(
-                    photoUrl = chat.photoUrl,
+                    bytes = null,
                     initials = title.take(2).uppercase(),
                     seed = chat.id,
                     size = 48.dp,
@@ -125,7 +125,7 @@ private fun ChatRow(
             }
         } else {
             Avatar(
-                photoUrl = chat.displayPhoto(currentUserId),
+                bytes = null,
                 initials = title.take(2).uppercase(),
                 seed = chat.otherMemberId(currentUserId).orEmpty(),
                 size = 48.dp,

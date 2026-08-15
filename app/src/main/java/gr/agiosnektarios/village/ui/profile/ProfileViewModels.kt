@@ -11,7 +11,8 @@ import gr.agiosnektarios.village.core.model.VillageBlock
 import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.issue.IssueRepository
-import gr.agiosnektarios.village.data.media.MediaRepository
+import gr.agiosnektarios.village.data.media.ImageCodec
+import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.user.UserRepository
 import gr.agiosnektarios.village.data.village.VillageBlockRepository
@@ -86,7 +87,7 @@ data class EditProfileUiState(
     val phone: String = "",
     val address: String = "",
     val blockId: String = "",
-    val photoUrl: String = "",
+    val avatar: ByteArray? = null,
     val blocks: List<VillageBlock> = emptyList(),
     @StringRes val firstNameError: Int? = null,
     @StringRes val lastNameError: Int? = null,
@@ -102,7 +103,7 @@ data class EditProfileUiState(
 class EditProfileViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val userRepository: UserRepository,
-    private val mediaRepository: MediaRepository,
+    private val imageCodec: ImageCodec,
     private val authRepository: AuthRepository,
     blockRepository: VillageBlockRepository,
 ) : ViewModel() {
@@ -122,7 +123,7 @@ class EditProfileViewModel @Inject constructor(
                     phone = profile?.phone.orEmpty(),
                     address = profile?.address.orEmpty(),
                     blockId = profile?.blockId.orEmpty(),
-                    photoUrl = profile?.photoUrl.orEmpty(),
+                    avatar = profile?.avatarBytes,
                 )
             }
         }
@@ -138,17 +139,14 @@ class EditProfileViewModel @Inject constructor(
         val userId = sessionRepository.currentUserId ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(uploadingPhoto = true) }
-            val result = mediaRepository.uploadAvatar(userId, uri)
-            result.onSuccess { url ->
-                userRepository.updatePhoto(userId, url)
-                // Mirrored onto the auth record too, so the name and picture
-                // Firebase itself shows stay in step with the village profile.
-                authRepository.updatePhotoUrl(url)
+            val result = imageCodec.encode(uri, ImageSpec.AVATAR)
+            result.onSuccess { bytes ->
+                userRepository.updateAvatar(userId, bytes)
+                _uiState.update { it.copy(avatar = bytes) }
             }
             _uiState.update {
                 it.copy(
                     uploadingPhoto = false,
-                    photoUrl = result.getOrNull() ?: it.photoUrl,
                     errorMessage = result.exceptionOrNull()?.localizedMessage,
                 )
             }

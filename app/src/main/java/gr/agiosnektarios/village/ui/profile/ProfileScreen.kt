@@ -98,7 +98,7 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Avatar(
-                    photoUrl = profile?.photoUrl.orEmpty(),
+                    bytes = profile?.avatarBytes,
                     initials = profile?.initials.orEmpty(),
                     seed = profile?.id.orEmpty(),
                     size = 96.dp,

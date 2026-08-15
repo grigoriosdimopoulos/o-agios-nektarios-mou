@@ -54,9 +54,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.Comment
+import gr.agiosnektarios.village.core.model.IssuePhoto
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.core.model.UserProfile
+import gr.agiosnektarios.village.ui.components.BytesImage
 import gr.agiosnektarios.village.ui.components.Avatar
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.LoadingState
@@ -147,6 +149,7 @@ fun IssueDetailScreen(
             else -> IssueDetailContent(
                 issue = issue,
                 comments = state.comments,
+                photos = state.photos,
                 viewer = state.viewer,
                 myVote = state.myVote,
                 onVote = viewModel::castVote,
@@ -199,6 +202,7 @@ fun IssueDetailScreen(
 private fun IssueDetailContent(
     issue: Issue,
     comments: List<Comment>,
+    photos: List<IssuePhoto>,
     viewer: UserProfile?,
     myVote: Int,
     onVote: (Int) -> Unit,
@@ -212,15 +216,15 @@ private fun IssueDetailContent(
             bottom = contentPadding.calculateBottomPadding() + 24.dp,
         ),
     ) {
-        if (issue.photoUrls.isNotEmpty()) {
+        if (photos.isNotEmpty()) {
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(issue.photoUrls) { url ->
-                        AsyncImage(
-                            model = url,
+                    items(photos, key = { it.id }) { photo ->
+                        BytesImage(
+                            bytes = photo.bytes,
                             contentDescription = null,
                             modifier = Modifier
                                 .height(210.dp)
@@ -256,7 +260,7 @@ private fun IssueDetailContent(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Avatar(
-                        photoUrl = issue.authorPhotoUrl,
+                        bytes = null,
                         initials = issue.authorName.take(2).uppercase(),
                         seed = issue.authorId,
                         size = 36.dp,
@@ -349,7 +353,7 @@ private fun CommentRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Avatar(
-            photoUrl = comment.authorPhotoUrl,
+            bytes = null,
             initials = comment.authorName.take(2).uppercase(),
             seed = comment.authorId,
             size = 34.dp,
