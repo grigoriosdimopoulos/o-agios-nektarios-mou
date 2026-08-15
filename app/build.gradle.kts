@@ -73,7 +73,11 @@ android {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
-            // Shrink, but keep names: the tester's crash report has to be legible.
+            // Set explicitly rather than trusted to initWith, which does not
+            // carry them over: without these R8 never ran, and a build whose
+            // whole purpose is being small was shipping its full dex.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
