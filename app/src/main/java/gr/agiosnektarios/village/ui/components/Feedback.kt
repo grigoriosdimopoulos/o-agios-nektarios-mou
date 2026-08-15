@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,8 +26,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.R
+
+
+/**
+ * A failure the user needs to see, in place, where they caused it.
+ *
+ * Exists because several screens were tracking an `errorMessage` in state and
+ * rendering it nowhere: the write failed, the state updated, and the button
+ * appeared simply not to work. A silent failure is worse than an ugly one.
+ */
+@Composable
+fun ErrorBanner(message: String?, modifier: Modifier = Modifier) {
+    if (message == null) return
+    Text(
+        text = message.ifBlank { stringResource(R.string.error_generic) },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    )
+}
 
 /** Full-screen spinner for the brief moment before first data arrives. */
 @Composable

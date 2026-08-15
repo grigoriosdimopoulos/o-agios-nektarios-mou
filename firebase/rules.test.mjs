@@ -6,6 +6,7 @@ import {
 import { readFileSync } from "fs";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, serverTimestamp,
+  writeBatch, increment, query, where, getDocs, limit,
 } from "firebase/firestore";
 
 const env = await initializeTestEnvironment({
@@ -146,7 +147,15 @@ const chat = {
   lastMessageAt: serverTimestamp(), unreadCounts: { maria: 0, giorgos: 0 },
   createdAt: serverTimestamp(),
 };
+// ChatRepository.openDirectChat reads the deterministic id first, to decide
+// whether to create it. Every earlier test here jumped straight to setDoc and
+// so never covered that read — which is how a suite this size stayed green
+// while starting a direct message was impossible.
+await check("a member may read their direct chat before it exists",
+  assertSucceeds(getDoc(doc(maria, "chats/giorgos_maria"))));
 await check("open a direct chat", assertSucceeds(setDoc(doc(maria, "chats/giorgos_maria"), chat)));
+await check("and may still read it once it does",
+  assertSucceeds(getDoc(doc(maria, "chats/giorgos_maria"))));
 await check("cannot create a chat you are not in",
   assertFails(setDoc(doc(maria, "chats/other"), { ...chat, memberIds: ["giorgos", "someone"] })));
 await check("member sends a message",
@@ -158,10 +167,75 @@ const outsider = env.authenticatedContext("outsider").firestore();
 await setDoc(doc(outsider, "users/outsider"), profileSeed("outsider"));
 await check("outsider cannot read the conversation",
   assertFails(getDoc(doc(outsider, "chats/giorgos_maria"))));
+// The absent-document branch must not become a way to read anyone's chat.
+await check("outsider cannot probe a conversation that does not exist",
+  assertFails(getDoc(doc(outsider, "chats/giorgos_maria_missing"))));
+await check("outsider cannot read a random absent chat id",
+  assertFails(getDoc(doc(outsider, "chats/anything"))));
+await check("a resident may read an absent direct id that includes them",
+  assertSucceeds(getDoc(doc(outsider, "chats/maria_outsider"))));
 await check("outsider cannot send into the conversation",
   assertFails(addDoc(collection(outsider, "chats/giorgos_maria/messages"),
     { senderId: "outsider", senderName: "X", senderPhotoUrl: "", text: "intruding",
       imageUrl: "", systemEvent: "", createdAt: serverTimestamp() })));
+
+// ---- the whole conversation, in the order ChatRepository performs it
+//
+// The assertions above check rules one clause at a time. This one replays the
+// actual sequence a resident triggers by tapping "message" and typing, because
+// the bug that broke direct messages lived in the seam between two steps that
+// were each fine on their own.
+{
+  const nikos = env.authenticatedContext("nikos").firestore();
+  await setDoc(doc(nikos, "users/nikos"), profileSeed("nikos"));
+  const id = ["nikos", "maria"].sort().join("_");
+
+  // openDirectChat: read the deterministic id, then create it if absent.
+  await check("flow: read the id before creating",
+    assertSucceeds(getDoc(doc(nikos, `chats/${id}`))));
+  await check("flow: create the conversation",
+    assertSucceeds(setDoc(doc(nikos, `chats/${id}`), {
+      ...chat, memberIds: ["maria", "nikos"], createdById: "nikos",
+      memberNames: { maria: "Maria Test", nikos: "Nikos Test" },
+      memberPhotos: { maria: "", nikos: "" },
+      unreadCounts: { maria: 0, nikos: 0 },
+    })));
+
+  // sendMessage: read members, then one batch for the message and the preview.
+  await check("flow: read members before sending",
+    assertSucceeds(getDoc(doc(nikos, `chats/${id}`))));
+  await check("flow: send the message and bump the preview in one batch",
+    assertSucceeds((() => {
+      const b = writeBatch(nikos);
+      b.set(doc(collection(nikos, `chats/${id}/messages`)), {
+        senderId: "nikos", senderName: "Nikos", senderPhotoUrl: "",
+        text: "καλησπέρα", imageUrl: "", systemEvent: "",
+        createdAt: serverTimestamp(),
+      });
+      b.update(doc(nikos, `chats/${id}`), {
+        lastMessage: "καλησπέρα", lastMessageSenderId: "nikos",
+        lastMessageAt: serverTimestamp(), "unreadCounts.maria": increment(1),
+      });
+      return b.commit();
+    })()));
+
+  // The recipient's chat list, exactly as observeChats queries it.
+  await check("flow: recipient lists their conversations",
+    assertSucceeds(getDocs(query(
+      collection(maria, "chats"),
+      where("memberIds", "array-contains", "maria"),
+      limit(200),
+    ))));
+  await check("flow: recipient reads the thread",
+    assertSucceeds(getDocs(collection(maria, `chats/${id}/messages`))));
+  await check("flow: recipient clears their own badge",
+    assertSucceeds(updateDoc(doc(maria, `chats/${id}`), { "unreadCounts.maria": 0 })));
+  await check("flow: recipient replies",
+    assertSucceeds(addDoc(collection(maria, `chats/${id}/messages`), {
+      senderId: "maria", senderName: "Maria", senderPhotoUrl: "",
+      text: "γεια", imageUrl: "", systemEvent: "", createdAt: serverTimestamp(),
+    })));
+}
 
 // ---- counters the client now owns, which the rules have to police
 async function seedIssue(id, authorId, fields = {}) {

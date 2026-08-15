@@ -200,7 +200,32 @@ service cloud.firestore {
         return isSignedIn() && uid() in resource.data.memberIds;
       }
 
-      allow read: if isMember();
+      /**
+       * A direct conversation's id is the two uids sorted and joined, so the
+       * id alone says who is in it. That matters for the case below, where
+       * there is no document yet to ask.
+       */
+      function isMyDirectChatId() {
+        return uid() in chatId.split('_');
+      }
+
+      // Reading a chat that does not exist has to be answerable, because that
+      // is exactly how a direct conversation starts: the app derives the
+      // deterministic id and reads it to decide whether to create it. On a
+      // missing document `resource` is null, so a rule that reaches into
+      // `resource.data` does not evaluate to false — it errors, and the read is
+      // denied. That denial made it impossible to ever open a direct message.
+      //
+      // Membership therefore comes from the id when the document is absent,
+      // and from the document itself when it is present. A group chat has a
+      // random id and so cannot be probed this way at all.
+      allow get: if isSignedIn() && (
+        resource == null ? isMyDirectChatId() : uid() in resource.data.memberIds
+      );
+
+      // Queries only ever return documents that exist, so listing keeps the
+      // straightforward membership test.
+      allow list: if isMember();
 
       // You may only create a conversation you are part of.
       allow create: if isActiveResident()

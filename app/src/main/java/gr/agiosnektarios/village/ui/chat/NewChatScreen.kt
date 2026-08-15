@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.Avatar
 import gr.agiosnektarios.village.ui.components.EmptyState
+import gr.agiosnektarios.village.ui.components.ErrorBanner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 
@@ -171,6 +172,11 @@ fun NewChatScreen(
                     }
                 }
             }
+
+            ErrorBanner(
+                message = state.errorMessage,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
 
             PrimaryButton(
                 text = stringResource(R.string.action_create),

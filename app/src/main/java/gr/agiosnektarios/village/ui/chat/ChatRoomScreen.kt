@@ -48,6 +48,7 @@ import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.ChatMessage
 import gr.agiosnektarios.village.core.model.ChatType
 import gr.agiosnektarios.village.ui.components.Avatar
+import gr.agiosnektarios.village.ui.components.ErrorBanner
 import gr.agiosnektarios.village.ui.components.LoadingState
 import gr.agiosnektarios.village.ui.components.timeOfDay
 
@@ -114,11 +115,19 @@ fun ChatRoomScreen(
             )
         },
         bottomBar = {
-            MessageComposer(
-                draft = state.draft,
-                onDraftChange = viewModel::onDraftChange,
-                onSend = viewModel::send,
-            )
+            Column {
+                // Above the composer, because the draft is restored on failure
+                // and this explains why it came back.
+                ErrorBanner(
+                    message = state.errorMessage,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+                MessageComposer(
+                    draft = state.draft,
+                    onDraftChange = viewModel::onDraftChange,
+                    onSend = viewModel::send,
+                )
+            }
         },
     ) { padding ->
         if (state.loading) {
