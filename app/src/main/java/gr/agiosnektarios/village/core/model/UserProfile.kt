@@ -23,9 +23,6 @@ data class UserProfile(
     val nameLower: String = "",
     val role: String = Role.USER.id,
     val disabled: Boolean = false,
-    val issueCount: Int = 0,
-    val resolvedCount: Int = 0,
-    val upvotesReceived: Int = 0,
     /** Registration tokens for every device this resident is signed in on. */
     val fcmTokens: List<String> = emptyList(),
     val notificationPrefs: NotificationPrefs = NotificationPrefs(),

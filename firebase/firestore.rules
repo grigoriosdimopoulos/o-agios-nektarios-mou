@@ -1,8 +1,20 @@
 rules_version = '2';
 
-// Security model in one line: authorship and membership are enforced here, not
-// in the app. Every counter the UI displays (votes, comment totals, unread
-// badges) is written by Cloud Functions, so clients can never forge them.
+// Security model, in one line: this app runs entirely on the Spark (free) plan,
+// so there is no server to own the counters — clients maintain them, and these
+// rules are the only thing constraining what they may write.
+//
+// The consequences are deliberate and worth stating:
+//
+//   * A vote or comment tally can only move by one per write, and `score` must
+//     stay equal to `upvotes - downvotes`. Someone running a modified client
+//     could still nudge a counter without casting a real vote — rules cannot
+//     see another document's pending write inside a transaction — but they
+//     cannot jump a report to a thousand upvotes, and they cannot touch anyone
+//     else's content. For a village of neighbours that is the right trade.
+//   * Roles live on the user document rather than in a custom claim, because
+//     setting a claim needs the Admin SDK. Only an administrator may write the
+//     `role` and `disabled` fields, and never on their own document.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -16,24 +28,31 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    // Role lives in a custom claim so it can be checked without an extra read.
-    // The claim is set by the adminSetRole function, never by a client.
-    function role() {
-      return isSignedIn() ? request.auth.token.get('role', 'USER') : 'USER';
+    // Repeated get() calls to the same path inside one evaluation are cached,
+    // so leaning on this helper does not multiply the read cost.
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
     }
 
-    function isAdmin() {
-      return role() == 'ADMIN';
-    }
-
-    function isModerator() {
-      return role() == 'ADMIN' || role() == 'MODERATOR';
+    function hasProfile() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(uid()));
     }
 
     function isActiveResident() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/users/$(uid()))
-        && get(/databases/$(database)/documents/users/$(uid())).data.get('disabled', false) == false;
+      return hasProfile() && profile().get('disabled', false) == false;
+    }
+
+    function role() {
+      return hasProfile() ? profile().get('role', 'USER') : 'USER';
+    }
+
+    function isAdmin() {
+      return isActiveResident() && role() == 'ADMIN';
+    }
+
+    function isModerator() {
+      return isActiveResident() && (role() == 'ADMIN' || role() == 'MODERATOR');
     }
 
     /** Fields present in the incoming write that differ from the stored document. */
@@ -41,33 +60,41 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
+    function touchesOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    /** A counter that moved by at most one in either direction, and never below zero. */
+    function movedByOne(field) {
+      return request.resource.data[field] is int
+        && request.resource.data[field] >= 0
+        && request.resource.data[field] - resource.data[field] >= -1
+        && request.resource.data[field] - resource.data[field] <= 1;
+    }
+
     // ----------------------------------------------------------------- users
 
     match /users/{userId} {
-      // The resident directory is readable by residents: starting a chat or
-      // seeing who filed a report requires it. It is not public.
       allow read: if isActiveResident() || uid() == userId;
 
-      // Self-registration only, and never with a role or moderation counters
-      // of your own choosing.
+      // Self-registration only, and never with a role of your own choosing.
       allow create: if isSignedIn()
         && uid() == userId
         && request.resource.data.get('role', 'USER') == 'USER'
         && request.resource.data.get('disabled', false) == false;
 
-      // Residents edit their own contact details. Role, suspension and the
-      // denormalised counters are function-owned, so a client write touching
-      // them is rejected outright.
-      allow update: if isSignedIn()
-        && uid() == userId
-        && !changed([
-          'role', 'disabled', 'issueCount', 'resolvedCount', 'upvotesReceived', 'createdAt'
-        ]);
+      // Residents edit their own contact details but never their own standing.
+      // Administrators may edit anyone — including role and suspension — except
+      // themselves, so the last admin cannot lock the village out by accident.
+      allow update: if isSignedIn() && (
+        (uid() == userId && !changed(['role', 'disabled', 'createdAt']))
+        || (isAdmin() && uid() != userId && !changed(['createdAt']))
+      );
 
-      // Deleting an account cascades an auth record and every document the
-      // resident wrote; only the deleteMyAccount / adminDeleteUser functions
-      // (which run with admin credentials) may do it.
-      allow delete: if false;
+      // Residents may close their own account; administrators may remove a
+      // resident. Neither can delete the underlying login — that needs the
+      // Admin SDK — so the app deletes its own data and says so plainly.
+      allow delete: if isSignedIn() && (uid() == userId || (isAdmin() && uid() != userId));
     }
 
     // ---------------------------------------------------------------- issues
@@ -89,12 +116,35 @@ service cloud.firestore {
         && request.resource.data.lat is number
         && request.resource.data.lng is number;
 
-      // Author or moderator may edit. Vote and comment tallies stay
-      // function-owned regardless of who is writing, and authorship is
-      // immutable so a report cannot be reassigned.
-      allow update: if isActiveResident()
-        && (resource.data.authorId == uid() || isModerator())
-        && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
+      // Any resident may nudge the vote tally by one, because casting a vote is
+      // a two-document transaction and this is its second half. The invariant
+      // score == upvotes - downvotes is enforced here so the sort order can
+      // never be driven out of step with the counts.
+      function isVoteTallyWrite() {
+        return isActiveResident()
+          && touchesOnly(['upvotes', 'downvotes', 'score'])
+          && movedByOne('upvotes')
+          && movedByOne('downvotes')
+          && request.resource.data.score ==
+             request.resource.data.upvotes - request.resource.data.downvotes;
+      }
+
+      // Likewise for the comment total, the second half of posting a comment.
+      function isCommentCountWrite() {
+        return isActiveResident()
+          && touchesOnly(['commentCount'])
+          && movedByOne('commentCount');
+      }
+
+      // The author or a moderator may edit the report itself, but never its
+      // tallies, its authorship, or when it was filed.
+      function isContentEdit() {
+        return isActiveResident()
+          && (resource.data.authorId == uid() || isModerator())
+          && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
+      }
+
+      allow update: if isContentEdit() || isVoteTallyWrite() || isCommentCountWrite();
 
       allow delete: if isActiveResident()
         && (resource.data.authorId == uid() || isModerator());
@@ -109,7 +159,12 @@ service cloud.firestore {
           && uid() == voterId
           && request.resource.data.userId == voterId
           && request.resource.data.value in [1, -1];
-        allow delete: if isActiveResident() && uid() == voterId;
+        // Deletable by the voter, and by whoever is allowed to delete the
+        // parent report, since the client now sweeps the subcollections itself.
+        allow delete: if isActiveResident()
+          && (uid() == voterId
+              || get(/databases/$(database)/documents/issues/$(issueId)).data.authorId == uid()
+              || isModerator());
       }
 
       // --------------------------------------------------------- comments
@@ -125,7 +180,9 @@ service cloud.firestore {
         // changes what other people appear to have responded to.
         allow update: if false;
         allow delete: if isActiveResident()
-          && (resource.data.authorId == uid() || isModerator());
+          && (resource.data.authorId == uid()
+              || get(/databases/$(database)/documents/issues/$(issueId)).data.authorId == uid()
+              || isModerator());
       }
     }
 
@@ -133,7 +190,7 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       allow read: if isActiveResident();
-      allow create, update, delete: if isActiveResident() && isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ----------------------------------------------------------------- chats
@@ -151,10 +208,10 @@ service cloud.firestore {
         && request.resource.data.memberIds.size() >= 2
         && request.resource.data.memberIds.size() <= 100;
 
-      // Members may add people, mark their own conversation read, or leave.
-      // The preview fields are written by onMessageCreated.
-      allow update: if isMember()
-        && !changed(['createdById', 'createdAt', 'lastMessage', 'lastMessageSenderId', 'lastMessageAt']);
+      // Members maintain the preview line and the unread badges themselves,
+      // since there is no function to do it. Who started the conversation and
+      // when stay immutable.
+      allow update: if isMember() && !changed(['createdById', 'createdAt']);
 
       allow delete: if isAdmin();
 

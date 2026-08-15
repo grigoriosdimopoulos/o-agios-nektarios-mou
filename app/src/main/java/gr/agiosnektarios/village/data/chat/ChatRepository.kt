@@ -131,9 +131,12 @@ class ChatRepository @Inject constructor(
     }
 
     /**
-     * Appends a message. The chat's preview fields and every *other* member's
-     * unread counter are bumped by the `onMessageCreated` function, which also
-     * sends the push — the sender's client only writes the message itself.
+     * Appends a message and updates what the conversation list shows.
+     *
+     * The message, the preview line and every *other* member's unread counter
+     * are written in one batch, so the list can never show a preview for a
+     * message that failed to send, or a badge without a message behind it.
+     * The sender's own counter is untouched: they have obviously read it.
      */
     suspend fun sendMessage(
         chatId: String,
@@ -143,7 +146,12 @@ class ChatRepository @Inject constructor(
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             require(text.isNotBlank() || imageUrl.isNotBlank()) { "Empty message" }
-            chats.document(chatId).collection(Collections.MESSAGES).add(
+            val chatRef = chats.document(chatId)
+            val members = chatRef.get().await().get("memberIds") as? List<*> ?: emptyList<Any>()
+
+            val batch = firestore.batch()
+            batch.set(
+                chatRef.collection(Collections.MESSAGES).document(),
                 mapOf(
                     "senderId" to sender.id,
                     "senderName" to sender.displayName,
@@ -153,7 +161,20 @@ class ChatRepository @Inject constructor(
                     "systemEvent" to "",
                     "createdAt" to FieldValue.serverTimestamp(),
                 ),
-            ).await()
+            )
+
+            val preview = text.trim().ifBlank { "📷" }
+            val updates = mutableMapOf<String, Any>(
+                "lastMessage" to preview.take(80),
+                "lastMessageSenderId" to sender.id,
+                "lastMessageAt" to FieldValue.serverTimestamp(),
+            )
+            members.filterIsInstance<String>()
+                .filter { it != sender.id }
+                .forEach { updates["unreadCounts.$it"] = FieldValue.increment(1) }
+            batch.update(chatRef, updates)
+
+            batch.commit().await()
         }
     }
 

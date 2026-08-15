@@ -1,24 +1,23 @@
 /**
- * Cloud Functions for the Agios Nektarios village app.
+ * OPTIONAL Cloud Functions for the Agios Nektarios village app.
  *
- * Three jobs live here, and nothing else should:
+ * The app is designed to run with none of this, on the free Spark plan: the
+ * client maintains its own counters inside transactions, sweeps its own
+ * subcollections, and administers roles through Firestore documents that the
+ * security rules gate.
  *
- * 1. **Counters** — vote tallies, comment totals, unread badges. Clients are
- *    forbidden from writing these by the security rules, so the numbers on
- *    screen cannot be forged.
- * 2. **Notifications** — everything that has to reach a resident who is not
- *    looking at the app.
- * 3. **Privileged operations** — deleting accounts, setting roles, cascading
- *    deletes. These need the Admin SDK and an authorisation check a client
- *    cannot skip.
+ * The single thing a client genuinely cannot do is send a push notification,
+ * because that needs an FCM credential and anything shipped inside an APK is
+ * public. That is all these functions are for. None of them writes a counter —
+ * doing so would double-count against the client and produce a worse bug than
+ * the missing notifications they fix.
+ *
+ * Deploying them requires the Blaze plan. Nothing breaks if you never do.
  */
 
 export {
-  onIssueCreated,
-  onIssueDeleted,
   onVoteWritten,
   onCommentCreated,
-  onCommentDeleted,
   onIssueStatusChanged,
 } from "./issues";
 
@@ -26,12 +25,8 @@ export { onMessageCreated } from "./chats";
 
 export { onAnnouncementCreated } from "./announcements";
 
-export {
-  adminSetRole,
-  adminSetDisabled,
-  adminRenameUser,
-  adminSendPasswordReset,
-  adminDeleteUser,
-  deleteMyAccount,
-  bootstrapFirstAdmin,
-} from "./admin";
+// Deleting a Firebase Auth account belonging to someone else is the one
+// administrative act with no client-side equivalent, so it stays here as an
+// optional upgrade. Roles, suspension, renaming and password resets are all
+// plain Firestore writes now — see AdminRepository.
+export { adminDeleteAuthAccount } from "./admin";

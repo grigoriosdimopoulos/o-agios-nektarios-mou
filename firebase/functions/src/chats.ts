@@ -1,14 +1,14 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { FieldValue, db, preview, sendToUser } from "./common";
+import { db, preview, sendToUser } from "./common";
 
 const DEEP_LINK = "agiosnektarios://open";
 
 /**
- * Fans a new message out to the conversation.
+ * Sends the push for a new message. Notification-only.
  *
- * Everything here is server-owned for a reason: the sender's client could
- * otherwise write other members' unread counters, and the conversation preview
- * would be whatever the sender claimed rather than what was actually sent.
+ * The preview line and the unread badges are written by the sender's client in
+ * the same batch as the message — see ChatRepository.sendMessage. Incrementing
+ * them here as well would double every badge.
  */
 export const onMessageCreated = onDocumentCreated(
   "chats/{chatId}/messages/{messageId}",
@@ -29,17 +29,6 @@ export const onMessageCreated = onDocumentCreated(
       : message.text
         ? preview(message.text, 80)
         : "📷";
-
-    const updates: Record<string, unknown> = {
-      lastMessage: previewText,
-      lastMessageSenderId: message.senderId ?? "",
-      lastMessageAt: message.createdAt ?? FieldValue.serverTimestamp(),
-    };
-    // The sender's own counter is untouched: they have obviously read it.
-    others.forEach((id) => {
-      updates[`unreadCounts.${id}`] = FieldValue.increment(1);
-    });
-    await chatRef.update(updates);
 
     if (message.systemEvent) return;
 

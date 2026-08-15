@@ -123,25 +123,42 @@ over the top as updates.
 
 ## What still will not work
 
-**Cloud Functions and Storage need the Blaze plan** (a card on file, though
-village-scale usage sits inside the free allowance). Without them:
+The app is built to run on the free Spark plan, so almost everything works with
+no billing at all: sign-up, the map, filing reports, **vote and comment counts**,
+chat with unread badges, announcements, and the whole administration screen.
 
-- sign-up, sign-in, the map, filing reports, comments, chat and announcements
-  all work;
-- vote and comment counters stay at zero — they are written by the server, not
-  the client;
-- push notifications never arrive;
-- photo upload is unavailable;
-- the admin actions (delete a resident, change a role) fail.
+Two things need the Blaze plan (a card on file, though village-scale usage sits
+inside the free allowance):
 
-That is a reasonable way to see the app running before deciding about billing.
+- **Push notifications.** Sending them requires a credential that cannot ship
+  inside an app, so it needs a server. Deploy `firebase/functions` when you want
+  them; nothing else changes.
+- **Photo upload.** Cloud Storage requires Blaze on projects created after
+  October 2024.
+
+One thing has no workaround at all: deleting a resident removes their profile
+and everything they wrote, but **not their login**. Only the Admin SDK can
+delete somebody else's Firebase account. Signing in with it again lands on the
+"complete your profile" screen as a brand new resident.
 
 ## Becoming the administrator
 
-Roles live in a Firebase custom claim that no client can write, so this needs
-either a Cloud Function or the service account. Once you have signed up, ask and
-it can be set for you — after which sign out and back in, because the claim is
-baked into the session token.
+Roles are a field on your own user document, so you can do this from the phone
+with no server and no terminal:
+
+1. Sign up in the app first, so the document exists.
+2. Firebase console → **Firestore Database** → **Data** → `users` collection →
+   your document (the id is your account's uid — if there are several, match the
+   `email` field).
+3. **Add field** → name `role`, type `string`, value `ADMIN` → Update.
+4. Force-close the app and reopen it.
+
+The administration screen appears in your profile. From there you can promote
+others, so this is the only time you need the console.
+
+The rules stop an administrator editing their own `role`, which means you cannot
+accidentally demote yourself and leave the village with no admin — if you ever
+need to undo it, do it from the console the same way.
 
 ---
 

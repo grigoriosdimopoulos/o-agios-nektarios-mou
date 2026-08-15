@@ -113,9 +113,16 @@ class AdminUserViewModel @Inject constructor(
     fun rename(firstName: String, lastName: String) =
         perform { adminRepository.renameUser(userId, firstName, lastName) }
 
-    /** [successMessage] is passed in already localized by the screen. */
-    fun sendPasswordReset(successMessage: String) =
-        perform(successMessage) { adminRepository.sendPasswordReset(userId) }
+    /**
+     * [successMessage] is passed in already localized by the screen.
+     *
+     * The address comes from the loaded profile because, without a server,
+     * this is the ordinary "forgot password" call and it needs an email
+     * rather than a uid.
+     */
+    fun sendPasswordReset(successMessage: String) = perform(successMessage) {
+        adminRepository.sendPasswordReset(uiState.value.profile?.email.orEmpty())
+    }
 
     fun deleteUser() {
         viewModelScope.launch {

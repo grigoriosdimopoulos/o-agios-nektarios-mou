@@ -15,11 +15,10 @@ indexes, and prints your debug SHA-1. Three things it cannot do — enabling the
 sign-in providers, registering that SHA-1, and creating a Maps key — are printed
 at the end with direct links. It is safe to re-run.
 
-**Cloud Functions are deliberately left out**, because they require the Blaze
-billing plan. The app runs without them: you can sign up, browse the map, file
-reports and comment. What breaks is everything server-owned — vote and comment
-counters stay at zero, push notifications never arrive, and the admin actions
-fail. That is a fine way to see the app working before deciding about billing.
+**Cloud Functions are deliberately left out**, and the app no longer needs them:
+counters, chat badges, cascading deletes and administration are all client
+transactions constrained by the security rules. Functions add push notifications
+and nothing else, and they require the Blaze billing plan.
 
 The rest of this document is the same thing done by hand, plus troubleshooting.
 
@@ -35,11 +34,10 @@ for Firebase.
 
 - Android Studio Ladybug or newer, or a standalone Android SDK with API 35
 - JDK 17
-- Node.js 20 (for the Cloud Functions)
+- Node.js 20 (only for the optional Cloud Functions and the rules tests)
 - `firebase-tools` (`npm install -g firebase-tools`)
-- A Google account with billing enabled on the Firebase project — Cloud
-  Functions require the Blaze plan; at village scale the actual cost sits inside
-  the free allowance.
+- A Google account. **No billing needed** — the app is built to run on the free
+  Spark plan. Blaze buys push notifications and photo upload, nothing else.
 
 ---
 
@@ -125,8 +123,11 @@ data".
 cd firebase
 firebase use --add                 # pick the project created above
 npm --prefix functions install
-firebase deploy --only firestore:rules,firestore:indexes,storage,functions
+firebase deploy --only firestore:rules,firestore:indexes
 ```
+
+That is the whole backend. `storage` and `functions` are optional extras that
+need Blaze — add them to the list once you have it.
 
 The indexes take a few minutes to build. Until they finish, the profile screen,
 the chat list and the duplicate-detection query will fail with a
@@ -137,34 +138,21 @@ bug.
 
 ## 5. Make yourself an administrator
 
-Roles are stored in a Firebase Auth custom claim, which no client can write. To
-create the very first administrator, either:
+Roles are a `role` field on the user document, not a custom claim, so this needs
+no server and no terminal:
 
-**Option A — the bootstrap function.** Set the address on the function and call
-it once from the app while signed in with that address:
+1. Sign up in the app first, so your document exists.
+2. Firebase console → Firestore Database → Data → `users` → your document
+   (match the `email` field if several exist).
+3. Add a field `role`, type string, value `ADMIN`.
+4. Restart the app.
 
-```bash
-firebase functions:config:unset bootstrap    # if a previous value exists
-firebase deploy --only functions \
-  --set-env-vars BOOTSTRAP_ADMIN_EMAIL=you@example.com
-```
+The security rules read that field with `get()`, so it takes effect immediately —
+no token refresh, no sign-out. From then on you can promote others in the app.
 
-`bootstrapFirstAdmin` refuses to run once any administrator exists, so it closes
-itself behind you.
-
-**Option B — set the claim by hand,** from a machine with the Admin SDK
-credentials:
-
-```js
-await admin.auth().setCustomUserClaims(uid, { role: "ADMIN" });
-await admin.firestore().collection("users").doc(uid).update({ role: "ADMIN" });
-```
-
-Either way, **sign out and back in** afterwards. Custom claims are baked into the
-ID token, so a promotion only takes effect when the token is renewed — within the
-hour automatically, or immediately on a fresh sign-in. Until then the app shows
-the admin tools (it reads the user document) but Firestore still rejects
-admin-only writes (it reads the claim). That gap is expected and short.
+The rules refuse to let an administrator edit *their own* `role` or `disabled`,
+so the village cannot be locked out by a mis-tap; undo it in the console the
+same way.
 
 ---
 

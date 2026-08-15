@@ -1,6 +1,7 @@
 package gr.agiosnektarios.village.data.issue
 
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -159,12 +160,32 @@ class IssueRepository @Inject constructor(
     }
 
     /**
-     * Removes the issue document. Its `comments` and `votes` subcollections are
-     * swept by the `onIssueDeleted` Cloud Function — a client cannot delete a
-     * subcollection, and pretending otherwise would leave orphans.
+     * Removes the report and everything under it.
+     *
+     * Firestore does not cascade, so the subcollections are swept first and the
+     * parent deleted last. That order matters: if this dies half way, what is
+     * left is a live report missing some votes — recoverable and visible —
+     * rather than orphaned documents under a path nothing can reach.
      */
     suspend fun deleteIssue(issueId: String): Result<Unit> = withContext(io) {
-        runCatchingUnit { issueDoc(issueId).delete().await() }
+        runCatchingUnit {
+            val doc = issueDoc(issueId)
+            deleteAll(doc.collection(Collections.VOTES))
+            deleteAll(doc.collection(Collections.COMMENTS))
+            doc.delete().await()
+        }
+    }
+
+    /** Deletes a whole (small) subcollection in batches of [BATCH_LIMIT]. */
+    private suspend fun deleteAll(collection: CollectionReference) {
+        while (true) {
+            val page = collection.limit(BATCH_LIMIT).get().await()
+            if (page.isEmpty) return
+            val batch = firestore.batch()
+            page.documents.forEach { batch.delete(it.reference) }
+            batch.commit().await()
+            if (page.size() < BATCH_LIMIT) return
+        }
     }
 
     suspend fun setStatus(
@@ -197,27 +218,61 @@ class IssueRepository @Inject constructor(
     /**
      * Casts, flips or clears a vote.
      *
-     * The client writes only its own vote document; the `onVoteWritten`
-     * function recomputes `upvotes`/`downvotes`/`score` on the issue. That way
-     * a resident cannot inflate a counter by writing it directly, and the
-     * tallies stay consistent even if two people vote at the same instant.
+     * The vote document and the report's tally move together in one
+     * transaction, so two neighbours voting at the same instant cannot lose
+     * each other's increment — the transaction re-runs on contention.
+     *
+     * The delta is derived from the *previous* vote read inside the
+     * transaction rather than from the UI's idea of it, which is what makes
+     * flipping an upvote to a downvote a single -1/+1 pair instead of a guess.
      */
     suspend fun castVote(issueId: String, userId: String, value: Int): Result<Unit> =
         withContext(io) {
             runCatchingUnit {
                 require(value in -1..1) { "Vote must be -1, 0 or 1" }
-                val voteDoc = issueDoc(issueId).collection(Collections.VOTES).document(userId)
-                if (value == 0) {
-                    voteDoc.delete().await()
-                } else {
-                    voteDoc.set(
+                val issueRef = issueDoc(issueId)
+                val voteRef = issueRef.collection(Collections.VOTES).document(userId)
+
+                firestore.runTransaction { transaction ->
+                    val issueSnapshot = transaction.get(issueRef)
+                    if (!issueSnapshot.exists()) return@runTransaction null
+
+                    val previous = transaction.get(voteRef).let { snapshot ->
+                        if (snapshot.exists()) snapshot.getLong("value")?.toInt() ?: 0 else 0
+                    }
+                    if (previous == value) return@runTransaction null
+
+                    val upvotes = (issueSnapshot.getLong("upvotes") ?: 0L).toInt()
+                    val downvotes = (issueSnapshot.getLong("downvotes") ?: 0L).toInt()
+                    // Each vote contributes to exactly one counter, so removing
+                    // the old contribution and adding the new one keeps both
+                    // within the ±1 step the security rules allow.
+                    val newUpvotes = upvotes - (if (previous == 1) 1 else 0) + (if (value == 1) 1 else 0)
+                    val newDownvotes =
+                        downvotes - (if (previous == -1) 1 else 0) + (if (value == -1) 1 else 0)
+
+                    if (value == 0) {
+                        transaction.delete(voteRef)
+                    } else {
+                        transaction.set(
+                            voteRef,
+                            mapOf(
+                                "userId" to userId,
+                                "value" to value,
+                                "createdAt" to FieldValue.serverTimestamp(),
+                            ),
+                        )
+                    }
+                    transaction.update(
+                        issueRef,
                         mapOf(
-                            "userId" to userId,
-                            "value" to value,
-                            "createdAt" to FieldValue.serverTimestamp(),
+                            "upvotes" to newUpvotes.coerceAtLeast(0),
+                            "downvotes" to newDownvotes.coerceAtLeast(0),
+                            "score" to newUpvotes.coerceAtLeast(0) - newDownvotes.coerceAtLeast(0),
                         ),
-                    ).await()
-                }
+                    )
+                    null
+                }.await()
             }
         }
 
@@ -231,8 +286,9 @@ class IssueRepository @Inject constructor(
 
     suspend fun addComment(issueId: String, author: UserProfile, text: String): Result<Unit> =
         withContext(io) {
-            runCatchingUnit {
-                issueDoc(issueId).collection(Collections.COMMENTS).add(
+            runCatchingUnit { adjustCommentCount(issueId, delta = 1) { transaction, commentRef ->
+                transaction.set(
+                    commentRef,
                     mapOf(
                         "issueId" to issueId,
                         "authorId" to author.id,
@@ -241,14 +297,47 @@ class IssueRepository @Inject constructor(
                         "text" to text.trim(),
                         "createdAt" to FieldValue.serverTimestamp(),
                     ),
-                ).await()
-            }
+                )
+            } }
         }
 
     suspend fun deleteComment(issueId: String, commentId: String): Result<Unit> = withContext(io) {
         runCatchingUnit {
-            issueDoc(issueId).collection(Collections.COMMENTS).document(commentId).delete().await()
+            adjustCommentCount(issueId, delta = -1, commentId = commentId) { transaction, ref ->
+                transaction.delete(ref)
+            }
         }
+    }
+
+    /**
+     * Writes a comment and the report's `commentCount` in one transaction.
+     *
+     * The count exists so the issue list can sort by "most discussed" without
+     * reading every subcollection; keeping it in the same transaction as the
+     * comment is what stops the two drifting apart.
+     */
+    private suspend fun adjustCommentCount(
+        issueId: String,
+        delta: Int,
+        commentId: String? = null,
+        write: (com.google.firebase.firestore.Transaction, com.google.firebase.firestore.DocumentReference) -> Unit,
+    ) {
+        val issueRef = issueDoc(issueId)
+        val comments = issueRef.collection(Collections.COMMENTS)
+        val commentRef = commentId?.let { comments.document(it) } ?: comments.document()
+
+        firestore.runTransaction { transaction ->
+            val issueSnapshot = transaction.get(issueRef)
+            if (!issueSnapshot.exists()) return@runTransaction null
+            val current = (issueSnapshot.getLong("commentCount") ?: 0L).toInt()
+            write(transaction, commentRef)
+            transaction.update(issueRef, "commentCount", (current + delta).coerceAtLeast(0))
+            null
+        }.await()
+    }
+
+    private companion object {
+        const val BATCH_LIMIT = 300L
     }
 }
 

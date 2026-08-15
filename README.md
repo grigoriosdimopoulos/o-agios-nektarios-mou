@@ -70,7 +70,7 @@ before sending.
 | Navigation | Navigation Compose, with deep links for push notifications |
 | State | ViewModel + `StateFlow`, unidirectional data flow |
 | DI | Hilt |
-| Backend | Firebase Auth, Firestore, Storage, Cloud Messaging, Cloud Functions |
+| Backend | Firebase Auth + Firestore (free Spark plan; no server required) |
 | Maps | Google Maps Compose |
 | Local prefs | DataStore |
 
@@ -81,19 +81,25 @@ app/src/main/java/gr/agiosnektarios/village/
 ├── notifications/  FCM service, channels, token synchronisation
 └── ui/             theme, shared components, one package per feature
 firebase/
-├── firestore.rules  storage.rules  firestore.indexes.json
-└── functions/       counters, notifications, privileged operations
+├── firestore.rules      the actual authorisation model
+├── rules.test.mjs       52 assertions against the emulator
+└── functions/           OPTIONAL: push notifications only, needs Blaze
 ```
 
 ### Three decisions worth knowing about
 
-**Every counter is server-owned.** Vote tallies, comment totals and unread
-badges are written only by Cloud Functions, and the security rules reject a
-client write that touches them. A client casts a vote by writing one document at
-`issues/{id}/votes/{uid}` — the path itself makes double-voting impossible — and
-the function recounts from the subcollection rather than incrementing. That makes
-the totals self-healing: a lost trigger is corrected by the next vote instead of
-leaving a permanently wrong number on screen.
+**It runs with no server at all.** The whole app works on Firebase's free
+Spark plan, which means no Cloud Functions own the counters — clients maintain
+them, and the security rules are the only thing constraining what they write. A
+vote is one transaction: the vote document at `issues/{id}/votes/{uid}` (a path
+that makes double-voting structurally impossible) plus a tally that may move by
+exactly one, with `score == upvotes - downvotes` enforced server-side.
+
+The honest cost: someone running a modified client could nudge a counter without
+casting a real vote, because rules cannot see another document's pending write
+inside a transaction. They cannot jump a report to a thousand upvotes, and they
+cannot touch anyone else's content. For a village of neighbours that is the
+right trade; for a public app it would not be.
 
 **Enums are stored as stable string ids, not as enums.** A document written by a
 newer build never fails to deserialise on an older one; an unknown category
@@ -138,9 +144,8 @@ indexes, and prints the three things you have to click in a browser. Then:
 ./gradlew assembleDebug
 ```
 
-Cloud Functions are left out of the script because they need the Blaze billing
-plan — the app runs without them, minus the server-owned counters and push
-notifications. Full instructions, troubleshooting, and how to make yourself the
+Cloud Functions are entirely optional: they add push notifications and nothing
+else, and they need the Blaze billing plan. Full instructions, troubleshooting, and how to make yourself the
 first administrator are in **[docs/SETUP.md](docs/SETUP.md)**.
 
 Neither `google-services.json` nor `local.properties` is committed; both are
@@ -152,7 +157,7 @@ git-ignored.
 ./gradlew testDebugUnitTest            # 37 tests: geohashing, clustering, validation, permissions
 ./gradlew assembleRelease              # also runs R8 and lint's fatal checks
 cd firebase/functions && npx tsc --noEmit   # Cloud Functions typecheck
-npm --prefix firebase/functions run test:rules  # 30 security-rule tests, in the emulator
+npm --prefix firebase run test:rules    # 52 security-rule assertions, in the emulator
 ```
 
 The unit tests cover the parts where a subtle mistake would be invisible in the
@@ -160,8 +165,9 @@ UI: geohash encoding, the clustering rules, phone and password validation, and
 who is allowed to edit what.
 
 `firebase/rules.test.mjs` runs the security rules against the Firestore
-emulator using the exact payloads the repositories write. It asserts both
-halves: that an ordinary resident can sign up, file a report, vote and comment —
-and that nobody can promote themselves to admin, forge a vote tally, write under
-someone else's name, or read a conversation they are not in. Rules are the one
-place where a mistake is silent in development and serious in production.
+emulator using the exact payloads the repositories write. Since the rules are
+now the *only* thing standing between a client and the data, this matters more
+than the Kotlin tests: it asserts that an ordinary resident can sign up, file a
+report, vote and comment — and that nobody can promote themselves to admin,
+jump a tally, write under someone else's name, unsuspend themselves, or read a
+conversation they are not in.
