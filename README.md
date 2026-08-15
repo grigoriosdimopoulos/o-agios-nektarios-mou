@@ -163,6 +163,7 @@ git-ignored.
 ```bash
 ./gradlew testDebugUnitTest            # 37 tests: geohashing, clustering, validation, permissions
 ./gradlew assembleRelease              # also runs R8 and lint's fatal checks
+./gradlew assemblePreview              # shrunk but debug-signed, for sending to a tester
 cd firebase/functions && npx tsc --noEmit   # Cloud Functions typecheck
 npm --prefix firebase run test:rules    # 52 security-rule assertions, in the emulator
 ```

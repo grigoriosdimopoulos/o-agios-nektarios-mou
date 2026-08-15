@@ -58,6 +58,29 @@ android {
                 abiFilters += listOf("arm64-v8a", "armeabi-v7a")
             }
         }
+        /**
+         * What gets handed to a tester over a chat window.
+         *
+         * Identical to debug in identity — same `.debug` applicationId, same
+         * committed signing key, so it installs over a debug build and matches
+         * the fingerprint registered in Firebase — but shrunk like a release.
+         * An unminified debug APK is ~46 MB, most of it dex from Compose icons
+         * and Firebase; R8 removes what the app never calls and takes it under
+         * a size that can actually be sent to a phone.
+         */
+        create("preview") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            // arm64 only: every Android phone sold since ~2017 is arm64, and
+            // carrying a second copy of MapLibre's renderer costs 9 MB on a
+            // build whose whole purpose is being small enough to send.
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
+        }
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
