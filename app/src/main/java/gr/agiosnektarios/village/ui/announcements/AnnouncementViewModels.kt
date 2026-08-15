@@ -31,7 +31,6 @@ class AnnouncementsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<AnnouncementsUiState> = repository.observeAnnouncements()
-        .catch { emit(emptyList()) }
         .map { AnnouncementsUiState(announcements = it, loading = false) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AnnouncementsUiState())
 

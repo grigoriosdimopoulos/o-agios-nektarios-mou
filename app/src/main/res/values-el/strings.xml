@@ -220,4 +220,9 @@
     <string name="notif_status_wont_do">Σημάνθηκε ως «δεν θα γίνει»</string>
     <string name="notif_status_changed">Η κατάσταση άλλαξε</string>
     <string name="notif_new_announcement">Νέα ανακοίνωση</string>
+
+    <string name="crash_title">Η εφαρμογή έκλεισε απροσδόκητα</string>
+    <string name="crash_body">Ζητούμε συγγνώμη. Αντιγράψτε τις παρακάτω λεπτομέρειες και στείλτε τις για να διορθωθεί.</string>
+    <string name="crash_copy">Αντιγραφή λεπτομερειών</string>
+    <string name="error_google_unavailable">Δεν υπάρχει διαθέσιμος λογαριασμός Google. Προσθέστε έναν στις Ρυθμίσεις του τηλεφώνου ή συνδεθείτε με email και κωδικό.</string>
 </resources>

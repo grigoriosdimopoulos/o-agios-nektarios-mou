@@ -7,7 +7,7 @@ requires a terminal.
 | You, in the phone browser | The build machine |
 | --- | --- |
 | Create the Firebase project | Build and sign the APK |
-| Register the two Android apps | Deploy the security rules and indexes |
+| Register the two Android apps | Deploy the security rules |
 | Turn on Email/Password sign-in | (Optional) deploy push notifications |
 | Create the Firestore database | |
 | Download `google-services.json` and send it | |
@@ -75,8 +75,8 @@ only permission errors.
 
 ## 6. Get the rules deployed
 
-The rules and indexes are the difference between "signs in, then everything
-fails" and a working app. Two ways, pick one.
+The rules are the difference between "signs in, then everything fails" and a
+working app. Two ways, pick one.
 
 ### Option A — paste them yourself (no credentials shared)
 
@@ -84,9 +84,10 @@ fails" and a working app. Two ways, pick one.
 paste the contents of
 [`firebase/firestore.rules`](../firebase/firestore.rules). *Publish*.
 
-Then *Indexes* → *Composite* → *Add index*, five times, from
-[`firebase/firestore.indexes.json`](../firebase/firestore.indexes.json). This
-part is genuinely tedious on a phone — about ten minutes of form filling.
+That is the whole step. **No composite indexes to create.** Every query the app
+makes is a shape Firestore indexes on its own, precisely so this page does not
+end with ten minutes of form filling on a phone — see
+[`firebase/firestore.indexes.json`](../firebase/firestore.indexes.json) for why.
 
 ### Option B — send a service account key and it gets done for you
 

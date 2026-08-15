@@ -59,7 +59,7 @@ fun SignInScreen(
                 imeAction = ImeAction.Done,
             )
 
-            AuthErrorText(message = state.errorMessage)
+            AuthErrorText(message = state.errorRes?.let { stringResource(it) } ?: state.errorMessage)
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                 TextButton(onClick = onNavigateToForgotPassword) {

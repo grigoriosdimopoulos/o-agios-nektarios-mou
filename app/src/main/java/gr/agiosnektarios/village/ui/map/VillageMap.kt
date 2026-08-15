@@ -91,6 +91,17 @@ fun VillageMap(
     val state = remember { VillageMapState() }
 
     DisposableEffect(lifecycleOwner) {
+        // Destroyed exactly once, by whichever comes first: leaving the
+        // composition, or the activity going away. MapView.onDestroy() is not
+        // idempotent, and calling it twice takes the process down.
+        var destroyed = false
+        fun destroyOnce() {
+            if (!destroyed) {
+                destroyed = true
+                mapView.onDestroy()
+            }
+        }
+
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_CREATE -> mapView.onCreate(null)
@@ -98,14 +109,14 @@ fun VillageMap(
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 Lifecycle.Event.ON_STOP -> mapView.onStop()
-                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+                Lifecycle.Event.ON_DESTROY -> destroyOnce()
                 else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            mapView.onDestroy()
+            destroyOnce()
         }
     }
 

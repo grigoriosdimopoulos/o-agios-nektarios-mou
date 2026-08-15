@@ -123,10 +123,10 @@ firebase deploy --only firestore:rules,firestore:indexes
 That is the whole backend. `storage` and `functions` are optional extras that
 need Blaze — add them to the list once you have it.
 
-The indexes take a few minutes to build. Until they finish, the profile screen,
-the chat list and the duplicate-detection query will fail with a
-`FAILED_PRECONDITION` error naming the missing index — that is expected, not a
-bug.
+There are no composite indexes to wait on: the app only issues queries
+Firestore indexes automatically, so the rules deploy is the whole story. The
+`firestore:indexes` target above is kept in the command because
+`firestore.indexes.json` still carries field overrides.
 
 ---
 
@@ -213,6 +213,11 @@ a connection. There is no key to get wrong.
 permission (Android 13+), the category switch in Settings — the server checks it
 before sending — and whether the user document has any `fcmTokens`.
 
-**A query fails with `FAILED_PRECONDITION`.** A composite index is missing. The
-error message contains a link that creates it; also add it to
-`firebase/firestore.indexes.json` so it survives the next deploy.
+**A query fails with `FAILED_PRECONDITION`.** A composite index is missing,
+which means a query was added in a shape the app deliberately avoids — an
+equality or range filter combined with an `orderBy` on another field. Prefer
+reshaping it to a single-key query and sorting the capped result locally, as
+`observeChats` and `observeIssuesByAuthor` do. If the index is genuinely
+unavoidable, the error message contains a link that creates it; add it to
+`firebase/firestore.indexes.json` too, and note in `docs/PHONE-SETUP.md` that
+setup now requires a step that cannot be done from a phone.

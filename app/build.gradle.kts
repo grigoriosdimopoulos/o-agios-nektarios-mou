@@ -73,6 +73,12 @@ android {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
+            // Shrink, but keep names: the tester's crash report has to be legible.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+                "proguard-preview.pro",
+            )
             // arm64 only: every Android phone sold since ~2017 is arm64, and
             // carrying a second copy of MapLibre's renderer costs 9 MB on a
             // build whose whole purpose is being small enough to send.

@@ -1,5 +1,7 @@
 package gr.agiosnektarios.village.data.issue
 
+import gr.agiosnektarios.village.core.firestore.orEmptyOnError
+import gr.agiosnektarios.village.core.firestore.orNullOnError
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
@@ -24,6 +26,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -64,15 +67,29 @@ class IssueRepository @Inject constructor(
             .limit(limit)
             .asFlow()
             .map { it.toObjectsSafe<Issue>() }
+            .orEmptyOnError("all issues")
 
     fun observeIssue(issueId: String): Flow<Issue?> =
         issueDoc(issueId).asFlow().map { it.toObjectSafe<Issue>() }
+            .orNullOnError("issue $issueId")
 
+    /**
+     * One resident's reports, newest first.
+     *
+     * Ordered locally for the same reason as the chat list: an equality filter
+     * plus an `orderBy` on a different field needs a hand-created composite
+     * index, and nobody's own report list is long enough for that to be worth
+     * a setup step that can be forgotten.
+     */
     fun observeIssuesByAuthor(authorId: String): Flow<List<Issue>> =
         issues.whereEqualTo("authorId", authorId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(500)
             .asFlow()
-            .map { it.toObjectsSafe<Issue>() }
+            .map { snapshot ->
+                snapshot.toObjectsSafe<Issue>()
+                    .sortedByDescending { it.createdAt?.time ?: 0L }
+            }
+            .orEmptyOnError("issues by $authorId")
 
     suspend fun getIssue(issueId: String): Result<Issue?> = withContext(io) {
         runCatching { issueDoc(issueId).get().await().toObjectSafe<Issue>() }
@@ -93,14 +110,20 @@ class IssueRepository @Inject constructor(
     ): Result<List<Issue>> = withContext(io) {
         runCatching {
             val prefix = geohash(center.lat, center.lng, precision = 5)
-            issues.whereEqualTo("categoryId", category.id)
-                .orderBy("geohash")
+            // The category is matched locally, not in the query: adding an
+            // equality filter alongside the geohash range would need a
+            // composite index. One precision-5 cell comfortably contains the
+            // whole village, so this reads the village's reports once and
+            // narrows them here \u2014 where the exact distance has to be applied
+            // anyway, since Firestore cannot do radius queries.
+            issues.orderBy("geohash")
                 .startAt(prefix)
                 .endAt(prefix + '\uf8ff')
-                .limit(60)
+                .limit(400)
                 .get()
                 .await()
                 .toObjectsSafe<Issue>()
+                .filter { it.categoryId == category.id }
                 .filter { distanceMeters(center, GeoPoint(it.lat, it.lng)) <= radiusMeters }
                 .sortedBy { distanceMeters(center, GeoPoint(it.lat, it.lng)) }
         }
@@ -214,6 +237,7 @@ class IssueRepository @Inject constructor(
         issueDoc(issueId).collection(Collections.VOTES).document(userId)
             .asFlow()
             .map { it.toObjectSafe<Vote>()?.value ?: 0 }
+            .catch { emit(0) }
 
     /**
      * Casts, flips or clears a vote.
@@ -283,6 +307,7 @@ class IssueRepository @Inject constructor(
             .orderBy("createdAt", Query.Direction.ASCENDING)
             .asFlow()
             .map { it.toObjectsSafe<Comment>() }
+            .orEmptyOnError("comments of $issueId")
 
     suspend fun addComment(issueId: String, author: UserProfile, text: String): Result<Unit> =
         withContext(io) {

@@ -4,6 +4,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.firestore.orEmptyOnError
+import gr.agiosnektarios.village.core.firestore.orNullOnError
 import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
@@ -44,9 +46,11 @@ class AnnouncementRepository @Inject constructor(
                             .thenByDescending { it.createdAt?.time ?: 0L },
                     )
             }
+            .orEmptyOnError("announcements")
 
     fun observeAnnouncement(id: String): Flow<Announcement?> =
         announcements.document(id).asFlow().map { it.toObjectSafe<Announcement>() }
+            .orNullOnError("announcement $id")
 
     suspend fun publish(
         author: UserProfile,

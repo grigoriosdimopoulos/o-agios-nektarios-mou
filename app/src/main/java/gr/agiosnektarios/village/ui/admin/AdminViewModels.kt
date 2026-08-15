@@ -48,7 +48,7 @@ class AdminViewModel @Inject constructor(
         query.debounce(220).flatMapLatest { text ->
             userRepository.searchResidents(text, limit = 60).catch { emit(emptyList()) }
         },
-        issueRepository.observeIssues(limit = 200).catch { emit(emptyList()) },
+        issueRepository.observeIssues(limit = 200),
         sessionRepository.profile,
         query,
     ) { residents, issues, profile, currentQuery ->
@@ -93,7 +93,7 @@ class AdminUserViewModel @Inject constructor(
 
     val uiState: StateFlow<AdminUserUiState> = combine(
         userRepository.observeProfile(userId).catch { emit(null) },
-        issueRepository.observeIssuesByAuthor(userId).catch { emit(emptyList()) },
+        issueRepository.observeIssuesByAuthor(userId),
         local,
     ) { profile, issues, localState ->
         AdminUserUiState(

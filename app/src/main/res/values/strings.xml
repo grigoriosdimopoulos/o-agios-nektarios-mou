@@ -4,7 +4,9 @@
     <string name="app_tagline">Our village, in our hands</string>
 
     <!-- Notification channels -->
-    <string name="notification_channel_general_id">general</string>
+    <!-- An identifier Android stores per channel, never shown to anyone. Translating it
+         would orphan the existing channel and silence its notifications. -->
+    <string name="notification_channel_general_id" translatable="false">general</string>
     <string name="notification_channel_general">General</string>
     <string name="notification_channel_issues">Issue activity</string>
     <string name="notification_channel_chat">Messages</string>
@@ -194,8 +196,10 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_language">Language</string>
-    <string name="settings_language_el">Ελληνικά</string>
-    <string name="settings_language_en">English</string>
+    <!-- Endonyms: a language is listed in its own language in every locale, so a
+         Greek speaker looking for Greek finds "Ελληνικά" and not a translation of it. -->
+    <string name="settings_language_el" translatable="false">Ελληνικά</string>
+    <string name="settings_language_en" translatable="false">English</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notif_comments">Comments on my reports</string>
     <string name="settings_notif_status">Status changes on my reports</string>
@@ -238,4 +242,10 @@
     <string name="notif_status_wont_do">Marked as won\'t do</string>
     <string name="notif_status_changed">The status changed</string>
     <string name="notif_new_announcement">New announcement</string>
+
+    <!-- Crash reporting, for testers with no access to a computer -->
+    <string name="crash_title">The app closed unexpectedly</string>
+    <string name="crash_body">Sorry about that. Copy the details below and send them over so it can be fixed.</string>
+    <string name="crash_copy">Copy details</string>
+    <string name="error_google_unavailable">No Google account is available. Add one to the phone in Android Settings, or sign in with email and password.</string>
 </resources>

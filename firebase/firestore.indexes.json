@@ -1,51 +1,22 @@
 {
-  "indexes": [
-    {
-      "//": "issuesByAuthor: profile page and admin user detail",
-      "collectionGroup": "issues",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "authorId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "//": "findSimilarNearby: equality on category plus a geohash prefix range",
-      "collectionGroup": "issues",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "categoryId", "order": "ASCENDING" },
-        { "fieldPath": "geohash", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "//": "purgeUser: every vote a departing resident ever cast",
-      "collectionGroup": "votes",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "//": "purgeUser: every comment a departing resident ever wrote",
-      "collectionGroup": "comments",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "authorId", "order": "ASCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "//": "chat list: conversations I am a member of, most recent first",
-      "collectionGroup": "chats",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "memberIds", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "lastMessageAt", "order": "DESCENDING" }
-      ]
-    }
+  "//": [
+    "Deliberately empty of composite indexes.",
+    "",
+    "A composite index does not exist until somebody creates it, and until it",
+    "exists the query that needs it fails outright — which made a fresh project",
+    "unusable for anyone who could not run the Firebase CLI. Every query in the",
+    "app was therefore reduced to a shape Firestore indexes automatically: a",
+    "single equality, a single range, or a single orderBy. Where a second key",
+    "was wanted (chats by recency, a resident's own reports by date, similar",
+    "reports by category) the query fetches a capped page and the app sorts or",
+    "filters it locally. The sets involved are a village's worth of data, so the",
+    "cost is nothing and the setup step disappears.",
+    "",
+    "Add an entry here only alongside a query that genuinely cannot be shaped",
+    "this way, and expect it to need `firebase deploy --only firestore:indexes`",
+    "before that query works."
   ],
+  "indexes": [],
   "fieldOverrides": [
     {
       "//": "Nothing queries these large arrays; skipping the index saves write cost.",

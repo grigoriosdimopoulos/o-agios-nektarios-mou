@@ -11,6 +11,7 @@ import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.auth.GoogleCredentialClient
 import gr.agiosnektarios.village.data.auth.GoogleSignInCancelled
+import gr.agiosnektarios.village.data.auth.GoogleSignInUnavailable
 import gr.agiosnektarios.village.data.user.UserRepository
 import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
@@ -30,6 +31,8 @@ data class SignInUiState(
     val loading: Boolean = false,
     val googleLoading: Boolean = false,
     val errorMessage: String? = null,
+    /** Preferred over [errorMessage] when set, so the text can be localized. */
+    @StringRes val errorRes: Int? = null,
 )
 
 @HiltViewModel
@@ -84,15 +87,20 @@ class SignInViewModel @Inject constructor(
                 it.copy(
                     googleLoading = false,
                     // A dismissed sheet is a deliberate choice, not a failure.
+                    errorRes = if (error is GoogleSignInUnavailable) {
+                        R.string.error_google_unavailable
+                    } else {
+                        null
+                    },
                     errorMessage = error
-                        ?.takeUnless { e -> e is GoogleSignInCancelled }
+                        ?.takeUnless { e -> e is GoogleSignInCancelled || e is GoogleSignInUnavailable }
                         ?.let(::friendlyMessage),
                 )
             }
         }
     }
 
-    fun consumeError() = _uiState.update { it.copy(errorMessage = null) }
+    fun consumeError() = _uiState.update { it.copy(errorMessage = null, errorRes = null) }
 }
 
 // ------------------------------------------------------------------ sign up

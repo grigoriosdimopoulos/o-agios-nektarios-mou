@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.firestore.orEmptyOnError
 import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
@@ -145,10 +146,12 @@ class UserRepository @Inject constructor(
                 .endAt(normalized + '\uf8ff')
         }
         return base.limit(limit).asFlow().map { it.toObjectsSafe<UserProfile>() }
+            .orEmptyOnError("user search")
     }
 
     fun observeAllResidents(limit: Long = 500): Flow<List<UserProfile>> =
         users.orderBy("nameLower").limit(limit).asFlow().map { it.toObjectsSafe<UserProfile>() }
+            .orEmptyOnError("user directory")
 
     suspend fun getProfiles(userIds: List<String>): Result<List<UserProfile>> = withContext(io) {
         runCatching {

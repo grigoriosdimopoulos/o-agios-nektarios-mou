@@ -13,7 +13,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -45,7 +44,7 @@ class IssueListViewModel @Inject constructor(
     private val criteria = MutableStateFlow(Criteria())
 
     val uiState: StateFlow<IssueListUiState> = combine(
-        issueRepository.observeIssues().catch { emit(emptyList()) },
+        issueRepository.observeIssues(),
         criteria,
     ) { issues, current ->
         // Search runs locally over the already-live list: a village's worth of

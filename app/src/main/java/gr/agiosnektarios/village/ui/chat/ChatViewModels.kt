@@ -48,7 +48,6 @@ class ChatsViewModel @Inject constructor(
                 flowOf(ChatsUiState(loading = false))
             } else {
                 chatRepository.observeChats(profile.id)
-                    .catch { emit(emptyList()) }
                     .map { chats ->
                         ChatsUiState(
                             // Conversations with no messages yet are hidden:
@@ -89,8 +88,8 @@ class ChatRoomViewModel @Inject constructor(
     private val local = MutableStateFlow(LocalState())
 
     val uiState: StateFlow<ChatRoomUiState> = combine(
-        chatRepository.observeChat(chatId).catch { emit(null) },
-        chatRepository.observeMessages(chatId).catch { emit(emptyList()) },
+        chatRepository.observeChat(chatId),
+        chatRepository.observeMessages(chatId),
         sessionRepository.profile,
         local,
     ) { chat, messages, profile, localState ->

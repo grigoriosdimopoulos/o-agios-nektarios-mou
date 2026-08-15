@@ -66,8 +66,8 @@ class IssueDetailViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     val uiState: StateFlow<IssueDetailUiState> = combine(
-        issueRepository.observeIssue(issueId).catch { emit(null) },
-        issueRepository.observeComments(issueId).catch { emit(emptyList()) },
+        issueRepository.observeIssue(issueId),
+        issueRepository.observeComments(issueId),
         vote,
         sessionRepository.profile,
         local,

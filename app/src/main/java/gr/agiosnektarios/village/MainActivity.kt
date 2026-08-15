@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import gr.agiosnektarios.village.data.settings.AppLanguage
 import gr.agiosnektarios.village.ui.MainViewModel
+import gr.agiosnektarios.village.ui.components.CrashDialog
 import gr.agiosnektarios.village.ui.VillageApp
 import gr.agiosnektarios.village.ui.theme.VillageTheme
 
@@ -57,7 +58,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            val lastCrash by viewModel.lastCrash.collectAsStateWithLifecycle()
+
             VillageTheme(themeMode = settings.themeMode) {
+                lastCrash?.let { report ->
+                    CrashDialog(report = report, onDismiss = viewModel::dismissCrashReport)
+                }
                 VillageApp(
                     session = session,
                     deepLink = pendingDeepLink,

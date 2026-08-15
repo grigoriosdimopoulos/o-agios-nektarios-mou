@@ -4,6 +4,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
+import gr.agiosnektarios.village.core.firestore.orEmptyOnError
+import gr.agiosnektarios.village.core.firestore.orNullOnError
 import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
 import gr.agiosnektarios.village.core.firestore.asFlow
@@ -28,15 +30,29 @@ class ChatRepository @Inject constructor(
 ) {
     private val chats get() = firestore.collection(Collections.CHATS)
 
+    /**
+     * Every conversation this resident belongs to, most recent first.
+     *
+     * Sorted here rather than by the server: pairing `array-contains` with an
+     * `orderBy` needs a composite index, and a composite index has to be
+     * created by hand before the query works at all — which turns a first run
+     * against a fresh project into a failure. A resident has tens of
+     * conversations, not thousands, so the ordering costs nothing locally and
+     * the app works the moment the project exists.
+     */
     fun observeChats(userId: String): Flow<List<Chat>> =
         chats.whereArrayContains("memberIds", userId)
-            .orderBy("lastMessageAt", Query.Direction.DESCENDING)
             .limit(200)
             .asFlow()
-            .map { it.toObjectsSafe<Chat>() }
+            .map { snapshot ->
+                snapshot.toObjectsSafe<Chat>()
+                    .sortedByDescending { it.lastMessageAt?.time ?: 0L }
+            }
+            .orEmptyOnError("chats of $userId")
 
     fun observeChat(chatId: String): Flow<Chat?> =
         chats.document(chatId).asFlow().map { it.toObjectSafe<Chat>() }
+            .orNullOnError("chat $chatId")
 
     /**
      * Messages newest-first so the capped query keeps the *recent* tail; the UI
@@ -48,6 +64,7 @@ class ChatRepository @Inject constructor(
             .limit(limit)
             .asFlow()
             .map { it.toObjectsSafe<ChatMessage>().reversed() }
+            .orEmptyOnError("messages of $chatId")
 
     /**
      * Opens the one-to-one conversation between two residents, creating it on
