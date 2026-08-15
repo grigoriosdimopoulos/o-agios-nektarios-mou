@@ -3,6 +3,8 @@
 build/
 local.properties
 *.apk
+# ...except the one build handed to the tester; see dist/README.md.
+!dist/*.apk
 *.aab
 *.jks
 *.keystore
