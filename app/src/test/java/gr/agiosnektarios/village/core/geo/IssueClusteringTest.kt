@@ -106,8 +106,8 @@ class IssueClusteringTest {
 
         val cluster = IssueClustering.cluster(issues, zoom = 20f).single()
 
-        assertEquals(37.84810, cluster.position.latitude, 0.00001)
-        assertEquals(23.92000, cluster.position.longitude, 0.00001)
+        assertEquals(37.84810, cluster.position.lat, 0.00001)
+        assertEquals(23.92000, cluster.position.lng, 0.00001)
     }
 
     @Test

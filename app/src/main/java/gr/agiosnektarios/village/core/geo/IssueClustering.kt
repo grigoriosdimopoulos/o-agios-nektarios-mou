@@ -1,6 +1,6 @@
 package gr.agiosnektarios.village.core.geo
 
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueCategory
 import kotlin.math.cos
@@ -12,7 +12,7 @@ import kotlin.math.pow
  */
 data class IssueCluster(
     val id: String,
-    val position: LatLng,
+    val position: GeoPoint,
     val issues: List<Issue>,
 ) {
     val size: Int get() = issues.size
@@ -67,7 +67,7 @@ object IssueClustering {
         val ordered = issues.sortedBy { it.createdAt?.time ?: Long.MAX_VALUE }
 
         for (issue in ordered) {
-            val point = LatLng(issue.lat, issue.lng)
+            val point = GeoPoint(issue.lat, issue.lng)
             val host = buckets.firstOrNull { bucket ->
                 val categoriesMatch = mergeCategories || bucket.categoryId == issue.categoryId
                 if (!categoriesMatch) return@firstOrNull false
@@ -110,6 +110,6 @@ object IssueClustering {
             lngSum += issue.lng
         }
 
-        fun center() = LatLng(latSum / issues.size, lngSum / issues.size)
+        fun center() = GeoPoint(latSum / issues.size, lngSum / issues.size)
     }
 }

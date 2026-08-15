@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,24 +5,6 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
-}
-
-/**
- * Resolution order for the Google Maps key:
- * local.properties -> gradle property -> MAPS_API_KEY env var -> empty.
- * An empty key still builds; the map simply renders blank at runtime.
- */
-val mapsApiKey: String = run {
-    val local = rootProject.file("local.properties")
-    val fromLocal = if (local.exists()) {
-        Properties().apply { local.inputStream().use { load(it) } }.getProperty("MAPS_API_KEY")
-    } else {
-        null
-    }
-    fromLocal?.takeIf { it.isNotBlank() }
-        ?: (project.findProperty("MAPS_API_KEY") as String?)?.takeIf { it.isNotBlank() }
-        ?: System.getenv("MAPS_API_KEY")
-        ?: ""
 }
 
 android {
@@ -39,7 +19,6 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         resourceConfigurations += setOf("en", "el")
     }
 
@@ -71,6 +50,13 @@ android {
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("debug")
+            // MapLibre ships a native renderer per ABI, which quadruples the
+            // debug APK. Debug builds are sideloaded onto real phones, and
+            // every Android phone in use is ARM — so the emulator-only x86
+            // slices are dropped. Release keeps all four for the store.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            }
         }
         release {
             isMinifyEnabled = true
@@ -140,11 +126,7 @@ dependencies {
     implementation(libs.firebase.functions)
     implementation(libs.firebase.analytics)
 
-    implementation(libs.play.services.maps)
-    implementation(libs.play.services.location)
-    implementation(libs.maps.compose)
-    implementation(libs.maps.compose.utils)
-    implementation(libs.maps.android.utils)
+    implementation(libs.maplibre)
 
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)

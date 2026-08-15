@@ -47,16 +47,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MapsComposeExperimentalApi
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberUpdatedMarkerState
 import gr.agiosnektarios.village.R
-import gr.agiosnektarios.village.core.VillageConfig
+import androidx.compose.foundation.isSystemInDarkTheme
+import gr.agiosnektarios.village.core.geo.GeoBounds
+import gr.agiosnektarios.village.ui.map.VillageMap
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.InlineSpinner
@@ -64,7 +58,6 @@ import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.isGreekLocale
-import gr.agiosnektarios.village.ui.map.IssuePin
 
 /**
  * Compose or edit a report.
@@ -73,7 +66,7 @@ import gr.agiosnektarios.village.ui.map.IssuePin
  * location is already roughly chosen (by tapping the village map, or by the
  * report being edited) and this is for fine adjustment.
  */
-@OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IssueComposeScreen(
     onBack: () -> Unit,
@@ -103,13 +96,6 @@ fun IssueComposeScreen(
             showSnackbar(it)
             viewModel.consumeError()
         }
-    }
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            state.position ?: VillageConfig.CENTER,
-            VillageConfig.FOCUS_ZOOM,
-        )
     }
 
     Scaffold(
@@ -214,32 +200,24 @@ fun IssueComposeScreen(
                         .height(220.dp)
                         .clip(MaterialTheme.shapes.medium),
                 ) {
-                    GoogleMap(
+                    // The same map component as the main screen, with no
+                    // neighbourhoods or clusters — just the one pin being placed.
+                    VillageMap(
                         modifier = Modifier.fillMaxSize(),
-                        cameraPositionState = cameraPositionState,
-                        properties = MapProperties(
-                            latLngBoundsForCameraTarget = VillageConfig.BOUNDS,
-                            minZoomPreference = VillageConfig.MIN_ZOOM,
-                            maxZoomPreference = VillageConfig.MAX_ZOOM,
-                        ),
-                        uiSettings = MapUiSettings(
-                            zoomControlsEnabled = false,
-                            mapToolbarEnabled = false,
-                        ),
-                        onMapClick = viewModel::setPosition,
-                    ) {
-                        state.position?.let { position ->
-                            MarkerComposable(
-                                keys = arrayOf(position.latitude, position.longitude),
-                                state = rememberUpdatedMarkerState(position = position),
-                            ) {
-                                IssuePin(
-                                    category = state.category ?: IssueCategory.OTHER,
-                                    open = true,
-                                )
-                            }
-                        }
-                    }
+                        clusters = emptyList(),
+                        blocks = emptyList(),
+                        showBlocks = false,
+                        pendingPin = state.position,
+                        darkTheme = isSystemInDarkTheme(),
+                        greekLabels = greek,
+                        focusBounds = state.position?.let {
+                            GeoBounds(it.lat, it.lng, it.lat, it.lng)
+                        },
+                        onMapTap = viewModel::setPosition,
+                        onClusterTap = {},
+                        onBlockTap = {},
+                        onZoomChanged = {},
+                    )
                 }
                 state.locationError?.let {
                     Text(

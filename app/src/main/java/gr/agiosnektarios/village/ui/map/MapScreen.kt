@@ -44,25 +44,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MapsComposeExperimentalApi
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.Polygon
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberUpdatedMarkerState
 import gr.agiosnektarios.village.R
-import gr.agiosnektarios.village.core.VillageConfig
+import gr.agiosnektarios.village.core.geo.GeoBounds
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.ui.components.CategoryChip
@@ -75,7 +63,7 @@ import gr.agiosnektarios.village.ui.components.isGreekLocale
  * The village map: reports as pins, neighbourhoods as tinted polygons with
  * open-issue counters, and a "drop a pin here" flow for filing a new one.
  */
-@OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     onOpenIssue: (String) -> Unit,
@@ -83,117 +71,38 @@ fun MapScreen(
     viewModel: MapViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val darkTheme = isSystemInDarkTheme()
     val greek = isGreekLocale()
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(VillageConfig.CENTER, VillageConfig.DEFAULT_ZOOM)
-    }
-
-    // Clustering is a function of zoom, so the view model needs to know about
-    // camera changes — but only about the zoom, not every pan.
-    LaunchedEffect(cameraPositionState.position.zoom) {
-        viewModel.onZoomChanged(cameraPositionState.position.zoom)
-    }
-
     var showFilters by remember { mutableStateOf(false) }
 
-    val mapProperties = remember(darkTheme) {
-        MapProperties(
-            latLngBoundsForCameraTarget = VillageConfig.BOUNDS,
-            minZoomPreference = VillageConfig.MIN_ZOOM,
-            maxZoomPreference = VillageConfig.MAX_ZOOM,
-            mapStyleOptions = if (darkTheme) {
-                MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_dark)
-            } else {
-                null
-            },
-        )
-    }
+    // The camera is only pushed at the map when a neighbourhood is opened;
+    // otherwise the map owns its own position and nothing here fights it.
+    val focusBounds = state.selectedBlock?.block?.bounds
 
     Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
+        VillageMap(
             modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = MapUiSettings(
-                zoomControlsEnabled = false,
-                mapToolbarEnabled = false,
-                // The app's own FAB owns this corner.
-                myLocationButtonEnabled = false,
-            ),
-            onMapClick = { point ->
+            clusters = state.clusters,
+            blocks = state.blocks,
+            showBlocks = state.showBlocks,
+            pendingPin = state.pendingPin,
+            darkTheme = darkTheme,
+            greekLabels = greek,
+            focusBounds = focusBounds,
+            onZoomChanged = viewModel::onZoomChanged,
+            onMapTap = { point ->
                 if (state.placingPin) viewModel.onMapTapped(point) else viewModel.dismissSheets()
             },
-        ) {
-            if (state.showBlocks) {
-                state.blocks.forEach { summary ->
-                    val tint = summary.dominantCategory?.tint
-                        ?: MaterialTheme.colorScheme.primary
-                    Polygon(
-                        points = summary.block.polygon,
-                        // Fill opacity scales with activity, so a busy
-                        // neighbourhood is visible before you read any number.
-                        fillColor = tint.copy(
-                            alpha = if (summary.openCount > 0) 0.13f else 0.04f,
-                        ),
-                        strokeColor = tint.copy(alpha = 0.5f),
-                        strokeWidth = 3f,
-                        clickable = true,
-                        onClick = { viewModel.selectBlock(summary.block.id) },
-                    )
-                    MarkerComposable(
-                        keys = arrayOf(summary.block.id, summary.openCount),
-                        state = rememberUpdatedMarkerState(position = summary.block.centroid),
-                        onClick = {
-                            viewModel.selectBlock(summary.block.id)
-                            true
-                        },
-                    ) {
-                        BlockBadge(
-                            summary = summary,
-                            label = summary.block.localizedName(greek),
-                        )
-                    }
+            onClusterTap = { clusterId ->
+                val cluster = state.clusters.firstOrNull { it.id == clusterId }
+                when {
+                    cluster == null -> Unit
+                    cluster.isSingle -> onOpenIssue(cluster.representative.id)
+                    else -> viewModel.selectCluster(cluster)
                 }
-            }
-
-            state.clusters.forEach { cluster ->
-                MarkerComposable(
-                    // The key set is what tells maps-compose to redraw the
-                    // marker bitmap; without the size it would keep a stale one.
-                    keys = arrayOf(cluster.id, cluster.size, cluster.openCount),
-                    state = rememberUpdatedMarkerState(position = cluster.position),
-                    onClick = {
-                        if (cluster.isSingle) {
-                            onOpenIssue(cluster.representative.id)
-                        } else {
-                            viewModel.selectCluster(cluster)
-                        }
-                        true
-                    },
-                ) {
-                    if (cluster.isSingle) {
-                        IssuePin(
-                            category = cluster.representative.category,
-                            open = cluster.representative.isOpen,
-                        )
-                    } else {
-                        ClusterPin(cluster = cluster)
-                    }
-                }
-            }
-
-            state.pendingPin?.let { pin ->
-                MarkerComposable(
-                    keys = arrayOf("pending", pin.latitude, pin.longitude),
-                    state = rememberUpdatedMarkerState(position = pin),
-                ) {
-                    IssuePin(category = IssueCategory.OTHER, open = true)
-                }
-            }
-        }
+            },
+            onBlockTap = viewModel::selectBlock,
+        )
 
         MapOverlay(
             state = state,
@@ -201,7 +110,7 @@ fun MapScreen(
             onToggleBlocks = viewModel::toggleBlocksLayer,
             onStartPlacing = viewModel::startPlacingPin,
             onCancelPlacing = viewModel::cancelPlacingPin,
-            onConfirmPlacement = { point -> onCreateIssueAt(point.latitude, point.longitude) },
+            onConfirmPlacement = { point -> onCreateIssueAt(point.lat, point.lng) },
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -249,14 +158,9 @@ fun MapScreen(
     }
 
     state.selectedBlock?.let { summary ->
+        // Framing the neighbourhood is driven by focusBounds above, so the
+        // numbers in this sheet and the area on the map always agree.
         val sheetState = rememberModalBottomSheetState()
-        LaunchedEffect(summary.block.id) {
-            // Frame the neighbourhood while its sheet is open, so the numbers in
-            // the sheet and the area on the map refer to the same thing.
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngBounds(summary.block.bounds, 96),
-            )
-        }
         ModalBottomSheet(onDismissRequest = viewModel::dismissSheets, sheetState = sheetState) {
             Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
                 Text(
@@ -273,7 +177,7 @@ fun MapScreen(
                     .flatMap { it.issues }
                     .filter { issue ->
                         gr.agiosnektarios.village.core.geo.isPointInPolygon(
-                            LatLng(issue.lat, issue.lng),
+                            GeoPoint(issue.lat, issue.lng),
                             summary.block.polygon,
                         )
                     }
@@ -308,7 +212,7 @@ private fun MapOverlay(
     onToggleBlocks: () -> Unit,
     onStartPlacing: () -> Unit,
     onCancelPlacing: () -> Unit,
-    onConfirmPlacement: (LatLng) -> Unit,
+    onConfirmPlacement: (GeoPoint) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {

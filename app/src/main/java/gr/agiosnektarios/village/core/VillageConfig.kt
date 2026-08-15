@@ -1,7 +1,7 @@
 package gr.agiosnektarios.village.core
 
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
+import gr.agiosnektarios.village.core.geo.GeoBounds
+import gr.agiosnektarios.village.core.geo.GeoPoint
 
 /**
  * Where the village is, and how far the map lets you roam.
@@ -14,15 +14,17 @@ import com.google.android.gms.maps.model.LatLngBounds
  */
 object VillageConfig {
 
-    val CENTER = LatLng(37.8480, 23.9200)
+    val CENTER = GeoPoint(37.8480, 23.9200)
 
     /** Half-height / half-width of the camera bounds, in degrees. */
     private const val LAT_SPAN = 0.0125
     private const val LNG_SPAN = 0.0160
 
-    val BOUNDS: LatLngBounds = LatLngBounds(
-        LatLng(CENTER.latitude - LAT_SPAN, CENTER.longitude - LNG_SPAN),
-        LatLng(CENTER.latitude + LAT_SPAN, CENTER.longitude + LNG_SPAN),
+    val BOUNDS: GeoBounds = GeoBounds(
+        south = CENTER.lat - LAT_SPAN,
+        west = CENTER.lng - LNG_SPAN,
+        north = CENTER.lat + LAT_SPAN,
+        east = CENTER.lng + LNG_SPAN,
     )
 
     const val DEFAULT_ZOOM = 15.5f
@@ -35,11 +37,10 @@ object VillageConfig {
     /** A pin dropped outside this margin around [BOUNDS] is rejected on submit. */
     const val OUT_OF_BOUNDS_TOLERANCE_DEGREES = 0.004
 
-    fun isInsideVillage(point: LatLng): Boolean {
-        val t = OUT_OF_BOUNDS_TOLERANCE_DEGREES
-        return point.latitude >= BOUNDS.southwest.latitude - t &&
-            point.latitude <= BOUNDS.northeast.latitude + t &&
-            point.longitude >= BOUNDS.southwest.longitude - t &&
-            point.longitude <= BOUNDS.northeast.longitude + t
-    }
+    fun isInsideVillage(point: GeoPoint): Boolean =
+        point in BOUNDS.expanded(OUT_OF_BOUNDS_TOLERANCE_DEGREES)
+
+    /** Style URLs for the keyless OpenStreetMap tiles the map renders. */
+    const val MAP_STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
+    const val MAP_STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
 }

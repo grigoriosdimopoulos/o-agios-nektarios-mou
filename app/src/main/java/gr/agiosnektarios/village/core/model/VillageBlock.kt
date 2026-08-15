@@ -1,7 +1,7 @@
 package gr.agiosnektarios.village.core.model
 
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
+import gr.agiosnektarios.village.core.geo.GeoBounds
+import gr.agiosnektarios.village.core.geo.GeoPoint
 
 /**
  * A named neighbourhood ("block") of the village, drawn on the map as a polygon
@@ -14,21 +14,21 @@ data class VillageBlock(
     val id: String,
     val nameEl: String,
     val nameEn: String,
-    val polygon: List<LatLng>,
+    val polygon: List<GeoPoint>,
 ) {
-    val centroid: LatLng by lazy {
+    val centroid: GeoPoint by lazy {
         if (polygon.isEmpty()) {
-            LatLng(0.0, 0.0)
+            GeoPoint(0.0, 0.0)
         } else {
-            LatLng(
-                polygon.sumOf { it.latitude } / polygon.size,
-                polygon.sumOf { it.longitude } / polygon.size,
+            GeoPoint(
+                polygon.sumOf { it.lat } / polygon.size,
+                polygon.sumOf { it.lng } / polygon.size,
             )
         }
     }
 
-    val bounds: LatLngBounds by lazy {
-        LatLngBounds.builder().apply { polygon.forEach { include(it) } }.build()
+    val bounds: GeoBounds by lazy {
+        GeoBounds.around(polygon) ?: GeoBounds(0.0, 0.0, 0.0, 0.0)
     }
 
     fun localizedName(isGreek: Boolean): String = if (isGreek) nameEl else nameEn

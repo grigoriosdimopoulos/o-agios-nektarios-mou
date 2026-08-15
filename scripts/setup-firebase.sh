@@ -138,11 +138,10 @@ fi
 
 bold "Cloud Functions"
 
-warn "not deployed by this script — they require the Blaze billing plan."
-info "Without them the app still runs: you can sign up, browse the map, file"
-info "reports and comment. What stops working is anything server-owned —"
-info "vote and comment counters stay at zero, push notifications never arrive,"
-info "and the admin actions fail. Deploy them when you are ready with:"
+warn "not deployed — they are optional and require the Blaze billing plan."
+info "The app is built to run without them: counters, chat badges and the"
+info "whole admin screen are client transactions that the rules police."
+info "Functions add push notifications and nothing else. To add them later:"
 info ""
 info "    cd firebase && npm --prefix functions install && firebase deploy --only functions"
 
@@ -161,7 +160,7 @@ fi
 # ------------------------------------------------------------------- manual
 
 echo
-bold "Three things left, all in the browser"
+bold "Two things left, both in the browser"
 cat <<EOF
 
   1. Turn on sign-in providers
@@ -173,15 +172,6 @@ cat <<EOF
      https://console.firebase.google.com/project/$PROJECT_ID/settings/general
      Under "Your apps" → $DEBUG_PACKAGE → "Add fingerprint".
      Skip this if you only care about email/password sign-in for now.
-
-  3. Create a Google Maps key
-     https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com?project=$PROJECT_ID
-     Enable "Maps SDK for Android", then create an API key under Credentials
-     and put it in local.properties:
-
-         echo "MAPS_API_KEY=AIza..." >> local.properties
-
-     Without it the app runs but the map renders grey.
 
   Then build:
 

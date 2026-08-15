@@ -71,7 +71,7 @@ before sending.
 | State | ViewModel + `StateFlow`, unidirectional data flow |
 | DI | Hilt |
 | Backend | Firebase Auth + Firestore (free Spark plan; no server required) |
-| Maps | Google Maps Compose |
+| Maps | MapLibre + OpenStreetMap tiles (no key, no account) |
 | Local prefs | DataStore |
 
 ```
@@ -100,6 +100,13 @@ casting a real vote, because rules cannot see another document's pending write
 inside a transaction. They cannot jump a report to a thousand upvotes, and they
 cannot touch anyone else's content. For a village of neighbours that is the
 right trade; for a public app it would not be.
+
+**The map needs no API key.** Google Maps requires a billing account on the
+Cloud project even though Android map loads are free, which would have forced a
+card on file for a village app. It renders with MapLibre against keyless
+OpenStreetMap vector tiles instead. Pins are bitmaps in a symbol layer rather
+than per-marker composables — that is the one thing the swap cost — and OSM
+attribution stays visible on the map, as its licence requires.
 
 **Enums are stored as stable string ids, not as enums.** A document written by a
 newer build never fails to deserialise on an older one; an unknown category

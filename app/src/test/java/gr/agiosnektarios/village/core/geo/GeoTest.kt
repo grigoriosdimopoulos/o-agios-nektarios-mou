@@ -1,6 +1,5 @@
 package gr.agiosnektarios.village.core.geo
 
-import com.google.android.gms.maps.model.LatLng
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -31,42 +30,42 @@ class GeoTest {
 
     @Test
     fun `distance between identical points is zero`() {
-        val point = LatLng(37.848, 23.920)
+        val point = GeoPoint(37.848, 23.920)
         assertEquals(0.0, distanceMeters(point, point), 0.001)
     }
 
     @Test
     fun `distance matches a known separation`() {
         // One degree of latitude is ~111 km anywhere on the globe.
-        val distance = distanceMeters(LatLng(37.0, 23.0), LatLng(38.0, 23.0))
+        val distance = distanceMeters(GeoPoint(37.0, 23.0), GeoPoint(38.0, 23.0))
         assertEquals(111_195.0, distance, 500.0)
     }
 
     @Test
     fun `distance is symmetric`() {
-        val a = LatLng(37.8480, 23.9200)
-        val b = LatLng(37.8510, 23.9260)
+        val a = GeoPoint(37.8480, 23.9200)
+        val b = GeoPoint(37.8510, 23.9260)
         assertEquals(distanceMeters(a, b), distanceMeters(b, a), 0.0001)
     }
 
     @Test
     fun `point inside a square polygon is detected`() {
         val square = listOf(
-            LatLng(37.840, 23.910),
-            LatLng(37.840, 23.930),
-            LatLng(37.860, 23.930),
-            LatLng(37.860, 23.910),
+            GeoPoint(37.840, 23.910),
+            GeoPoint(37.840, 23.930),
+            GeoPoint(37.860, 23.930),
+            GeoPoint(37.860, 23.910),
         )
-        assertTrue(isPointInPolygon(LatLng(37.850, 23.920), square))
-        assertFalse(isPointInPolygon(LatLng(37.870, 23.920), square))
-        assertFalse(isPointInPolygon(LatLng(37.850, 23.940), square))
+        assertTrue(isPointInPolygon(GeoPoint(37.850, 23.920), square))
+        assertFalse(isPointInPolygon(GeoPoint(37.870, 23.920), square))
+        assertFalse(isPointInPolygon(GeoPoint(37.850, 23.940), square))
     }
 
     @Test
     fun `degenerate polygons contain nothing`() {
-        val line = listOf(LatLng(37.84, 23.91), LatLng(37.86, 23.93))
-        assertFalse(isPointInPolygon(LatLng(37.85, 23.92), line))
-        assertFalse(isPointInPolygon(LatLng(37.85, 23.92), emptyList()))
+        val line = listOf(GeoPoint(37.84, 23.91), GeoPoint(37.86, 23.93))
+        assertFalse(isPointInPolygon(GeoPoint(37.85, 23.92), line))
+        assertFalse(isPointInPolygon(GeoPoint(37.85, 23.92), emptyList()))
     }
 
     @Test
@@ -80,9 +79,9 @@ class GeoTest {
 
     @Test
     fun `rough containment agrees with exact distance for clear cases`() {
-        val center = LatLng(37.8480, 23.9200)
-        val near = LatLng(37.8481, 23.9201)
-        val far = LatLng(37.8600, 23.9400)
+        val center = GeoPoint(37.8480, 23.9200)
+        val near = GeoPoint(37.8481, 23.9201)
+        val far = GeoPoint(37.8600, 23.9400)
 
         assertTrue(isRoughlyWithin(center, near, meters = 50.0))
         assertFalse(isRoughlyWithin(center, far, meters = 50.0))

@@ -91,20 +91,14 @@ it requires the Blaze plan, and the app runs fine without it.
 
 ---
 
-## 2. Google Maps key
+## 2. Maps — nothing to do
 
-In the [Google Cloud console](https://console.cloud.google.com/apis/credentials)
-for the *same* project, enable **Maps SDK for Android** and create an API key.
-Restrict it to Android apps, with the package name and SHA-1 above.
+The map uses MapLibre with OpenStreetMap tiles. No API key, no Google Cloud
+project, no billing account. It works the moment the app starts.
 
-```bash
-echo "MAPS_API_KEY=AIza..." >> local.properties
-```
-
-`local.properties` is git-ignored. CI can supply the key as a `MAPS_API_KEY`
-environment variable or Gradle property instead. An empty key still builds — the
-map simply renders blank, which is a useful way to tell "no key" apart from "no
-data".
+Tiles come from OpenFreeMap's public endpoint; the style URLs are
+`MAP_STYLE_LIGHT` / `MAP_STYLE_DARK` in `VillageConfig.kt` if you ever want to
+point at your own tile server.
 
 ---
 
@@ -212,9 +206,8 @@ Firestore, `9099` on Auth, `9199` on Storage, `5001` on Functions — guarded by
 or a Firebase project without the Google provider enabled. Check that
 `default_web_client_id` exists in the merged resources after a build.
 
-**The map is grey.** No Maps API key, or the key is not authorised for
-Maps SDK for Android, or its restriction does not match the package name and
-SHA-1 of the build you are running.
+**The map is blank.** The tile endpoint is unreachable — check the device has
+a connection. There is no key to get wrong.
 
 **Notifications never arrive.** Check in order: the POST_NOTIFICATIONS runtime
 permission (Android 13+), the category switch in Settings — the server checks it

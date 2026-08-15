@@ -8,7 +8,7 @@ requires a terminal.
 | --- | --- |
 | Create the Firebase project | Build and sign the APK |
 | Register the two Android apps | Deploy the security rules and indexes |
-| Turn on Email/Password sign-in | Deploy the Cloud Functions (optional) |
+| Turn on Email/Password sign-in | (Optional) deploy push notifications |
 | Create the Firestore database | |
 | Download `google-services.json` and send it | |
 
@@ -99,16 +99,12 @@ settings. Only do this for a project that holds nothing you care about, and
 revoke it when setup is done: *Service accounts* → the key → delete. Option A
 shares nothing.
 
-## 7. Maps key (optional)
+## 7. Maps — nothing to do
 
-Without it the app works but the map is a grey rectangle.
+The map uses OpenStreetMap through MapLibre: no API key, no Google Cloud
+console, no billing account. It just works.
 
-<https://console.cloud.google.com> → same project → *APIs & Services* →
-*Library* → search **Maps SDK for Android** → *Enable*. Then *Credentials* →
-*Create credentials* → *API key*. Send the key (`AIza…`) in the chat.
-
-Restrict it afterwards to Android apps, with package name
-`gr.agiosnektarios.village.debug` and the SHA-1 above.
+---
 
 ## 8. Install the APK
 
@@ -194,8 +190,6 @@ These are the exact settings. Do not substitute your own:
 - I need to download google-services.json, but ONLY after BOTH apps are
   registered — the copy offered right after the first app has only one app in
   it and breaks the build. Tell me the exact path to download the complete one.
-- I also need a Google Maps API key with "Maps SDK for Android" enabled, in the
-  same project, from the Google Cloud console.
 
 Do NOT tell me to:
 - install the Firebase CLI, npm, Node, or run any terminal command
@@ -210,9 +204,9 @@ If I paste an error message, explain what it means in plain language and what to
 tap to fix it.
 ```
 
-**What to do with the results.** Two things come back to the person building the
-app: the `google-services.json` file, and the Maps API key string. Nothing else
-from the console is needed.
+**What to do with the results.** One thing comes back to the person building the
+app: the `google-services.json` file. Nothing else from the console is needed —
+the map needs no key.
 
 **One thing Gemini cannot help with**: deploying the Firestore security rules.
 Until they are published the app signs in and then fails every read and write.

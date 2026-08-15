@@ -14,10 +14,7 @@ navigation = "2.8.5"
 hiltNavigation = "1.2.0"
 datastore = "1.1.1"
 firebaseBom = "33.7.0"
-playServicesMaps = "19.0.0"
-playServicesLocation = "21.3.0"
-mapsCompose = "6.5.3"
-mapsUtils = "3.10.0"
+maplibre = "11.13.5"
 credentials = "1.3.0"
 googleId = "1.1.1"
 coil = "2.7.0"
@@ -64,11 +61,7 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
 firebase-functions = { module = "com.google.firebase:firebase-functions-ktx" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics-ktx" }
 
-play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
-play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
-maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
-maps-compose-utils = { module = "com.google.maps.android:maps-compose-utils", version.ref = "mapsCompose" }
-maps-android-utils = { module = "com.google.maps.android:android-maps-utils", version.ref = "mapsUtils" }
+maplibre = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }

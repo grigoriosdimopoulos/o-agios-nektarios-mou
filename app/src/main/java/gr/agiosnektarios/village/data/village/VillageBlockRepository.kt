@@ -1,7 +1,7 @@
 package gr.agiosnektarios.village.data.village
 
 import android.content.Context
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
 import gr.agiosnektarios.village.core.di.IoDispatcher
 import gr.agiosnektarios.village.core.geo.isPointInPolygon
@@ -49,7 +49,7 @@ class VillageBlockRepository @Inject constructor(
                 val polygon = buildList {
                     for (j in 0 until polygonJson.length()) {
                         val point = polygonJson.getJSONObject(j)
-                        add(LatLng(point.getDouble("lat"), point.getDouble("lng")))
+                        add(GeoPoint(point.getDouble("lat"), point.getDouble("lng")))
                     }
                 }
                 add(
@@ -65,7 +65,7 @@ class VillageBlockRepository @Inject constructor(
     }
 
     /** The neighbourhood containing [point], or null if the pin fell outside all of them. */
-    suspend fun blockAt(point: LatLng): VillageBlock? =
+    suspend fun blockAt(point: GeoPoint): VillageBlock? =
         blocks().firstOrNull { isPointInPolygon(point, it.polygon) }
 
     /**
@@ -84,7 +84,7 @@ class VillageBlockRepository @Inject constructor(
         val categories = mutableMapOf<String, MutableMap<String, Int>>()
 
         for (issue in issues) {
-            val block = all.firstOrNull { isPointInPolygon(LatLng(issue.lat, issue.lng), it.polygon) }
+            val block = all.firstOrNull { isPointInPolygon(GeoPoint(issue.lat, issue.lng), it.polygon) }
                 ?: continue
             total[block.id] = (total[block.id] ?: 0) + 1
             if (issue.isOpen) {

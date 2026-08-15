@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.VillageConfig
@@ -28,7 +28,7 @@ data class IssueComposeUiState(
     val title: String = "",
     val description: String = "",
     val category: IssueCategory? = null,
-    val position: LatLng? = null,
+    val position: GeoPoint? = null,
     /** Both languages, since the view model has no business knowing the locale. */
     val blockNameEl: String = "",
     val blockNameEn: String = "",
@@ -68,7 +68,7 @@ class IssueComposeViewModel @Inject constructor(
             val lat = savedStateHandle.get<String>("lat")?.toDoubleOrNull()
             val lng = savedStateHandle.get<String>("lng")?.toDoubleOrNull()
             if (lat != null && lng != null && (lat != 0.0 || lng != 0.0)) {
-                setPosition(LatLng(lat, lng))
+                setPosition(GeoPoint(lat, lng))
             }
         }
     }
@@ -87,11 +87,11 @@ class IssueComposeViewModel @Inject constructor(
                     title = issue.title,
                     description = issue.description,
                     category = issue.category,
-                    position = LatLng(issue.lat, issue.lng),
+                    position = GeoPoint(issue.lat, issue.lng),
                     photoUrls = issue.photoUrls,
                 )
             }
-            refreshBlockName(LatLng(issue.lat, issue.lng))
+            refreshBlockName(GeoPoint(issue.lat, issue.lng))
         }
     }
 
@@ -105,13 +105,13 @@ class IssueComposeViewModel @Inject constructor(
         refreshSimilarNearby()
     }
 
-    fun setPosition(position: LatLng) {
+    fun setPosition(position: GeoPoint) {
         _uiState.update { it.copy(position = position, locationError = null) }
         refreshBlockName(position)
         refreshSimilarNearby()
     }
 
-    private fun refreshBlockName(position: LatLng) {
+    private fun refreshBlockName(position: GeoPoint) {
         viewModelScope.launch {
             val block = blockRepository.blockAt(position)
             _uiState.update {

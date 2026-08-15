@@ -1,6 +1,6 @@
 package gr.agiosnektarios.village.data.issue
 
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,7 +36,7 @@ data class IssueDraft(
     val title: String,
     val description: String,
     val category: IssueCategory,
-    val position: LatLng,
+    val position: GeoPoint,
     val blockId: String,
     val photoUrls: List<String>,
 )
@@ -87,12 +87,12 @@ class IssueRepository @Inject constructor(
      * (a ~1.2 km cell at precision 5) and applies the exact distance locally.
      */
     suspend fun findSimilarNearby(
-        center: LatLng,
+        center: GeoPoint,
         category: IssueCategory,
         radiusMeters: Double = IssueClustering.SAME_PROBLEM_METERS,
     ): Result<List<Issue>> = withContext(io) {
         runCatching {
-            val prefix = geohash(center.latitude, center.longitude, precision = 5)
+            val prefix = geohash(center.lat, center.lng, precision = 5)
             issues.whereEqualTo("categoryId", category.id)
                 .orderBy("geohash")
                 .startAt(prefix)
@@ -101,8 +101,8 @@ class IssueRepository @Inject constructor(
                 .get()
                 .await()
                 .toObjectsSafe<Issue>()
-                .filter { distanceMeters(center, LatLng(it.lat, it.lng)) <= radiusMeters }
-                .sortedBy { distanceMeters(center, LatLng(it.lat, it.lng)) }
+                .filter { distanceMeters(center, GeoPoint(it.lat, it.lng)) <= radiusMeters }
+                .sortedBy { distanceMeters(center, GeoPoint(it.lat, it.lng)) }
         }
     }
 
@@ -118,9 +118,9 @@ class IssueRepository @Inject constructor(
                         "description" to draft.description.trim(),
                         "categoryId" to draft.category.id,
                         "statusId" to IssueStatus.OPEN.id,
-                        "lat" to draft.position.latitude,
-                        "lng" to draft.position.longitude,
-                        "geohash" to geohash(draft.position.latitude, draft.position.longitude),
+                        "lat" to draft.position.lat,
+                        "lng" to draft.position.lng,
+                        "geohash" to geohash(draft.position.lat, draft.position.lng),
                         "blockId" to draft.blockId,
                         "photoUrls" to draft.photoUrls,
                         "authorId" to author.id,
@@ -148,9 +148,9 @@ class IssueRepository @Inject constructor(
                     "title" to draft.title.trim(),
                     "description" to draft.description.trim(),
                     "categoryId" to draft.category.id,
-                    "lat" to draft.position.latitude,
-                    "lng" to draft.position.longitude,
-                    "geohash" to geohash(draft.position.latitude, draft.position.longitude),
+                    "lat" to draft.position.lat,
+                    "lng" to draft.position.lng,
+                    "geohash" to geohash(draft.position.lat, draft.position.lng),
                     "blockId" to draft.blockId,
                     "photoUrls" to draft.photoUrls,
                     "updatedAt" to FieldValue.serverTimestamp(),

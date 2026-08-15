@@ -29,8 +29,6 @@ jobs:
 
       - name: Assemble debug
         run: ./gradlew assembleDebug --no-daemon
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
@@ -40,8 +38,6 @@ jobs:
       # have caught real bugs here.
       - name: Assemble release
         run: ./gradlew assembleRelease --no-daemon
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
       - uses: actions/upload-artifact@v4
         if: failure()

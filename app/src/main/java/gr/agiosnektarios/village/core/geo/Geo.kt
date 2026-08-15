@@ -1,6 +1,6 @@
 package gr.agiosnektarios.village.core.geo
 
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -12,11 +12,11 @@ private const val EARTH_RADIUS_METERS = 6_371_000.0
 private const val BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz"
 
 /** Great-circle distance in metres between two points. */
-fun distanceMeters(a: LatLng, b: LatLng): Double {
-    val dLat = Math.toRadians(b.latitude - a.latitude)
-    val dLng = Math.toRadians(b.longitude - a.longitude)
-    val lat1 = Math.toRadians(a.latitude)
-    val lat2 = Math.toRadians(b.latitude)
+fun distanceMeters(a: GeoPoint, b: GeoPoint): Double {
+    val dLat = Math.toRadians(b.lat - a.lat)
+    val dLng = Math.toRadians(b.lng - a.lng)
+    val lat1 = Math.toRadians(a.lat)
+    val lat2 = Math.toRadians(b.lat)
     val h = sin(dLat / 2).pow(2) + sin(dLng / 2).pow(2) * cos(lat1) * cos(lat2)
     return 2 * EARTH_RADIUS_METERS * atan2(sqrt(h), sqrt(1 - h))
 }
@@ -76,16 +76,16 @@ fun geohash(lat: Double, lng: Double, precision: Int = 8): String {
  * the precision of a hand-placed pin, and this keeps block assignment
  * dependency-free and testable on the JVM.
  */
-fun isPointInPolygon(point: LatLng, polygon: List<LatLng>): Boolean {
+fun isPointInPolygon(point: GeoPoint, polygon: List<GeoPoint>): Boolean {
     if (polygon.size < 3) return false
     var inside = false
     var j = polygon.lastIndex
     for (i in polygon.indices) {
         val pi = polygon[i]
         val pj = polygon[j]
-        val intersects = (pi.latitude > point.latitude) != (pj.latitude > point.latitude) &&
-            point.longitude < (pj.longitude - pi.longitude) *
-            (point.latitude - pi.latitude) / (pj.latitude - pi.latitude) + pi.longitude
+        val intersects = (pi.lat > point.lat) != (pj.lat > point.lat) &&
+            point.lng < (pj.lng - pi.lng) *
+            (point.lat - pi.lat) / (pj.lat - pi.lat) + pi.lng
         if (intersects) inside = !inside
         j = i
     }
@@ -101,6 +101,6 @@ fun metersToLngDegrees(meters: Double, atLatitude: Double): Double {
 }
 
 /** Cheap pre-filter before the exact [distanceMeters] check. */
-fun isRoughlyWithin(a: LatLng, b: LatLng, meters: Double): Boolean =
-    abs(a.latitude - b.latitude) <= metersToLatDegrees(meters) &&
-        abs(a.longitude - b.longitude) <= metersToLngDegrees(meters, a.latitude)
+fun isRoughlyWithin(a: GeoPoint, b: GeoPoint, meters: Double): Boolean =
+    abs(a.lat - b.lat) <= metersToLatDegrees(meters) &&
+        abs(a.lng - b.lng) <= metersToLngDegrees(meters, a.lat)

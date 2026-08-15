@@ -2,7 +2,7 @@ package gr.agiosnektarios.village.ui.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.maps.model.LatLng
+import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.geo.IssueCluster
 import gr.agiosnektarios.village.core.geo.IssueClustering
@@ -43,7 +43,7 @@ data class MapUiState(
     val showBlocks: Boolean = true,
     val loading: Boolean = true,
     val placingPin: Boolean = false,
-    val pendingPin: LatLng? = null,
+    val pendingPin: GeoPoint? = null,
     val selectedCluster: IssueCluster? = null,
     val selectedBlock: BlockSummary? = null,
     val errorMessage: String? = null,
@@ -147,7 +147,7 @@ class MapViewModel @Inject constructor(
 
     fun cancelPlacingPin() = interaction.update { it.copy(placingPin = false, pendingPin = null) }
 
-    fun onMapTapped(point: LatLng) {
+    fun onMapTapped(point: GeoPoint) {
         if (!interaction.value.placingPin) return
         interaction.update { it.copy(pendingPin = point) }
     }
@@ -163,7 +163,7 @@ class MapViewModel @Inject constructor(
 
     private data class MapInteraction(
         val placingPin: Boolean = false,
-        val pendingPin: LatLng? = null,
+        val pendingPin: GeoPoint? = null,
         val selectedClusterId: String? = null,
         val selectedBlockId: String? = null,
     )
