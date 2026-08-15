@@ -80,7 +80,6 @@ class ImageCodec @Inject constructor(
         runCatching {
             var bitmap = decodeDownsampled(uri, spec.maxEdge)
             try {
-                var edge = spec.maxEdge
                 // Quality first — it costs detail but keeps the picture's size.
                 // Only when the cheapest quality still will not fit does the
                 // image get physically smaller, which is the more visible loss.
@@ -89,11 +88,15 @@ class ImageCodec @Inject constructor(
                         val encoded = bitmap.toJpeg(quality)
                         if (encoded.size <= spec.maxBytes) return@runCatching encoded
                     }
-                    edge /= 2
-                    check(edge >= MIN_EDGE) {
+                    // Halve what the bitmap actually is, not what it was asked
+                    // to be: an image already smaller than the target would
+                    // otherwise be "shrunk" to the same size and re-encoded
+                    // unchanged until the floor was reached.
+                    val longest = maxOf(bitmap.width, bitmap.height)
+                    check(longest > MIN_EDGE) {
                         "cannot fit this image under ${spec.maxBytes} bytes"
                     }
-                    bitmap = bitmap.scaledToFit(edge)
+                    bitmap = bitmap.scaledToFit(maxOf(MIN_EDGE, longest / 2))
                 }
                 @Suppress("UNREACHABLE_CODE")
                 error("unreachable")
@@ -111,17 +114,26 @@ class ImageCodec @Inject constructor(
      * device out of memory.
      */
     private fun decodeDownsampled(uri: Uri, maxEdge: Int): Bitmap {
+        // A measuring pass. `inJustDecodeBounds` makes decodeStream return null
+        // *by contract* — it fills outWidth/outHeight and produces no bitmap —
+        // so its result says nothing about success and must not be null-checked.
+        // Whether the picture could be opened is what `openInputStream` answers,
+        // and whether it could be understood is what the dimensions answer.
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        context.contentResolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, bounds)
-        } ?: error("Cannot open image")
+        val measured = context.contentResolver.openInputStream(uri)
+            ?: error("Cannot open image")
+        measured.use { BitmapFactory.decodeStream(it, null, bounds) }
+        check(bounds.outWidth > 0 && bounds.outHeight > 0) {
+            "That file is not an image this phone can read"
+        }
 
         val options = BitmapFactory.Options().apply {
             inSampleSize = sampleSizeFor(bounds.outWidth, bounds.outHeight, maxEdge)
         }
-        val decoded = context.contentResolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, options)
-        } ?: error("Cannot decode image")
+        val source = context.contentResolver.openInputStream(uri)
+            ?: error("Cannot open image")
+        val decoded = source.use { BitmapFactory.decodeStream(it, null, options) }
+            ?: error("Cannot decode image")
 
         return decoded.rotatedByExif(uri).scaledToFit(maxEdge)
     }
