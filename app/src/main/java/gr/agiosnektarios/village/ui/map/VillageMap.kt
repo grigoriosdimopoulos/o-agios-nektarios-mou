@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import gr.agiosnektarios.village.core.MapBasemap
+import gr.agiosnektarios.village.core.MapStyles
 import gr.agiosnektarios.village.core.VillageConfig
 import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.core.geo.GeoPoint
@@ -66,6 +68,7 @@ fun VillageMap(
     showBlocks: Boolean,
     pendingPin: GeoPoint?,
     darkTheme: Boolean,
+    basemap: MapBasemap,
     greekLabels: Boolean,
     onMapTap: (GeoPoint) -> Unit,
     onClusterTap: (String) -> Unit,
@@ -157,7 +160,7 @@ fun VillageMap(
                     true
                 }
 
-                state.applyStyle(mapView, darkTheme)
+                state.applyStyle(mapView, darkTheme, basemap)
             }
             mapView
         },
@@ -166,8 +169,8 @@ fun VillageMap(
             // different tile style, which throws away every source and layer
             // with it — so the style is re-applied, not merely recorded, and
             // the render below runs against whatever it rebuilds.
-            if (state.styleDark != darkTheme) {
-                state.applyStyle(view, darkTheme)
+            if (state.styleDark != darkTheme || state.styleBasemap != basemap) {
+                state.applyStyle(view, darkTheme, basemap)
             }
             state.render(
                 clusters = clusters,
@@ -195,6 +198,9 @@ private class VillageMapState {
     var styleDark: Boolean? = null
         private set
 
+    var styleBasemap: MapBasemap? = null
+        private set
+
     private var style: Style? = null
     private var pending: (() -> Unit)? = null
     private val registeredBadges = mutableSetOf<String>()
@@ -202,17 +208,26 @@ private class VillageMapState {
     /** Captured when the style loads; badge bitmaps are sized in device pixels. */
     private var metrics: android.util.DisplayMetrics? = null
 
-    fun applyStyle(mapView: MapView, dark: Boolean) {
+    fun applyStyle(mapView: MapView, dark: Boolean, basemap: MapBasemap) {
         val map = map ?: return
         styleDark = dark
+        styleBasemap = basemap
         // The outgoing style's sources, layers and images die with it, so
         // nothing may be added to it while the replacement loads. Dropping the
         // reference makes render() queue its work instead of writing into a
         // style that is on its way out.
         style = null
-        val url = if (dark) VillageConfig.MAP_STYLE_DARK else VillageConfig.MAP_STYLE_LIGHT
         metrics = mapView.resources.displayMetrics
-        map.setStyle(Style.Builder().fromUri(url)) { loaded ->
+
+        val builder = when (basemap) {
+            // The satellite and terrain styles are raster documents this app
+            // writes, because neither provider offers a style URL to fetch.
+            MapBasemap.SATELLITE -> Style.Builder().fromJson(MapStyles.SATELLITE)
+            MapBasemap.TERRAIN -> Style.Builder().fromJson(MapStyles.TERRAIN)
+            MapBasemap.STREETS -> Style.Builder().fromUri(MapStyles.streets(dark))
+        }
+
+        map.setStyle(builder) { loaded ->
             style = loaded
             registeredBadges.clear()
 
@@ -223,12 +238,16 @@ private class VillageMapState {
             loaded.addSource(GeoJsonSource(SOURCE_BLOCKS))
             loaded.addSource(GeoJsonSource(SOURCE_PINS))
 
-            loaded.addLayer(
-                FillLayer(LAYER_BLOCK_FILL, SOURCE_BLOCKS).withProperties(
-                    PropertyFactory.fillColor(Expression.get("fill")),
-                    PropertyFactory.fillOpacity(Expression.get("opacity")),
-                ),
+            // Neighbourhood shading goes *under* the street network rather than
+            // over it. Painted on top it washed the roads out — which is the
+            // one thing a village map has to show — so it is inserted beneath
+            // the first road or label layer the basemap defines.
+            val blockFill = FillLayer(LAYER_BLOCK_FILL, SOURCE_BLOCKS).withProperties(
+                PropertyFactory.fillColor(Expression.get("fill")),
+                PropertyFactory.fillOpacity(Expression.get("opacity")),
             )
+            val anchor = loaded.firstRoadOrLabelLayerId()
+            if (anchor != null) loaded.addLayerBelow(blockFill, anchor) else loaded.addLayer(blockFill)
             loaded.addLayer(
                 LineLayer(LAYER_BLOCK_LINE, SOURCE_BLOCKS).withProperties(
                     PropertyFactory.lineColor(Expression.get("fill")),
@@ -380,4 +399,18 @@ private class VillageMapState {
 
     private fun colorToHex(argb: Int): String =
         String.format("#%06X", 0xFFFFFF and argb)
+
+    /**
+     * The layer to slide the neighbourhood shading underneath.
+     *
+     * Style layer ids are the basemap author's, not ours, so this matches on
+     * convention rather than a known name: roads first, then any label layer,
+     * and null on a raster basemap that has neither — where shading on top is
+     * the only option and there are no road lines to hide anyway.
+     */
+    private fun Style.firstRoadOrLabelLayerId(): String? {
+        val ids = layers.map { it.id }
+        return ids.firstOrNull { it.startsWith("road") || it.contains("highway") }
+            ?: ids.firstOrNull { it.contains("label") }
+    }
 }

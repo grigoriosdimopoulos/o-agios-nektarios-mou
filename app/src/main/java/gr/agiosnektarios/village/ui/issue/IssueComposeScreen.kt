@@ -48,7 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
-import androidx.compose.foundation.isSystemInDarkTheme
+import gr.agiosnektarios.village.core.MapBasemap
+import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.ui.map.VillageMap
 import gr.agiosnektarios.village.core.model.IssueCategory
@@ -209,7 +210,8 @@ fun IssueComposeScreen(
                         blocks = emptyList(),
                         showBlocks = false,
                         pendingPin = state.position,
-                        darkTheme = isSystemInDarkTheme(),
+                        darkTheme = LocalIsDarkTheme.current,
+                        basemap = MapBasemap.STREETS,
                         greekLabels = greek,
                         focusBounds = state.position?.let {
                             GeoBounds(it.lat, it.lng, it.lat, it.lng)

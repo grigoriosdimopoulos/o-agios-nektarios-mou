@@ -236,4 +236,8 @@
     <string name="admin_unlock_confirm">Ξεκλείδωμα</string>
     <string name="admin_unlock_rejected">Το συνθηματικό δεν έγινε δεκτό.</string>
     <string name="admin_unlock_done">Έχετε πλέον δικαιώματα διαχειριστή.</string>
+    <string name="map_basemap">Τύπος χάρτη</string>
+    <string name="map_basemap_streets">Οδικός</string>
+    <string name="map_basemap_satellite">Δορυφόρος</string>
+    <string name="map_basemap_terrain">Ανάγλυφο</string>
 </resources>

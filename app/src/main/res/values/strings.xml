@@ -259,4 +259,8 @@
     <string name="admin_unlock_confirm">Unlock</string>
     <string name="admin_unlock_rejected">That passphrase was not accepted.</string>
     <string name="admin_unlock_done">You now have administrator rights.</string>
+    <string name="map_basemap">Map style</string>
+    <string name="map_basemap_streets">Streets</string>
+    <string name="map_basemap_satellite">Satellite</string>
+    <string name="map_basemap_terrain">Terrain</string>
 </resources>

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import gr.agiosnektarios.village.core.MapBasemap
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -55,6 +56,7 @@ data class AppSettings(
     val notifyAnnouncements: Boolean = true,
     val notifyChat: Boolean = true,
     val showBlocksLayer: Boolean = true,
+    val basemap: MapBasemap = MapBasemap.STREETS,
     val hasSeenOnboarding: Boolean = false,
 )
 
@@ -71,6 +73,7 @@ class SettingsRepository @Inject constructor(
         val NOTIFY_ANNOUNCEMENTS = booleanPreferencesKey("notify_announcements")
         val NOTIFY_CHAT = booleanPreferencesKey("notify_chat")
         val BLOCKS_LAYER = booleanPreferencesKey("blocks_layer")
+        val BASEMAP = stringPreferencesKey("basemap")
         val ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
     }
 
@@ -87,6 +90,7 @@ class SettingsRepository @Inject constructor(
                 notifyAnnouncements = prefs[Keys.NOTIFY_ANNOUNCEMENTS] ?: true,
                 notifyChat = prefs[Keys.NOTIFY_CHAT] ?: true,
                 showBlocksLayer = prefs[Keys.BLOCKS_LAYER] ?: true,
+                basemap = MapBasemap.fromId(prefs[Keys.BASEMAP]),
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
             )
         }
@@ -96,6 +100,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setLanguage(language: AppLanguage) = edit { it[Keys.LANGUAGE] = language.id }
 
     suspend fun setShowBlocksLayer(show: Boolean) = edit { it[Keys.BLOCKS_LAYER] = show }
+
+    suspend fun setBasemap(basemap: MapBasemap) = edit { it[Keys.BASEMAP] = basemap.id }
 
     suspend fun setOnboardingSeen() = edit { it[Keys.ONBOARDING] = true }
 

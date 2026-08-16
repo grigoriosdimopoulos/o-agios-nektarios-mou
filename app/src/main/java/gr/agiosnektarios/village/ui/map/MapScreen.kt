@@ -8,7 +8,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +27,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Satellite
+import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -57,7 +61,9 @@ import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.components.StatusChip
+import gr.agiosnektarios.village.core.MapBasemap
 import gr.agiosnektarios.village.ui.components.isGreekLocale
+import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 
 /**
  * The village map: reports as pins, neighbourhoods as tinted polygons with
@@ -71,7 +77,7 @@ fun MapScreen(
     viewModel: MapViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val darkTheme = isSystemInDarkTheme()
+    val darkTheme = LocalIsDarkTheme.current
     val greek = isGreekLocale()
     var showFilters by remember { mutableStateOf(false) }
 
@@ -87,6 +93,7 @@ fun MapScreen(
             showBlocks = state.showBlocks,
             pendingPin = state.pendingPin,
             darkTheme = darkTheme,
+            basemap = state.basemap,
             greekLabels = greek,
             focusBounds = focusBounds,
             onZoomChanged = viewModel::onZoomChanged,
@@ -108,6 +115,7 @@ fun MapScreen(
             state = state,
             onToggleFilters = { showFilters = true },
             onToggleBlocks = viewModel::toggleBlocksLayer,
+            onSelectBasemap = viewModel::setBasemap,
             onStartPlacing = viewModel::startPlacingPin,
             onCancelPlacing = viewModel::cancelPlacingPin,
             onConfirmPlacement = { point -> onCreateIssueAt(point.lat, point.lng) },
@@ -210,6 +218,7 @@ private fun MapOverlay(
     state: MapUiState,
     onToggleFilters: () -> Unit,
     onToggleBlocks: () -> Unit,
+    onSelectBasemap: (MapBasemap) -> Unit,
     onStartPlacing: () -> Unit,
     onCancelPlacing: () -> Unit,
     onConfirmPlacement: (GeoPoint) -> Unit,
@@ -234,6 +243,7 @@ private fun MapOverlay(
                     },
                 )
             }
+            BasemapButton(current = state.basemap, onSelect = onSelectBasemap)
             FilledTonalIconButton(onClick = onToggleBlocks) {
                 Icon(
                     imageVector = Icons.Filled.Layers,
@@ -389,3 +399,64 @@ private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.cli
     indication = null,
     onClick = onClick,
 )
+
+/**
+ * Switches what the map draws underneath: streets, aerial imagery, or terrain.
+ *
+ * A menu rather than a cycle button, because three states behind one icon means
+ * tapping twice to see what the third one is.
+ */
+@Composable
+private fun BasemapButton(current: MapBasemap, onSelect: (MapBasemap) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        FilledTonalIconButton(onClick = { open = true }) {
+            Icon(
+                imageVector = when (current) {
+                    MapBasemap.STREETS -> Icons.Filled.Map
+                    MapBasemap.SATELLITE -> Icons.Filled.Satellite
+                    MapBasemap.TERRAIN -> Icons.Filled.Terrain
+                },
+                contentDescription = stringResource(R.string.map_basemap),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            MapBasemap.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(
+                                when (option) {
+                                    MapBasemap.STREETS -> R.string.map_basemap_streets
+                                    MapBasemap.SATELLITE -> R.string.map_basemap_satellite
+                                    MapBasemap.TERRAIN -> R.string.map_basemap_terrain
+                                },
+                            ),
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = when (option) {
+                                MapBasemap.STREETS -> Icons.Filled.Map
+                                MapBasemap.SATELLITE -> Icons.Filled.Satellite
+                                MapBasemap.TERRAIN -> Icons.Filled.Terrain
+                            },
+                            contentDescription = null,
+                            tint = if (option == current) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    },
+                    onClick = {
+                        open = false
+                        onSelect(option)
+                    },
+                )
+            }
+        }
+    }
+}

@@ -2,6 +2,7 @@ package gr.agiosnektarios.village.ui.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import gr.agiosnektarios.village.core.MapBasemap
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.geo.IssueCluster
@@ -40,6 +41,7 @@ data class MapUiState(
     val blocks: List<BlockSummary> = emptyList(),
     val filters: MapFilters = MapFilters(),
     val showBlocks: Boolean = true,
+    val basemap: MapBasemap = MapBasemap.STREETS,
     val loading: Boolean = true,
     val placingPin: Boolean = false,
     val pendingPin: GeoPoint? = null,
@@ -79,16 +81,17 @@ class MapViewModel @Inject constructor(
         filters,
         zoom,
         combine(interaction, settingsRepository.settings) { interaction, settings ->
-            interaction to settings.showBlocksLayer
+            interaction to settings
         },
-    ) { allIssues, blocks, activeFilters, currentZoom, (interactionState, showBlocks) ->
+    ) { allIssues, blocks, activeFilters, currentZoom, (interactionState, settings) ->
         val visible = allIssues.filter(activeFilters::matches)
         val clusters = IssueClustering.cluster(visible, currentZoom)
         MapUiState(
             clusters = clusters,
             blocks = blocks,
             filters = activeFilters,
-            showBlocks = showBlocks,
+            showBlocks = settings.showBlocksLayer,
+            basemap = settings.basemap,
             loading = false,
             placingPin = interactionState.placingPin,
             pendingPin = interactionState.pendingPin,
@@ -131,6 +134,10 @@ class MapViewModel @Inject constructor(
     }
 
     fun clearFilters() = filters.update { MapFilters() }
+
+    fun setBasemap(basemap: MapBasemap) {
+        viewModelScope.launch { settingsRepository.setBasemap(basemap) }
+    }
 
     fun toggleBlocksLayer() {
         viewModelScope.launch {
