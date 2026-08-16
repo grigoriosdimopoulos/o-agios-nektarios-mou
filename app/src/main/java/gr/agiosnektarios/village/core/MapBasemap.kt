@@ -72,9 +72,26 @@ object MapStyles {
 
     fun streets(dark: Boolean): String = if (dark) STREETS_DARK else STREETS_LIGHT
 
+    /**
+     * Where MapLibre fetches letterforms for any text it has to draw.
+     *
+     * A style with no `glyphs` cannot render a symbol layer's text at all — it
+     * fails silently, leaving the labels simply absent. That is not obvious
+     * from the outside, and it is why the village's street names were invisible
+     * on the satellite and terrain maps: the layer was there, the names were
+     * there, and there was no font to draw them with.
+     *
+     * OpenFreeMap serves these, and Noto Sans covers Greek.
+     */
+    const val GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf"
+
+    /** A fontstack the glyph endpoint above actually serves. */
+    const val LABEL_FONT = "Noto Sans Regular"
+
     private fun rasterStyle(tiles: String, attribution: String, maxZoom: Int): String = """
         {
           "version": 8,
+          "glyphs": "$GLYPHS",
           "sources": {
             "basemap": {
               "type": "raster",

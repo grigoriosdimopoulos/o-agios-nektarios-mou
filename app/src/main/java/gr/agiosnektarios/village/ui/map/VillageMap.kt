@@ -285,6 +285,7 @@ private class VillageMapState {
                     PropertyFactory.iconImage(Expression.get("badge")),
                     PropertyFactory.iconAllowOverlap(true),
                     PropertyFactory.textField(Expression.get("name")),
+                    PropertyFactory.textFont(arrayOf(MapStyles.LABEL_FONT)),
                     PropertyFactory.textSize(11f),
                     PropertyFactory.textOffset(arrayOf(0f, 1.4f)),
                     PropertyFactory.textColor(if (dark) "#E4E6E4" else "#17211E"),
@@ -304,7 +305,12 @@ private class VillageMapState {
                     // A dark casing under a light line is what makes a road
                     // legible over pale tarmac and dark vegetation alike.
                     PropertyFactory.lineColor(if (dark) "#0A0F14" else "#2A2F35"),
-                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 0.55f),
+                    // Drawn on every basemap. This is the same OpenStreetMap
+                    // geometry the street basemap renders from, so it lands on
+                    // top of its roads rather than beside them — no doubling,
+                    // and the network is guaranteed visible whichever map is
+                    // showing.
+                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.30f else 0.55f),
                     PropertyFactory.lineWidth(roadWidth(outer = true)),
                     PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                     PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
@@ -320,9 +326,7 @@ private class VillageMapState {
                             Expression.stop("track", if (dark) "#6E7A86" else "#D9C7A3"),
                         ),
                     ),
-                    // Left invisible on the street basemap, which draws its own
-                    // roads properly; this layer exists for the two that do not.
-                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 0.95f),
+                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.55f else 0.95f),
                     PropertyFactory.lineWidth(roadWidth(outer = false)),
                     PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                     PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
@@ -332,11 +336,21 @@ private class VillageMapState {
                 SymbolLayer(LAYER_ROAD_LABEL, SOURCE_ROADS).withProperties(
                     PropertyFactory.textField(Expression.get("name")),
                     PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE),
-                    PropertyFactory.textSize(11f),
-                    PropertyFactory.textColor(if (dark) "#E4E6E4" else "#17211E"),
-                    PropertyFactory.textHaloColor(if (dark) "#10151A" else "#FFFFFF"),
-                    PropertyFactory.textHaloWidth(1.6f),
-                    PropertyFactory.textOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 1.0f),
+                    // Named explicitly: the default fontstack is not one the
+                    // glyph endpoint serves, and a missing font renders nothing
+                    // rather than falling back to something.
+                    PropertyFactory.textFont(arrayOf(MapStyles.LABEL_FONT)),
+                    PropertyFactory.textSize(12f),
+                    PropertyFactory.textColor(if (dark) "#F2F4F2" else "#14201C"),
+                    PropertyFactory.textHaloColor(if (dark) "#0B1014" else "#FFFFFF"),
+                    PropertyFactory.textHaloWidth(1.8f),
+                    // Shown on every basemap, including the street one. The
+                    // whole reason these names are bundled is that no basemap
+                    // has them: OpenStreetMap names one way in this village, so
+                    // hiding this layer over the street map hid every street
+                    // name the app knows.
+                    PropertyFactory.textOpacity(1.0f),
+                    PropertyFactory.symbolSpacing(220f),
                 ),
             )
 
@@ -347,6 +361,7 @@ private class VillageMapState {
                     PropertyFactory.iconAllowOverlap(true),
                     PropertyFactory.iconIgnorePlacement(true),
                     PropertyFactory.textField(Expression.get("count")),
+                    PropertyFactory.textFont(arrayOf(MapStyles.LABEL_FONT)),
                     PropertyFactory.textSize(11f),
                     PropertyFactory.textOffset(arrayOf(0.9f, -0.9f)),
                     PropertyFactory.textColor("#FFFFFF"),
