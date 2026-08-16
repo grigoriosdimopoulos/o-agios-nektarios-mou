@@ -97,6 +97,22 @@ service cloud.firestore {
         && request.resource.data.get('disabled', false) == false
         && imageWithin('avatar', 30000);
 
+      /**
+       * Taking administrator rights by proving the passphrase.
+       *
+       * Narrow on purpose: only your own document, only the role field moving
+       * to ADMIN, and only while an accepted claim exists — which it can only
+       * do if the passphrase matched. `disabled` is untouchable here, so a
+       * suspended resident cannot let themselves back in.
+       */
+      function isSelfElevation() {
+        return isActiveResident()
+          && uid() == userId
+          && touchesOnly(['role', 'updatedAt'])
+          && request.resource.data.role == 'ADMIN'
+          && exists(/databases/$(database)/documents/adminClaims/$(uid()));
+      }
+
       // Residents edit their own contact details but never their own standing.
       // Administrators may edit anyone — including role and suspension — except
       // themselves, so the last admin cannot lock the village out by accident.
@@ -105,6 +121,7 @@ service cloud.firestore {
         && (
           (uid() == userId && !changed(['role', 'disabled', 'createdAt']))
           || (isAdmin() && uid() != userId && !changed(['createdAt']))
+          || isSelfElevation()
         );
 
       // Residents may close their own account; administrators may remove a
@@ -140,6 +157,46 @@ service cloud.firestore {
           && request.resource.data.get('bodyArg', '').size() <= 500
           && request.resource.data.get('deepLink', '').size() <= 300;
       }
+    }
+
+    // ------------------------------------------------- administrator elevation
+
+    /**
+     * The village's admin passphrase, at `config/admin` with field `secret`.
+     *
+     * No client may read it. Rules may: a `get()` inside a rule is evaluated on
+     * the server and is not itself subject to these rules, which is what makes
+     * a secret usable without ever shipping it to a phone.
+     *
+     * Set it from the Firebase console. Until it exists, every elevation
+     * attempt fails — which is the correct default for a village that has not
+     * chosen a passphrase.
+     */
+    match /config/{document} {
+      allow read, write: if false;
+    }
+
+    /**
+     * Proof that somebody typed the passphrase.
+     *
+     * The write succeeds only if what they typed matches the stored secret, so
+     * a wrong guess is rejected here and learns nothing: a wrong passphrase and
+     * an unconfigured village fail identically. Nobody may read this collection
+     * — including its own author — so the secret cannot be recovered from it.
+     *
+     * The app deletes the claim as soon as it has been used. Deletion is
+     * allowed so it does not need administrator rights to clean up after
+     * itself.
+     */
+    match /adminClaims/{userId} {
+      allow read: if false;
+      allow create: if isActiveResident()
+        && uid() == userId
+        && request.resource.data.secret is string
+        && request.resource.data.secret ==
+           get(/databases/$(database)/documents/config/admin).data.secret;
+      allow update: if false;
+      allow delete: if isSignedIn() && uid() == userId;
     }
 
     // ---------------------------------------------------------------- issues

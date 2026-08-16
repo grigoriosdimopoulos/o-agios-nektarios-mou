@@ -1,6 +1,7 @@
 package gr.agiosnektarios.village.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,13 +53,36 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val events by viewModel.events.collectAsStateWithLifecycle()
+    val adminUnlock by viewModel.adminUnlock.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val onVersionTap = rememberTapUnlock(onUnlocked = viewModel::openAdminUnlock)
+    val elevatedMessage = stringResource(R.string.admin_unlock_done)
 
     LaunchedEffect(events.errorMessage) {
         events.errorMessage?.let {
             showSnackbar(it)
             viewModel.consumeError()
         }
+    }
+
+    LaunchedEffect(adminUnlock.elevated) {
+        if (adminUnlock.elevated) {
+            // The Admin tab appears on its own: the bottom bar is driven by the
+            // profile document, which the elevation just rewrote.
+            showSnackbar(elevatedMessage)
+            viewModel.consumeElevation()
+        }
+    }
+
+    if (adminUnlock.visible) {
+        AdminUnlockDialog(
+            passphrase = adminUnlock.passphrase,
+            submitting = adminUnlock.submitting,
+            errorMessage = adminUnlock.errorRes?.let { stringResource(it) },
+            onPassphraseChange = viewModel::onAdminPassphrase,
+            onSubmit = viewModel::submitAdminUnlock,
+            onDismiss = viewModel::dismissAdminUnlock,
+        )
     }
 
     Scaffold(
@@ -177,11 +201,19 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SectionHeader(stringResource(R.string.settings_about))
+            // The hidden door. Nothing marks this row as tappable — see
+            // rememberTapUnlock for why that is the design and not an oversight.
             Text(
                 text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onVersionTap,
+                    )
+                    .padding(horizontal = 16.dp),
             )
         }
     }

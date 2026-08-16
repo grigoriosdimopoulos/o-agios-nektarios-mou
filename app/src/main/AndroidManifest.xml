@@ -28,6 +28,24 @@
         android:theme="@style/Theme.AgiosNektarios"
         tools:targetApi="34">
 
+        <!--
+          WorkManager's own start-up initializer is removed because the
+          Application provides a Configuration with Hilt's WorkerFactory. Left
+          in, it would initialise WorkManager first with the default factory,
+          and NotificationSyncWorker — which has injected dependencies — could
+          not be constructed.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

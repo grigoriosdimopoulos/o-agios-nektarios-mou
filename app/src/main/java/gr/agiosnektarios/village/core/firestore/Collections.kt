@@ -8,6 +8,8 @@ object Collections {
     const val VOTES = "votes"
     const val PHOTOS = "photos"
     const val NOTIFICATIONS = "notifications"
+    const val ADMIN_CLAIMS = "adminClaims"
+    const val CONFIG = "config"
     const val ANNOUNCEMENTS = "announcements"
     const val CHATS = "chats"
     const val MESSAGES = "messages"

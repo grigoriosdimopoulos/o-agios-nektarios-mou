@@ -152,6 +152,43 @@ The rules refuse to let an administrator edit *their own* `role` or `disabled`,
 so the village cannot be locked out by a mis-tap; undo it in the console the
 same way.
 
+### The passphrase, and the hidden way in
+
+There is a second route that needs no console at all: a passphrase that turns
+whoever types it into an administrator.
+
+**Setting it.** Firebase console → Firestore Database → Data → create a
+collection `config` with a document id `admin`, holding one string field
+`secret`. Until that document exists, every attempt fails — which is the right
+default for a village that has not chosen one.
+
+**Using it.** In the app: Settings → tap the version line at the bottom **seven
+times** → type the passphrase. Nothing marks that line as tappable; the
+hiddenness is the point, the same way Android hides developer options.
+
+**How it is checked.** Never in the app. The passphrase document is unreadable
+by every client, but a `get()` inside a security rule runs on the server and is
+not itself subject to the rules — so the app writes what was typed to
+`adminClaims/{uid}`, and the rule accepts that write only if it matches. The
+accepted document is then proof the passphrase was known, which is what lets
+the rule allow raising your own role. The app deletes it immediately afterwards
+so the passphrase does not sit in the database.
+
+**What you are choosing when you set one.** The passphrase *is* the
+administrator credential for the village:
+
+- Anyone who learns it can take administrator rights. Demoting them does not
+  help — they can do it again. **Revoking someone means changing the
+  passphrase**, not demoting them.
+- Nothing rate-limits guesses. Make it long — a phrase of several unrelated
+  words, not a word and a number.
+- It is stored in plain text in Firestore. No client can read it; anyone with
+  console access can.
+
+If you would rather not have this route at all, simply never create
+`config/admin`. The elevation path then refuses everyone, and the console
+remains the only way to make an administrator.
+
 ---
 
 ## How photos are stored

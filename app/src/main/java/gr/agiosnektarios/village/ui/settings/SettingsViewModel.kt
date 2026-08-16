@@ -1,9 +1,12 @@
 package gr.agiosnektarios.village.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.NotificationPrefs
+import gr.agiosnektarios.village.data.admin.AdminElevationRepository
 import gr.agiosnektarios.village.data.admin.AdminRepository
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.session.SessionRepository
@@ -28,6 +31,7 @@ class SettingsViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
     private val adminRepository: AdminRepository,
+    private val adminElevationRepository: AdminElevationRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
@@ -35,6 +39,44 @@ class SettingsViewModel @Inject constructor(
 
     private val _events = MutableStateFlow(SettingsEvents())
     val events: StateFlow<SettingsEvents> = _events.asStateFlow()
+
+    private val _adminUnlock = MutableStateFlow(AdminUnlockState())
+    val adminUnlock: StateFlow<AdminUnlockState> = _adminUnlock.asStateFlow()
+
+    fun openAdminUnlock() = _adminUnlock.update { AdminUnlockState(visible = true) }
+
+    fun dismissAdminUnlock() = _adminUnlock.update { AdminUnlockState() }
+
+    fun onAdminPassphrase(value: String) =
+        _adminUnlock.update { it.copy(passphrase = value, errorRes = null) }
+
+    /**
+     * Attempts elevation.
+     *
+     * The passphrase is checked by the security rules, never here — this cannot
+     * know whether it was right, only whether the server accepted it. That is
+     * the point: a check the client could perform is a check an attacker could
+     * skip.
+     */
+    fun submitAdminUnlock() {
+        val userId = sessionRepository.currentUserId ?: return
+        val passphrase = _adminUnlock.value.passphrase
+        if (passphrase.isBlank()) return
+
+        viewModelScope.launch {
+            _adminUnlock.update { it.copy(submitting = true, errorRes = null) }
+            val result = adminElevationRepository.elevate(userId, passphrase)
+            _adminUnlock.update {
+                if (result.isSuccess) {
+                    AdminUnlockState(elevated = true)
+                } else {
+                    it.copy(submitting = false, errorRes = R.string.admin_unlock_rejected)
+                }
+            }
+        }
+    }
+
+    fun consumeElevation() = _adminUnlock.update { AdminUnlockState() }
 
     /** Google accounts have no password to change, so the row is hidden. */
     val canChangePassword: Boolean get() = !authRepository.isGoogleOnlyAccount()
@@ -104,6 +146,15 @@ class SettingsViewModel @Inject constructor(
 }
 
 data class SettingsEvents(val errorMessage: String? = null)
+
+/** State of the hidden administrator unlock. */
+data class AdminUnlockState(
+    val visible: Boolean = false,
+    val passphrase: String = "",
+    val submitting: Boolean = false,
+    @StringRes val errorRes: Int? = null,
+    val elevated: Boolean = false,
+)
 
 data class ChangePasswordUiState(
     val currentPassword: String = "",

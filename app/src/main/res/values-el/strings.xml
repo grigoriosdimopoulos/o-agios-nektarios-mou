@@ -231,4 +231,9 @@
     <string name="chat_no_residents_match_hint">Δοκιμάστε μέρος του ονόματος ή του επωνύμου.</string>
     <string name="notif_new_comment">Κάποιος σχολίασε την αναφορά σας</string>
     <string name="notif_new_message">Ο/Η %1$s σας έστειλε μήνυμα</string>
+    <string name="admin_unlock_title">Διαχείριση χωριού</string>
+    <string name="admin_unlock_label">Συνθηματικό</string>
+    <string name="admin_unlock_confirm">Ξεκλείδωμα</string>
+    <string name="admin_unlock_rejected">Το συνθηματικό δεν έγινε δεκτό.</string>
+    <string name="admin_unlock_done">Έχετε πλέον δικαιώματα διαχειριστή.</string>
 </resources>

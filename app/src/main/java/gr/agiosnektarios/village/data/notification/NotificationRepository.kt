@@ -149,6 +149,26 @@ class NotificationRepository @Inject constructor(
         }
     }
 
+    /**
+     * One-shot read of what has not been announced yet.
+     *
+     * Deliberately unordered in the query: `seen == false` is a single
+     * equality, which Firestore indexes on its own, while adding an orderBy
+     * would need a hand-created composite index — and this app has none by
+     * design. A page this small is sorted here instead.
+     */
+    suspend fun unseen(userId: String, limit: Long = 30): Result<List<AppNotification>> =
+        withContext(io) {
+            runCatching {
+                inbox(userId)
+                    .whereEqualTo("seen", false)
+                    .limit(limit)
+                    .get().await()
+                    .toObjectsSafe<AppNotification>()
+                    .sortedBy { it.createdAt?.time ?: 0L }
+            }
+        }
+
     suspend fun markSeen(userId: String, notificationId: String): Result<Unit> =
         withContext(io) {
             runCatchingUnit { inbox(userId).document(notificationId).update("seen", true).await() }

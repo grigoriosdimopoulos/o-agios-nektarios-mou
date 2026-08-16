@@ -1,17 +1,5 @@
 package gr.agiosnektarios.village.notifications
 
-import android.Manifest
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import dagger.hilt.android.qualifiers.ApplicationContext
-import gr.agiosnektarios.village.MainActivity
-import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.di.ApplicationScope
 import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.data.notification.AppNotification
@@ -20,7 +8,6 @@ import gr.agiosnektarios.village.data.notification.NotificationType
 import gr.agiosnektarios.village.data.session.SessionRepository
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -37,20 +24,20 @@ import kotlinx.coroutines.launch
  * happens instead is that the acting client writes a document into the
  * recipient's inbox, and this listener turns it into a notification.
  *
- * **What that does not do.** Firebase Cloud Messaging can wake a stopped app.
- * A Firestore listener cannot: it lives in this process, so notices arrive
- * while the app is open or still resident in memory after being backgrounded,
- * and stop arriving once Android reclaims the process. They are not lost —
- * they are in the inbox and appear the moment the app is opened again — but a
- * phone with the app closed for a day will hear nothing until it is opened.
- * Real push remains available by deploying `firebase/functions` on Blaze;
- * [VillageMessagingService] already handles the delivery side of that.
+ * This half is the fast one and only runs while the process is alive: a
+ * Firestore listener cannot wake a stopped app the way Cloud Messaging can.
+ * [NotificationSyncWorker] covers the app being closed, on a fifteen-minute
+ * schedule. Between them, a notice is immediate while the app is open and at
+ * worst a quarter of an hour late when it is not.
+ *
+ * They share the `seen` flag rather than each keeping their own memory, so
+ * whichever announces a notice first stops the other repeating it.
  */
 @Singleton
 class NotificationDispatcher @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val sessionRepository: SessionRepository,
     private val notificationRepository: NotificationRepository,
+    private val presenter: NotificationPresenter,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     /**
@@ -92,10 +79,18 @@ class NotificationDispatcher @Inject constructor(
                     notices
                         .asReversed()
                         .filter { it.id.isNotBlank() && alreadyShown.add(it.id) }
+                        .filter { !it.seen }
                         .filter { it.actorId != profile.id }
                         .filter { it.allowedBy(profile.notificationPrefs) }
                         .filterNot { it.isForTheConversationOnScreen() }
-                        .forEach { show(it) }
+                        .forEach { notice ->
+                            presenter.show(notice)
+                            // Marks the account, not just this device: the
+                            // scheduled worker reads the same flag, so a notice
+                            // announced here is not announced again in fifteen
+                            // minutes' time.
+                            notificationRepository.markSeen(profile.id, notice.id)
+                        }
                     trimMemory()
                 }
         }
@@ -113,65 +108,7 @@ class NotificationDispatcher @Inject constructor(
         }
     }
 
-    private fun show(notice: AppNotification) {
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!granted) return
 
-        val tag = notice.collapseKey.ifBlank { notice.id }
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            if (notice.deepLink.isNotBlank()) {
-                action = Intent.ACTION_VIEW
-                data = Uri.parse(notice.deepLink)
-            }
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            tag.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val body = localizedBody(notice)
-        val notification = NotificationCompat.Builder(
-            context,
-            NotificationChannels.channelFor(notice.type),
-        )
-            .setSmallIcon(R.drawable.ic_notification)
-            .setColor(ContextCompat.getColor(context, R.color.notification_accent))
-            .setContentTitle(notice.title.ifBlank { context.getString(R.string.app_name) })
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        NotificationManagerCompat.from(context)
-            .notify(tag, tag.hashCode().absoluteValue, notification)
-    }
-
-    /**
-     * Resolves the sender's key against this device's own strings.
-     *
-     * The same explicit map [VillageMessagingService] uses, and for the same
-     * reason: the writer must not be able to name an arbitrary resource, and an
-     * unknown key degrades to the literal text rather than crashing. It also
-     * means a notice written by a Greek phone reads in English on an English
-     * one.
-     */
-    private fun localizedBody(notice: AppNotification): String = when (notice.bodyKey) {
-        "notif_upvotes" -> context.getString(R.string.notif_upvotes, notice.bodyArg)
-        "notif_status_resolved" -> context.getString(R.string.notif_status_resolved)
-        "notif_status_wont_do" -> context.getString(R.string.notif_status_wont_do)
-        "notif_status_changed" -> context.getString(R.string.notif_status_changed)
-        "notif_new_announcement" -> context.getString(R.string.notif_new_announcement)
-        "notif_new_comment" -> context.getString(R.string.notif_new_comment)
-        "notif_new_message" -> context.getString(R.string.notif_new_message, notice.bodyArg)
-        else -> notice.body
-    }
 
     private companion object {
         /** Enough to cover a long session without growing without bound. */

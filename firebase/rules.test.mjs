@@ -308,6 +308,65 @@ await check("outsider cannot send into the conversation",
       { ...notice, actorId: "banned" })));
 }
 
+// ---- hidden administrator elevation
+{
+  // The village passphrase, as an admin would set it in the console. No client
+  // may read this document; only a rule's get() can.
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), "config/admin"), { secret: "correct horse battery staple" });
+  });
+
+  const nikos = env.authenticatedContext("nikos").firestore();
+
+  await check("the passphrase document is unreadable by anyone",
+    assertFails(getDoc(doc(nikos, "config/admin"))));
+
+  await check("a wrong passphrase is rejected outright",
+    assertFails(setDoc(doc(nikos, "adminClaims/nikos"),
+      { secret: "hunter2", userId: "nikos", createdAt: serverTimestamp() })));
+
+  // The whole point: no claim, no elevation.
+  await check("without a claim, nobody can make themselves an admin",
+    assertFails(updateDoc(doc(nikos, "users/nikos"), { role: "ADMIN" })));
+
+  await check("the right passphrase is accepted",
+    assertSucceeds(setDoc(doc(nikos, "adminClaims/nikos"),
+      { secret: "correct horse battery staple", userId: "nikos", createdAt: serverTimestamp() })));
+
+  await check("a claim cannot be read back to recover the passphrase",
+    assertFails(getDoc(doc(nikos, "adminClaims/nikos"))));
+
+  await check("nobody can forge a claim in someone else's name",
+    assertFails(setDoc(doc(nikos, "adminClaims/maria"),
+      { secret: "correct horse battery staple", userId: "maria", createdAt: serverTimestamp() })));
+
+  await check("with a claim, elevation is allowed",
+    assertSucceeds(updateDoc(doc(nikos, "users/nikos"), { role: "ADMIN" })));
+
+  await check("but elevation cannot smuggle anything else through",
+    assertFails(updateDoc(doc(maria, "users/maria"), { role: "ADMIN", disabled: false, phone: "666" })));
+
+  // Writing a field the value it already holds is a no-op that affectedKeys
+  // correctly ignores, so this needs a resident who really is suspended and a
+  // claim already sitting there — the state left behind if the app died between
+  // proving the passphrase and deleting the claim.
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, "users/exiled"), { ...profileSeed("exiled"), disabled: true });
+    await setDoc(doc(db, "adminClaims/exiled"),
+      { secret: "correct horse battery staple", userId: "exiled" });
+  });
+  const exiled = env.authenticatedContext("exiled").firestore();
+
+  await check("a lingering claim cannot be used to un-suspend yourself",
+    assertFails(updateDoc(doc(exiled, "users/exiled"), { role: "ADMIN", disabled: false })));
+  await check("nor to re-admin yourself after being suspended",
+    assertFails(updateDoc(doc(exiled, "users/exiled"), { role: "ADMIN" })));
+
+  await check("the claim is deletable so the passphrase does not linger",
+    assertSucceeds(deleteDoc(doc(nikos, "adminClaims/nikos"))));
+}
+
 // ---- counters the client now owns, which the rules have to police
 async function seedIssue(id, authorId, fields = {}) {
   await env.withSecurityRulesDisabled(async (ctx) => {
