@@ -219,6 +219,48 @@ down until the encoded image fits, so a large photo is never rejected — only
 made smaller. The rules enforce them again server-side, because a client is not
 the right place for the only copy of a limit.
 
+## The street network, and why nothing is labelled
+
+`app/src/main/assets/village_roads.json` holds the village's roads, extracted
+from OpenStreetMap and drawn by the app itself on top of whichever basemap is
+showing. It exists because satellite and terrain imagery contain no road lines
+at all, and finding a pothole on an aerial photo without them is guesswork.
+
+**Only one way in the village has a name.** OpenStreetMap records 82 ways here
+and names exactly one — the Vilia–Porto Germeno road. The 33 residential
+streets, 6 living streets and 8 service roads inside the settlement are
+unnamed, and so is every one of them in Nominatim and in every public source
+checked. They are therefore drawn unlabelled. Inventing names for the streets
+of a real village of forty-six people would put words in its mouth, and the app
+would state them with the same confidence as facts.
+
+Two ways to change that, both real:
+
+1. **Add the names to OpenStreetMap.** Anyone can, from a phone, with an app
+   like StreetComplete or Vespucci. They then reach this file on the next
+   regeneration and every other map in the world as well.
+2. **Ask for a name layer residents can edit in the app** — the village knows
+   what it calls these roads even if no register does.
+
+Regenerate the asset after OpenStreetMap changes, with the query the extraction
+used:
+
+```
+[out:json][timeout:120];
+way["highway"](38.1555,23.2820,38.1720,23.3020);
+out geom;
+```
+
+Feed the result through the same filter: keep `secondary`/`tertiary`/
+`unclassified` as `main`, `residential`/`living_street`/`service` as `street`,
+`track` as `track`, drop everything with no geometry inside the camera bounds,
+and carry `name` across where OpenStreetMap has one.
+
+The data is © OpenStreetMap contributors under ODbL; the map already carries
+the attribution, which must stay.
+
+---
+
 ## 6. Adjusting the geography
 
 The app is set up for Άγιος Νεκτάριος Αττικής — the settlement in the Vilia

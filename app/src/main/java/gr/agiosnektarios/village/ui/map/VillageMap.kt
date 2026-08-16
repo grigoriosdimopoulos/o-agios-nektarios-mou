@@ -31,6 +31,7 @@ import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -45,6 +46,30 @@ private const val LAYER_BLOCK_FILL = "village-block-fill"
 private const val LAYER_BLOCK_LINE = "village-block-line"
 private const val LAYER_BLOCK_LABEL = "village-block-label"
 private const val LAYER_PINS = "village-pin-symbols"
+private const val ROADS_ASSET = "village_roads.json"
+private const val SOURCE_ROADS = "village-roads"
+private const val LAYER_ROAD_CASING = "village-road-casing"
+private const val LAYER_ROAD_LINE = "village-road-line"
+private const val LAYER_ROAD_LABEL = "village-road-label"
+
+/**
+ * The bundled road network, parsed once for the life of the process.
+ *
+ * Read from assets rather than fetched: it is the same fifty kilobytes every
+ * time, it must be there before the first frame, and the village's streets
+ * should not depend on having signal.
+ */
+private val roadsGeoJson: (android.content.Context) -> FeatureCollection = run {
+    var cached: FeatureCollection? = null
+    { context ->
+        cached ?: synchronized(ROADS_ASSET) {
+            cached ?: runCatching {
+                context.assets.open(ROADS_ASSET).bufferedReader().use { it.readText() }
+                    .let(FeatureCollection::fromJson)
+            }.getOrElse { FeatureCollection.fromFeatures(emptyList()) }.also { cached = it }
+        }
+    }
+}
 
 internal fun GeoPoint.toLatLng() = LatLng(lat, lng)
 internal fun LatLng.toGeoPoint() = GeoPoint(latitude, longitude)
@@ -267,6 +292,54 @@ private class VillageMapState {
                     PropertyFactory.textHaloWidth(1.4f),
                 ),
             )
+            // The village's own copy of the street network, drawn over whatever
+            // basemap is showing. On satellite and terrain there are no road
+            // lines at all underneath, and finding a pothole on aerial imagery
+            // without them is guesswork.
+            loaded.addSource(
+                GeoJsonSource(SOURCE_ROADS, roadsGeoJson(mapView.context)),
+            )
+            loaded.addLayer(
+                LineLayer(LAYER_ROAD_CASING, SOURCE_ROADS).withProperties(
+                    // A dark casing under a light line is what makes a road
+                    // legible over pale tarmac and dark vegetation alike.
+                    PropertyFactory.lineColor(if (dark) "#0A0F14" else "#2A2F35"),
+                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 0.55f),
+                    PropertyFactory.lineWidth(roadWidth(outer = true)),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                ),
+            )
+            loaded.addLayer(
+                LineLayer(LAYER_ROAD_LINE, SOURCE_ROADS).withProperties(
+                    PropertyFactory.lineColor(
+                        Expression.match(
+                            Expression.get("kind"),
+                            Expression.literal(if (dark) "#8FA3B8" else "#FFFFFF"),
+                            Expression.stop("main", if (dark) "#E8B54D" else "#F6C453"),
+                            Expression.stop("track", if (dark) "#6E7A86" else "#D9C7A3"),
+                        ),
+                    ),
+                    // Left invisible on the street basemap, which draws its own
+                    // roads properly; this layer exists for the two that do not.
+                    PropertyFactory.lineOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 0.95f),
+                    PropertyFactory.lineWidth(roadWidth(outer = false)),
+                    PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+                    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                ),
+            )
+            loaded.addLayer(
+                SymbolLayer(LAYER_ROAD_LABEL, SOURCE_ROADS).withProperties(
+                    PropertyFactory.textField(Expression.get("name")),
+                    PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE),
+                    PropertyFactory.textSize(11f),
+                    PropertyFactory.textColor(if (dark) "#E4E6E4" else "#17211E"),
+                    PropertyFactory.textHaloColor(if (dark) "#10151A" else "#FFFFFF"),
+                    PropertyFactory.textHaloWidth(1.6f),
+                    PropertyFactory.textOpacity(if (basemap == MapBasemap.STREETS) 0.0f else 1.0f),
+                ),
+            )
+
             // Pins last so they sit above the neighbourhood shading.
             loaded.addLayer(
                 SymbolLayer(LAYER_PINS, SOURCE_PINS).withProperties(
@@ -399,6 +472,20 @@ private class VillageMapState {
 
     private fun colorToHex(argb: Int): String =
         String.format("#%06X", 0xFFFFFF and argb)
+
+    /**
+     * Road width that grows with zoom, so the network reads at village scale
+     * without becoming a smear when you zoom out to the whole settlement.
+     */
+    private fun roadWidth(outer: Boolean): Expression {
+        val pad = if (outer) 2.2f else 0f
+        return Expression.interpolate(
+            Expression.linear(), Expression.zoom(),
+            Expression.stop(14f, Expression.literal(1.2f + pad)),
+            Expression.stop(17f, Expression.literal(3.4f + pad)),
+            Expression.stop(20f, Expression.literal(8f + pad)),
+        )
+    }
 
     /**
      * The layer to slide the neighbourhood shading underneath.
