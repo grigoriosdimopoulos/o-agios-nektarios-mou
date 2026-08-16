@@ -7,6 +7,7 @@ object Collections {
     const val COMMENTS = "comments"
     const val VOTES = "votes"
     const val PHOTOS = "photos"
+    const val NOTIFICATIONS = "notifications"
     const val ANNOUNCEMENTS = "announcements"
     const val CHATS = "chats"
     const val MESSAGES = "messages"

@@ -252,4 +252,6 @@
     <string name="chat_no_residents_yet_hint">You are the first here. As soon as another resident creates an account they will appear in this list.</string>
     <string name="chat_no_residents_match">Nobody by that name</string>
     <string name="chat_no_residents_match_hint">Try part of a first or last name.</string>
+    <string name="notif_new_comment">Someone commented on your report</string>
+    <string name="notif_new_message">%1$s sent you a message</string>
 </resources>

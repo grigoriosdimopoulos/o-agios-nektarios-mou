@@ -8,6 +8,9 @@ import gr.agiosnektarios.village.core.model.Chat
 import gr.agiosnektarios.village.core.model.ChatMessage
 import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.data.chat.ChatRepository
+import gr.agiosnektarios.village.data.notification.NotificationRepository
+import gr.agiosnektarios.village.data.notification.NotificationType
+import gr.agiosnektarios.village.ui.navigation.DeepLinks
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.user.UserRepository
 import gr.agiosnektarios.village.notifications.ActiveChatTracker
@@ -82,6 +85,7 @@ class ChatRoomViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository,
     private val sessionRepository: SessionRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val chatId: String = savedStateHandle.get<String>("chatId").orEmpty()
@@ -122,6 +126,21 @@ class ChatRoomViewModel @Inject constructor(
         local.update { it.copy(draft = "", sending = true) }
         viewModelScope.launch {
             val result = chatRepository.sendMessage(chatId, sender, text)
+            if (result.isSuccess) {
+                val chat = uiState.value.chat
+                notificationRepository.notify(
+                    recipientIds = chat?.memberIds.orEmpty(),
+                    actorId = sender.id,
+                    type = NotificationType.CHAT,
+                    title = chat?.displayTitle(sender.id).orEmpty()
+                        .ifBlank { sender.displayName },
+                    bodyKey = "notif_new_message",
+                    bodyArg = sender.displayName,
+                    deepLink = DeepLinks.chat(chatId),
+                    // One line per conversation, not per message.
+                    collapseKey = "CHAT:$chatId",
+                )
+            }
             local.update {
                 it.copy(
                     sending = false,

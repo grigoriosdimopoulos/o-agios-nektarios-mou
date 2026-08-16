@@ -74,7 +74,7 @@ fun IssueDetailScreen(
     onEdit: (String) -> Unit,
     onDeleted: () -> Unit,
     onOpenChatWith: (String) -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: IssueDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

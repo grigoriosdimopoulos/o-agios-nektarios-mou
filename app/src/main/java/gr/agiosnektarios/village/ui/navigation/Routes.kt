@@ -61,6 +61,19 @@ object Routes {
         "announcement-compose?announcementId=${announcementId.orEmpty()}"
 }
 
+/**
+ * The links carried by notifications.
+ *
+ * Kept beside [Routes] because a notice and the screen it opens have to agree,
+ * and they are written by one device and opened on another — a mismatch would
+ * show up as a notification that goes nowhere.
+ */
+object DeepLinks {
+    fun issue(issueId: String) = "$DEEP_LINK_SCHEME/issue/$issueId"
+    fun chat(chatId: String) = "$DEEP_LINK_SCHEME/chat/$chatId"
+    const val ANNOUNCEMENTS = "$DEEP_LINK_SCHEME/announcements"
+}
+
 /** The five tabs, in bar order. */
 enum class TopLevelDestination(
     val route: String,

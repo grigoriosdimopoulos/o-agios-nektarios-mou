@@ -48,7 +48,7 @@ import gr.agiosnektarios.village.ui.components.SecondaryButton
 fun AdminUserDetailScreen(
     onBack: () -> Unit,
     onOpenIssue: (String) -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: AdminUserViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

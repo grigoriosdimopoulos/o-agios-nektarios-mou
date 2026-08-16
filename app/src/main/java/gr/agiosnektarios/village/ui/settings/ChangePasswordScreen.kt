@@ -31,7 +31,7 @@ import gr.agiosnektarios.village.ui.components.VillagePasswordField
 @Composable
 fun ChangePasswordScreen(
     onBack: () -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: ChangePasswordViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

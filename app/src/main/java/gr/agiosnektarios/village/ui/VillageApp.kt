@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -33,6 +34,7 @@ import gr.agiosnektarios.village.ui.navigation.Routes
 import gr.agiosnektarios.village.ui.navigation.TopLevelDestination
 import gr.agiosnektarios.village.ui.navigation.VillageBottomBar
 import gr.agiosnektarios.village.ui.navigation.VillageNavHost
+import kotlinx.coroutines.launch
 
 /**
  * The root of the UI.
@@ -89,6 +91,7 @@ private fun SignedInApp(
 ) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
 
     NotificationPermissionRequest()
 
@@ -133,9 +136,17 @@ private fun SignedInApp(
                 startDestination = Routes.MAP,
                 signedIn = true,
                 profile = session.profile,
+                // Dispatched rather than awaited. SnackbarHostState.showSnackbar
+                // suspends until the snackbar goes away — several seconds — and
+                // every screen that announced a save and then navigated was
+                // waiting out that delay before leaving, which read as the
+                // window refusing to close. The host lives above the NavHost,
+                // so the message outlives the screen that raised it.
                 showSnackbar = { message ->
-                    snackbarHostState.currentSnackbarData?.dismiss()
-                    snackbarHostState.showSnackbar(message)
+                    snackbarScope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar(message)
+                    }
                 },
             )
         }

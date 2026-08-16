@@ -49,7 +49,7 @@ import gr.agiosnektarios.village.ui.components.VillageTextField
 @Composable
 fun AnnouncementComposeScreen(
     onBack: () -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: AnnouncementComposeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

@@ -44,7 +44,7 @@ import gr.agiosnektarios.village.ui.components.VillageTextField
 @Composable
 fun EditProfileScreen(
     onBack: () -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

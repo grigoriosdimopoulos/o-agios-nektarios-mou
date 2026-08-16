@@ -53,7 +53,7 @@ fun VillageNavHost(
     startDestination: String,
     signedIn: Boolean,
     profile: UserProfile?,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
 ) {
     NavHost(
         navController = navController,

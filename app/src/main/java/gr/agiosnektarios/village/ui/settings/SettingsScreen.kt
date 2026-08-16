@@ -47,7 +47,7 @@ import gr.agiosnektarios.village.data.settings.ThemeMode
 fun SettingsScreen(
     onBack: () -> Unit,
     onChangePassword: () -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()

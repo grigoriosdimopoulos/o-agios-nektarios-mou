@@ -111,6 +111,35 @@ service cloud.firestore {
       // resident. Neither can delete the underlying login — that needs the
       // Admin SDK — so the app deletes its own data and says so plainly.
       allow delete: if isSignedIn() && (uid() == userId || (isAdmin() && uid() != userId));
+
+      // ---------------------------------------------------- notification inbox
+
+      /**
+       * One resident's notices, written *by other residents*.
+       *
+       * Sending a real push needs a server credential, which needs the paid
+       * plan, so the acting client addresses the notice itself: comment on your
+       * report and my phone writes a document here, under your uid, and your
+       * phone turns it into a notification.
+       *
+       * That necessarily means any resident may write into anyone's inbox —
+       * there is no way to notify someone without writing something they can
+       * see. What is constrained is everything else: the notice must be
+       * honestly attributed, it cannot arrive pre-read, and it is capped so an
+       * inbox cannot be used to store bulk data at someone else's expense.
+       * Reading and clearing stay private to the owner.
+       */
+      match /notifications/{noticeId} {
+        allow read, update, delete: if isSignedIn() && uid() == userId;
+
+        allow create: if isActiveResident()
+          && request.resource.data.actorId == uid()
+          && request.resource.data.get('seen', false) == false
+          && request.resource.data.get('title', '').size() <= 200
+          && request.resource.data.get('body', '').size() <= 500
+          && request.resource.data.get('bodyArg', '').size() <= 500
+          && request.resource.data.get('deepLink', '').size() <= 300;
+      }
     }
 
     // ---------------------------------------------------------------- issues

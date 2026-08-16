@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.model.Comment
+import gr.agiosnektarios.village.data.notification.NotificationRepository
+import gr.agiosnektarios.village.data.notification.NotificationType
+import gr.agiosnektarios.village.ui.navigation.DeepLinks
 import gr.agiosnektarios.village.core.model.IssuePhoto
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueStatus
@@ -51,6 +54,7 @@ class IssueDetailViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val issueId: String = savedStateHandle.get<String>("issueId").orEmpty()
@@ -114,6 +118,9 @@ class IssueDetailViewModel @Inject constructor(
         local.update { it.copy(optimisticVote = value) }
         viewModelScope.launch {
             val result = issueRepository.castVote(issueId, viewer.id, value)
+            // Only support is worth telling someone about. A downvote arriving
+            // as a notification would make disagreeing feel like an attack.
+            if (result.isSuccess && value == 1) notifyAuthorOfVote(viewer)
             local.update {
                 it.copy(
                     // Clearing the optimistic value hands control back to the
@@ -133,6 +140,13 @@ class IssueDetailViewModel @Inject constructor(
         local.update { it.copy(sendingComment = true) }
         viewModelScope.launch {
             val result = issueRepository.addComment(issueId, viewer, text)
+            if (result.isSuccess) {
+                notifyAuthor(
+                    actor = viewer,
+                    type = NotificationType.COMMENT,
+                    bodyKey = "notif_new_comment",
+                )
+            }
             local.update {
                 it.copy(
                     sendingComment = false,
@@ -143,6 +157,46 @@ class IssueDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tells the report's author what just happened to their report.
+     *
+     * The repository is left alone: notifying is a product decision about who
+     * cares, not part of writing a comment, and the notification is best-effort
+     * — a comment that saved must not fail because a notice did not.
+     */
+    private suspend fun notifyAuthor(
+        actor: UserProfile,
+        type: NotificationType,
+        bodyKey: String,
+        bodyArg: String = "",
+    ) {
+        val issue = uiState.value.issue ?: return
+        notificationRepository.notify(
+            recipientIds = listOf(issue.authorId),
+            actorId = actor.id,
+            type = type,
+            title = issue.title,
+            bodyKey = bodyKey,
+            bodyArg = bodyArg,
+            deepLink = DeepLinks.issue(issueId),
+            // One notice per report per kind, replaced rather than stacked:
+            // five comments should not mean five lines in the shade.
+            collapseKey = "${type.id}:$issueId",
+        )
+    }
+
+    private suspend fun notifyAuthorOfVote(actor: UserProfile) {
+        val issue = uiState.value.issue ?: return
+        notifyAuthor(
+            actor = actor,
+            type = NotificationType.VOTE,
+            bodyKey = "notif_upvotes",
+            // Reads from the live document, so the notice says the running
+            // total rather than "somebody voted" over and over.
+            bodyArg = (issue.upvotes + 1).toString(),
+        )
+    }
+
     fun deleteComment(commentId: String) {
         viewModelScope.launch { issueRepository.deleteComment(issueId, commentId) }
     }
@@ -151,6 +205,17 @@ class IssueDetailViewModel @Inject constructor(
         val viewer = sessionRepository.currentProfile ?: return
         viewModelScope.launch {
             val result = issueRepository.setStatus(issueId, status, viewer, note)
+            if (result.isSuccess) {
+                notifyAuthor(
+                    actor = viewer,
+                    type = NotificationType.STATUS,
+                    bodyKey = when (status) {
+                        IssueStatus.RESOLVED -> "notif_status_resolved"
+                        IssueStatus.WONT_DO -> "notif_status_wont_do"
+                        else -> "notif_status_changed"
+                    },
+                )
+            }
             result.exceptionOrNull()?.let { error ->
                 local.update { it.copy(errorMessage = error.localizedMessage) }
             }

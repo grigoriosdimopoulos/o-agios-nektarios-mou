@@ -8,6 +8,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.model.Announcement
 import gr.agiosnektarios.village.data.announcement.AnnouncementRepository
 import gr.agiosnektarios.village.data.media.ImageCodec
+import gr.agiosnektarios.village.data.notification.NotificationRepository
+import gr.agiosnektarios.village.data.notification.NotificationType
+import gr.agiosnektarios.village.ui.navigation.DeepLinks
 import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.data.session.SessionRepository
 import javax.inject.Inject
@@ -59,6 +62,7 @@ class AnnouncementComposeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: AnnouncementRepository,
     private val imageCodec: ImageCodec,
+    private val notificationRepository: NotificationRepository,
     private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
@@ -141,6 +145,20 @@ class AnnouncementComposeViewModel @Inject constructor(
                     image = state.image,
                     pinned = state.pinned,
                 ).map { }
+            }
+            // Only a brand new announcement is worth waking the village for;
+            // fixing a typo in one already published is not.
+            if (result.isSuccess && !state.isEditing) {
+                notificationRepository.allResidentIds().getOrNull()?.let { residents ->
+                    notificationRepository.notify(
+                        recipientIds = residents,
+                        actorId = author.id,
+                        type = NotificationType.ANNOUNCEMENT,
+                        title = state.title,
+                        bodyKey = "notif_new_announcement",
+                        deepLink = DeepLinks.ANNOUNCEMENTS,
+                    )
+                }
             }
             _uiState.update {
                 it.copy(

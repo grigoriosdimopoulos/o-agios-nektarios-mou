@@ -229,4 +229,6 @@
     <string name="chat_no_residents_yet_hint">Είστε ο πρώτος εδώ. Μόλις δημιουργήσει λογαριασμό άλλος κάτοικος, θα εμφανιστεί σε αυτή τη λίστα.</string>
     <string name="chat_no_residents_match">Κανείς με αυτό το όνομα</string>
     <string name="chat_no_residents_match_hint">Δοκιμάστε μέρος του ονόματος ή του επωνύμου.</string>
+    <string name="notif_new_comment">Κάποιος σχολίασε την αναφορά σας</string>
+    <string name="notif_new_message">Ο/Η %1$s σας έστειλε μήνυμα</string>
 </resources>

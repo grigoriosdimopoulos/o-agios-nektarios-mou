@@ -272,6 +272,42 @@ await check("outsider cannot send into the conversation",
     assertSucceeds(updateDoc(doc(maria, "users/maria"), { avatar: image(10_000) })));
 }
 
+// ---- notification inbox, the free-plan stand-in for server push
+{
+  const notice = {
+    type: "COMMENT", title: "Fallen branch", body: "", bodyKey: "notif_new_comment",
+    bodyArg: "", deepLink: "agiosnektarios://open/issue/issue1",
+    actorId: "giorgos", collapseKey: "COMMENT:issue1", seen: false,
+    createdAt: serverTimestamp(),
+  };
+
+  await check("a resident may put a notice in a neighbour's inbox",
+    assertSucceeds(addDoc(collection(giorgos, "users/maria/notifications"), notice)));
+  await check("but must sign it honestly",
+    assertFails(addDoc(collection(giorgos, "users/maria/notifications"),
+      { ...notice, actorId: "maria" })));
+  await check("and cannot deliver it pre-read",
+    assertFails(addDoc(collection(giorgos, "users/maria/notifications"),
+      { ...notice, seen: true })));
+  await check("an inbox is not bulk storage",
+    assertFails(addDoc(collection(giorgos, "users/maria/notifications"),
+      { ...notice, body: "x".repeat(600) })));
+
+  await check("the owner reads their own inbox",
+    assertSucceeds(getDocs(collection(maria, "users/maria/notifications"))));
+  await check("nobody reads someone else's inbox",
+    assertFails(getDocs(collection(giorgos, "users/maria/notifications"))));
+
+  const suspended = env.authenticatedContext("banned").firestore();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), "users/banned"),
+      { ...profileSeed("banned"), disabled: true });
+  });
+  await check("a suspended resident cannot spam an inbox",
+    assertFails(addDoc(collection(suspended, "users/maria/notifications"),
+      { ...notice, actorId: "banned" })));
+}
+
 // ---- counters the client now owns, which the rules have to police
 async function seedIssue(id, authorId, fields = {}) {
   await env.withSecurityRulesDisabled(async (ctx) => {

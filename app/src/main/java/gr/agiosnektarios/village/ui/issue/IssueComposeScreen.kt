@@ -72,7 +72,7 @@ import gr.agiosnektarios.village.ui.components.isGreekLocale
 fun IssueComposeScreen(
     onBack: () -> Unit,
     onSaved: (String) -> Unit,
-    showSnackbar: suspend (String) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: IssueComposeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
