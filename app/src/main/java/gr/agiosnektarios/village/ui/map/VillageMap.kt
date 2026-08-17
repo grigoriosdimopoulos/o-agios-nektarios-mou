@@ -330,6 +330,15 @@ private class VillageMapState {
                     PropertyFactory.lineWidth(roadWidth(outer = false)),
                     PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                     PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                    // Dashed only for tracks, so an unsurfaced path is
+                    // recognisable as one before you read anything.
+                    PropertyFactory.lineDasharray(
+                        Expression.match(
+                            Expression.get("kind"),
+                            Expression.literal(arrayOf(1f, 0f)),
+                            Expression.stop("track", arrayOf(2.2f, 1.6f)),
+                        ),
+                    ),
                 ),
             )
             loaded.addLayer(
@@ -493,12 +502,22 @@ private class VillageMapState {
      * without becoming a smear when you zoom out to the whole settlement.
      */
     private fun roadWidth(outer: Boolean): Expression {
-        val pad = if (outer) 2.2f else 0f
+        val pad = if (outer) 2.6f else 0f
+        // Width by class as well as zoom. A village where the lane you live on
+        // and the goat track up the hill are drawn identically tells you
+        // nothing; the hierarchy is most of the information.
+        fun byClass(main: Float, street: Float, track: Float): Expression =
+            Expression.match(
+                Expression.get("kind"),
+                Expression.literal(street + pad),
+                Expression.stop("main", main + pad),
+                Expression.stop("track", track + pad),
+            )
         return Expression.interpolate(
             Expression.linear(), Expression.zoom(),
-            Expression.stop(14f, Expression.literal(1.2f + pad)),
-            Expression.stop(17f, Expression.literal(3.4f + pad)),
-            Expression.stop(20f, Expression.literal(8f + pad)),
+            Expression.stop(14f, byClass(2.0f, 1.1f, 0.7f)),
+            Expression.stop(17f, byClass(6.0f, 3.6f, 1.8f)),
+            Expression.stop(20f, byClass(15f, 9f, 4f)),
         )
     }
 

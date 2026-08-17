@@ -98,7 +98,7 @@ private fun VoteButton(
     // voting feel free even though a round trip is still happening.
     val scale by animateFloatAsState(
         targetValue = if (active) 1.12f else 1f,
-        animationSpec = Motion.bouncy(),
+        animationSpec = Motion.playful(),
         label = "voteScale",
     )
 

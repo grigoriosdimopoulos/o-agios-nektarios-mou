@@ -35,6 +35,12 @@ import gr.agiosnektarios.village.ui.navigation.TopLevelDestination
 import gr.agiosnektarios.village.ui.navigation.VillageBottomBar
 import gr.agiosnektarios.village.ui.navigation.VillageNavHost
 import kotlinx.coroutines.launch
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import gr.agiosnektarios.village.ui.theme.Motion
+import kotlinx.coroutines.delay
 
 /**
  * The root of the UI.
@@ -49,10 +55,43 @@ fun VillageApp(
     deepLink: String?,
     onDeepLinkHandled: () -> Unit,
 ) {
+    // The splash is held for its own duration *and* until the session resolves,
+    // whichever is longer. Resolving fast should not flash the quote for 200 ms,
+    // and resolving slowly should not show a spinner after it.
+    var splashDone by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(SPLASH_DURATION_MS)
+        splashDone = true
+    }
+    val ready = splashDone && session != SessionState.Loading
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
+        // Crossfaded rather than swapped: the village should appear *through*
+        // the quote, not replace it on a frame boundary.
+        Crossfade(
+            targetState = ready,
+            animationSpec = tween(520, easing = Motion.emphasized),
+            label = "splash",
+        ) { showApp ->
+            if (!showApp) {
+                SplashScreen()
+            } else {
+                VillageContent(session, deepLink, onDeepLinkHandled)
+            }
+        }
+    }
+}
+
+@Composable
+private fun VillageContent(
+    session: SessionState,
+    deepLink: String?,
+    onDeepLinkHandled: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
         when (session) {
             SessionState.Loading -> LoadingState()
             SessionState.SignedOut -> AuthFlow()

@@ -59,7 +59,7 @@ fun VillageBottomBar(
             // outlined and filled variants this reads as a physical "press in".
             val scale by animateFloatAsState(
                 targetValue = if (selected) 1.14f else 1f,
-                animationSpec = Motion.bouncy(),
+                animationSpec = Motion.standard(),
                 label = "tabScale",
             )
 

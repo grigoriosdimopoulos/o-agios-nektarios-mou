@@ -49,7 +49,7 @@ fun CategoryChip(
     )
     val scale by animateFloatAsState(
         targetValue = if (selected) 1.04f else 1f,
-        animationSpec = Motion.bouncy(),
+        animationSpec = Motion.snap(),
         label = "categoryChipScale",
     )
 

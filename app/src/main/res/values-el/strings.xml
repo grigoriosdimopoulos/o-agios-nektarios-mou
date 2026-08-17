@@ -240,4 +240,5 @@
     <string name="map_basemap_streets">Οδικός</string>
     <string name="map_basemap_satellite">Δορυφόρος</string>
     <string name="map_basemap_terrain">Ανάγλυφο</string>
+    <string name="splash_quote_translation">τα βράχια του Κιθαιρώνα</string>
 </resources>

@@ -7,46 +7,125 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
 
 /**
- * One motion vocabulary for the whole app.
+ * One motion vocabulary for the whole app, tuned to feel like a platform rather
+ * than like a website.
  *
- * The playful feel comes from springs with a little bounce on things the user
- * *did* (a vote, a marker landing, a sheet arriving) and flat, quick tweens on
- * things that merely changed (a colour, a counter). Mixing the two arbitrarily
- * is what makes an app feel cheap, so every screen pulls from here.
+ * The thing that separates iOS and macOS motion from most Android motion is not
+ * speed — it is that almost nothing is on a *timer*. A spring carries momentum,
+ * so an interruption resolves from wherever the surface currently is instead of
+ * jumping and restarting. Everything here that a finger can interrupt is
+ * therefore a spring, and the durations that remain are only for things nobody
+ * can interrupt: a crossfade, a colour, a shimmer.
+ *
+ * The second thing is restraint. Overshoot reads as expensive exactly once and
+ * as cheap every time after, so [playful] is the only spec that bounces and it
+ * is reserved for a deliberate, celebratory act — casting a vote. Everything
+ * structural settles without bouncing at all.
  */
 object Motion {
 
-    /** Snappy with a hint of overshoot — buttons, chips, vote taps. */
-    fun <T> bouncy() = spring<T>(
-        dampingRatio = 0.55f,
-        stiffness = Spring.StiffnessMediumLow,
+    // ---------------------------------------------------------------- springs
+
+    /**
+     * The workhorse. Presses, chips, toggles, icon states.
+     *
+     * Critically damped and stiff enough that it reads as immediate while still
+     * carrying momentum if the user changes their mind mid-gesture.
+     */
+    fun <T> snap() = spring<T>(
+        dampingRatio = 1f,
+        stiffness = 1400f,
     )
 
-    /** Settles without overshoot — sheets, expanding cards. */
-    fun <T> smooth() = spring<T>(
-        dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMediumLow,
+    /**
+     * Standard transition for anything with visible size or position: cards
+     * settling, rows reordering, a badge growing.
+     */
+    fun <T> standard() = spring<T>(
+        dampingRatio = 0.92f,
+        stiffness = 420f,
     )
 
-    /** For offsets, which need a visibility threshold to avoid sub-pixel jitter. */
+    /**
+     * Large surfaces — sheets, dialogs, whole screens. Slower and completely
+     * settled, because weight is what makes a big surface feel substantial
+     * rather than flimsy.
+     */
+    fun <T> gentle() = spring<T>(
+        dampingRatio = 1f,
+        stiffness = 260f,
+    )
+
+    /**
+     * The one place bounce is allowed: the upvote. A single overshoot on the
+     * thing the resident chose to do, and nowhere else.
+     */
+    fun <T> playful() = spring<T>(
+        dampingRatio = 0.5f,
+        stiffness = 650f,
+    )
+
+    /** Offsets need a threshold or they jitter for the last sub-pixel. */
     fun offsetSpring() = spring<IntOffset>(
-        dampingRatio = 0.7f,
-        stiffness = Spring.StiffnessMediumLow,
+        dampingRatio = 0.95f,
+        stiffness = 380f,
         visibilityThreshold = IntOffset(1, 1),
     )
 
-    val emphasized = CubicBezierEasing(0.2f, 0f, 0f, 1f)
-    val standard = CubicBezierEasing(0.2f, 0f, 0.2f, 1f)
+    // ---------------------------------------------------------------- easings
 
-    fun <T> quick() = tween<T>(durationMillis = 180, easing = standard)
+    /**
+     * Slow-out. Almost all movement should start immediately and decelerate
+     * into place — the reverse feels sluggish because the delay lands before
+     * the user has any feedback.
+     */
+    val emphasized = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
+    val standardEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
-    fun <T> medium() = tween<T>(durationMillis = 320, easing = emphasized)
+    /** Enter and exit are asymmetric on purpose: arriving deserves more time. */
+    val enter = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+    val exit = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 
-    fun <T> slow() = tween<T>(durationMillis = 520, easing = emphasized)
+    // -------------------------------------------------------------- durations
 
-    /** Stagger between list items in an entrance animation. */
-    const val STAGGER_MS = 45
+    fun <T> instant() = tween<T>(durationMillis = 110, easing = standardEasing)
 
-    /** Cap the stagger so long lists do not take a full second to appear. */
+    fun <T> quick() = tween<T>(durationMillis = 190, easing = standardEasing)
+
+    fun <T> medium() = tween<T>(durationMillis = 300, easing = emphasized)
+
+    fun <T> slow() = tween<T>(durationMillis = 480, easing = emphasized)
+
+    // ------------------------------------------------------------ navigation
+
+    /**
+     * How far the outgoing screen slides when a new one pushes over it.
+     *
+     * A third, not the full width. The old screen staying partly visible and
+     * dimmed is what makes a push read as *depth* rather than as a swap, and it
+     * is the single most recognisable thing about iOS navigation.
+     */
+    const val PARALLAX_FRACTION = 3
+
+    const val PUSH_MS = 380
+    const val POP_MS = 320
+
+    /** How dark the screen being left behind goes. */
+    const val UNDERLAY_DIM = 0.28f
+
+    // ------------------------------------------------------------------ lists
+
+    /** Stagger between list items entering. Short: 45 ms already reads as a wave. */
+    const val STAGGER_MS = 38
+
+    /** Cap it, or a long list takes a second to finish arriving. */
     const val MAX_STAGGERED_ITEMS = 8
+
+    // ----------------------------------------------------------------- presses
+
+    /** How far an interactive surface depresses. Subtle by design. */
+    const val PRESS_SCALE = 0.972f
+
+    /** Cards are larger, so the same *visual* depression needs less scale. */
+    const val PRESS_SCALE_LARGE = 0.986f
 }

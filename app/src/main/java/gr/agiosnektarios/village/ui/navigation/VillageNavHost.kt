@@ -38,7 +38,44 @@ import gr.agiosnektarios.village.ui.settings.ChangePasswordScreen
 import gr.agiosnektarios.village.ui.settings.SettingsScreen
 import gr.agiosnektarios.village.ui.theme.Motion
 
-private const val SLIDE_MS = 300
+/**
+ * The push. A new screen slides in from the trailing edge while the one it
+ * covers slides a *third* of the way out and dims underneath it.
+ *
+ * That asymmetry is the whole trick. A full-width slide reads as two unrelated
+ * screens swapping; a partial slide with the outgoing screen still visible and
+ * darkened reads as depth — one thing on top of another. It is the most
+ * recognisable single detail of iOS navigation and costs four functions.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pushEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
+        initialOffsetX = { it },
+    ) + fadeIn(animationSpec = tween(Motion.PUSH_MS / 2, easing = Motion.enter))
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.pushExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
+        targetOffsetX = { -it / Motion.PARALLAX_FRACTION },
+    ) + fadeOut(
+        animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
+        targetAlpha = 1f - Motion.UNDERLAY_DIM,
+    )
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.popEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(Motion.POP_MS, easing = Motion.enter),
+        initialOffsetX = { -it / Motion.PARALLAX_FRACTION },
+    ) + fadeIn(
+        animationSpec = tween(Motion.POP_MS, easing = Motion.enter),
+        initialAlpha = 1f - Motion.UNDERLAY_DIM,
+    )
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.popExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(Motion.POP_MS, easing = Motion.exit),
+        targetOffsetX = { it },
+    ) + fadeOut(animationSpec = tween(Motion.POP_MS, easing = Motion.exit), targetAlpha = 0.6f)
 
 /**
  * The whole navigation graph.
@@ -58,8 +95,10 @@ fun VillageNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { fadeIn(animationSpec = tween(SLIDE_MS, easing = Motion.standard)) },
-        exitTransition = { fadeOut(animationSpec = tween(SLIDE_MS, easing = Motion.standard)) },
+        enterTransition = { pushEnter() },
+        exitTransition = { pushExit() },
+        popEnterTransition = { popEnter() },
+        popExitTransition = { popExit() },
     ) {
         // ------------------------------------------------------------ auth
         composable(Routes.SIGN_IN) {
@@ -69,13 +108,11 @@ fun VillageNavHost(
                 onNavigateToForgotPassword = { navController.navigate(Routes.FORGOT_PASSWORD) },
             )
         }
-        composable(Routes.SIGN_UP, enterTransition = slideIn(), exitTransition = slideOut()) {
+        composable(Routes.SIGN_UP) {
             SignUpScreen(onBack = navController::popBackStack)
         }
         composable(
             Routes.FORGOT_PASSWORD,
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             ForgotPasswordScreen(onBack = navController::popBackStack)
         }
@@ -131,8 +168,6 @@ fun VillageNavHost(
             deepLinks = listOf(
                 navDeepLink { uriPattern = "$DEEP_LINK_SCHEME/issue/{issueId}" },
             ),
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             IssueDetailScreen(
                 onBack = navController::popBackStack,
@@ -149,8 +184,6 @@ fun VillageNavHost(
                 navArgument("lat") { type = NavType.StringType; defaultValue = "0.0" },
                 navArgument("lng") { type = NavType.StringType; defaultValue = "0.0" },
             ),
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             IssueComposeScreen(
                 onBack = navController::popBackStack,
@@ -167,12 +200,10 @@ fun VillageNavHost(
             route = Routes.CHAT_ROOM,
             arguments = listOf(navArgument("chatId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "$DEEP_LINK_SCHEME/chat/{chatId}" }),
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             ChatRoomScreen(onBack = navController::popBackStack)
         }
-        composable(Routes.NEW_CHAT, enterTransition = slideIn(), exitTransition = slideOut()) {
+        composable(Routes.NEW_CHAT) {
             NewChatScreen(
                 onBack = navController::popBackStack,
                 onChatReady = { chatId ->
@@ -183,10 +214,10 @@ fun VillageNavHost(
         }
 
         // -------------------------------------------------- profile & admin
-        composable(Routes.EDIT_PROFILE, enterTransition = slideIn(), exitTransition = slideOut()) {
+        composable(Routes.EDIT_PROFILE) {
             EditProfileScreen(onBack = navController::popBackStack, showSnackbar = showSnackbar)
         }
-        composable(Routes.SETTINGS, enterTransition = slideIn(), exitTransition = slideOut()) {
+        composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = navController::popBackStack,
                 onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
@@ -195,12 +226,10 @@ fun VillageNavHost(
         }
         composable(
             Routes.CHANGE_PASSWORD,
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             ChangePasswordScreen(onBack = navController::popBackStack, showSnackbar = showSnackbar)
         }
-        composable(Routes.ADMIN, enterTransition = slideIn(), exitTransition = slideOut()) {
+        composable(Routes.ADMIN) {
             AdminScreen(
                 onBack = navController::popBackStack,
                 onOpenUser = { navController.navigate(Routes.adminUser(it)) },
@@ -210,8 +239,6 @@ fun VillageNavHost(
         composable(
             route = Routes.ADMIN_USER_DETAIL,
             arguments = listOf(navArgument("userId") { type = NavType.StringType }),
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             AdminUserDetailScreen(
                 onBack = navController::popBackStack,
@@ -226,8 +253,6 @@ fun VillageNavHost(
             arguments = listOf(
                 navArgument("announcementId") { type = NavType.StringType; defaultValue = "" },
             ),
-            enterTransition = slideIn(),
-            exitTransition = slideOut(),
         ) {
             AnnouncementComposeScreen(
                 onBack = navController::popBackStack,
@@ -237,18 +262,3 @@ fun VillageNavHost(
     }
 }
 
-private typealias EnterSpec =
-    AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?
-
-private typealias ExitSpec =
-    AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?
-
-private fun slideIn(): EnterSpec = {
-    slideInHorizontally(animationSpec = tween(SLIDE_MS, easing = Motion.emphasized)) { it / 3 } +
-        fadeIn(animationSpec = tween(SLIDE_MS))
-}
-
-private fun slideOut(): ExitSpec = {
-    slideOutHorizontally(animationSpec = tween(SLIDE_MS, easing = Motion.emphasized)) { -it / 6 } +
-        fadeOut(animationSpec = tween(SLIDE_MS))
-}

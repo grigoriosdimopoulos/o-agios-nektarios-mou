@@ -263,4 +263,8 @@
     <string name="map_basemap_streets">Streets</string>
     <string name="map_basemap_satellite">Satellite</string>
     <string name="map_basemap_terrain">Terrain</string>
+    <!-- Splash. Euripides, Bacchae 1045 — a real line, checked, not recalled. -->
+    <string name="splash_quote_greek" translatable="false">λέπας Κιθαιρώνειον</string>
+    <string name="splash_quote_translation">the rocky heights of Kithairon</string>
+    <string name="splash_quote_source" translatable="false">ΕΥΡΙΠΙΔΗΣ · ΒΑΚΧΑΙ 1045</string>
 </resources>

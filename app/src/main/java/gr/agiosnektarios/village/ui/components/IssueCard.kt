@@ -51,7 +51,7 @@ fun IssueCard(
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.985f else 1f,
-        animationSpec = gr.agiosnektarios.village.ui.theme.Motion.bouncy(),
+        animationSpec = gr.agiosnektarios.village.ui.theme.Motion.standard(),
         label = "issueCardScale",
     )
 
