@@ -48,7 +48,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,9 +59,13 @@ import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
+import gr.agiosnektarios.village.core.model.StreetName
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.IssueRow
+import gr.agiosnektarios.village.ui.components.PrimaryButton
+import gr.agiosnektarios.village.ui.components.SecondaryButton
+import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.core.MapBasemap
 import gr.agiosnektarios.village.ui.components.isGreekLocale
@@ -95,6 +101,8 @@ fun MapScreen(
             darkTheme = darkTheme,
             basemap = state.basemap,
             greekLabels = greek,
+            streetNames = state.streetNames,
+            allowRoadTaps = !state.placingPin,
             focusBounds = focusBounds,
             onZoomChanged = viewModel::onZoomChanged,
             onMapTap = { point ->
@@ -109,6 +117,7 @@ fun MapScreen(
                 }
             },
             onBlockTap = viewModel::selectBlock,
+            onRoadTap = viewModel::selectStreet,
         )
 
         MapOverlay(
@@ -207,6 +216,118 @@ fun MapScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    state.selectedStreet?.let { street ->
+        StreetNameSheet(
+            street = street,
+            onDismiss = viewModel::dismissStreetSheet,
+            onSubmit = { name -> viewModel.nameStreet(street.wayId, name) },
+            onToggleConfirm = { confirmed ->
+                viewModel.toggleStreetConfirmation(street.wayId, confirmed)
+            },
+        )
+    }
+}
+
+/**
+ * Where the village's street names come from.
+ *
+ * No public dataset names the streets of this settlement — OpenStreetMap has
+ * one named way in it, and matching the state valuation map's list to geometry
+ * by position produced wrong answers three times running. The residents know,
+ * so this asks them, and shows how many neighbours have agreed so a name that
+ * one person guessed is distinguishable from one the street actually goes by.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StreetNameSheet(
+    street: SelectedStreet,
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit,
+    onToggleConfirm: (Boolean) -> Unit,
+) {
+    val existing = street.existing
+    var draft by remember(street.wayId, existing?.name) {
+        mutableStateOf(existing?.name.orEmpty())
+    }
+    // Renaming is a deliberate act, not something you fall into by tapping a
+    // field: an established name shows as text until someone asks to change it.
+    var editing by remember(street.wayId) { mutableStateOf(existing == null) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(
+                    if (existing == null) R.string.street_name_unknown else R.string.street_name_title,
+                ),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = stringResource(R.string.street_name_explainer),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (editing) {
+                VillageTextField(
+                    value = draft,
+                    onValueChange = { draft = it.take(StreetName.MAX_LENGTH) },
+                    label = stringResource(R.string.street_name_field),
+                    placeholder = stringResource(R.string.street_name_placeholder),
+                    imeAction = ImeAction.Done,
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.street_name_save),
+                    onClick = { onSubmit(draft) },
+                    enabled = draft.isNotBlank() && draft != existing?.name,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (existing != null) {
+                    SecondaryButton(
+                        text = stringResource(R.string.action_cancel),
+                        onClick = { draft = existing.name; editing = false },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            } else if (existing != null) {
+                Text(text = existing.name, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.street_name_confirmations,
+                        existing.confirmations,
+                        existing.confirmations,
+                        existing.proposedByName,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PrimaryButton(
+                    text = stringResource(
+                        if (street.confirmedByMe) {
+                            R.string.street_name_confirmed
+                        } else {
+                            R.string.street_name_confirm
+                        },
+                    ),
+                    onClick = { onToggleConfirm(!street.confirmedByMe) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                // Anyone may propose a correction; the rules decide whether the
+                // write lands, and the button says so rather than pretending.
+                SecondaryButton(
+                    text = stringResource(R.string.street_name_change),
+                    onClick = { editing = true },
+                    enabled = street.canEdit,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

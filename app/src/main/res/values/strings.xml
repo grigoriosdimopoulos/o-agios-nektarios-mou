@@ -267,4 +267,20 @@
     <string name="splash_quote_greek" translatable="false">λέπας Κιθαιρώνειον</string>
     <string name="splash_quote_translation">the rocky heights of Kithairon</string>
     <string name="splash_quote_source" translatable="false">ΕΥΡΙΠΙΔΗΣ · ΒΑΚΧΑΙ 1045</string>
+
+    <!-- Street naming. No public dataset names this village's streets, so the
+         residents supply them; see assets/village_roads.json. -->
+    <string name="street_name_unknown">This street has no name yet</string>
+    <string name="street_name_title">Street name</string>
+    <string name="street_name_explainer">No map has the names of our streets, so we add them ourselves. Write what this street is called and your neighbours can confirm it.</string>
+    <string name="street_name_field">Street name</string>
+    <string name="street_name_placeholder">e.g. Elatias</string>
+    <string name="street_name_save">Save the name</string>
+    <string name="street_name_confirm">This is right</string>
+    <string name="street_name_confirmed">You have confirmed it</string>
+    <string name="street_name_change">Suggest a different name</string>
+    <plurals name="street_name_confirmations">
+        <item quantity="one">%1$d resident confirms it · added by %2$s</item>
+        <item quantity="other">%1$d residents confirm it · added by %2$s</item>
+    </plurals>
 </resources>

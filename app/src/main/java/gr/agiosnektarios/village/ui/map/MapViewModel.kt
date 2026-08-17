@@ -11,8 +11,13 @@ import gr.agiosnektarios.village.core.model.BlockSummary
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
+import gr.agiosnektarios.village.core.model.StreetName
+import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.data.issue.IssueRepository
+import gr.agiosnektarios.village.data.session.SessionRepository
+import gr.agiosnektarios.village.data.settings.AppSettings
 import gr.agiosnektarios.village.data.settings.SettingsRepository
+import gr.agiosnektarios.village.data.village.StreetNameRepository
 import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +52,24 @@ data class MapUiState(
     val pendingPin: GeoPoint? = null,
     val selectedCluster: IssueCluster? = null,
     val selectedBlock: BlockSummary? = null,
+    /** Way id to street name, for the map's labels. */
+    val streetNames: Map<String, String> = emptyMap(),
+    /** The street whose naming sheet is open, if any. */
+    val selectedStreet: SelectedStreet? = null,
     val errorMessage: String? = null,
+)
+
+/**
+ * A road the resident has tapped, and what the village currently calls it.
+ *
+ * [existing] is null for a street nobody has named yet, which is the common
+ * case in this village and the reason the whole feature exists.
+ */
+data class SelectedStreet(
+    val wayId: String,
+    val existing: StreetName?,
+    val canEdit: Boolean,
+    val confirmedByMe: Boolean,
 )
 
 @HiltViewModel
@@ -55,6 +77,8 @@ class MapViewModel @Inject constructor(
     private val issueRepository: IssueRepository,
     private val blockRepository: VillageBlockRepository,
     private val settingsRepository: SettingsRepository,
+    private val streetNameRepository: StreetNameRepository,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     /** Kept out of [MapUiState] so camera movement never re-renders the sheets. */
@@ -62,6 +86,9 @@ class MapViewModel @Inject constructor(
 
     private val filters = MutableStateFlow(MapFilters())
     private val interaction = MutableStateFlow(MapInteraction())
+
+    /** Write failures — naming a street is the first write this screen makes. */
+    private val errors = MutableStateFlow<String?>(null)
 
     private val issues: StateFlow<List<Issue>> = issueRepository.observeIssues()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -75,23 +102,59 @@ class MapViewModel @Inject constructor(
         .map { blockRepository.summarize(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val streets: StateFlow<List<StreetName>> =
+        streetNameRepository.observeStreetNames()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * The signed-in resident, held as state rather than collected.
+     *
+     * Naming a street has to stamp the author's uid on the write — the rules
+     * refuse anything else — and that happens in a click handler, which needs
+     * the value now rather than a flow to subscribe to.
+     */
+    private val viewer: StateFlow<UserProfile?> = sessionRepository.profile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * Everything that is not a report, folded into one flow.
+     *
+     * `combine` takes five sources in its typed overload and the map already
+     * uses all five, so the rest travel together rather than as an untyped
+     * vararg combine that loses every parameter name.
+     */
+    private data class MapContext(
+        val interaction: MapInteraction,
+        val settings: AppSettings,
+        val streets: List<StreetName>,
+        val viewer: UserProfile?,
+        val error: String?,
+    )
+
     val uiState: StateFlow<MapUiState> = combine(
         issues,
         blockSummaries,
         filters,
         zoom,
-        combine(interaction, settingsRepository.settings) { interaction, settings ->
-            interaction to settings
-        },
-    ) { allIssues, blocks, activeFilters, currentZoom, (interactionState, settings) ->
+        combine(
+            interaction,
+            settingsRepository.settings,
+            streets,
+            viewer,
+            errors,
+            ::MapContext,
+        ),
+    ) { allIssues, blocks, activeFilters, currentZoom, context ->
         val visible = allIssues.filter(activeFilters::matches)
         val clusters = IssueClustering.cluster(visible, currentZoom)
+        val interactionState = context.interaction
+        val byWay = context.streets.associateBy { it.wayId }
         MapUiState(
             clusters = clusters,
             blocks = blocks,
             filters = activeFilters,
-            showBlocks = settings.showBlocksLayer,
-            basemap = settings.basemap,
+            showBlocks = context.settings.showBlocksLayer,
+            basemap = context.settings.basemap,
             loading = false,
             placingPin = interactionState.placingPin,
             pendingPin = interactionState.pendingPin,
@@ -103,6 +166,21 @@ class MapViewModel @Inject constructor(
             selectedBlock = interactionState.selectedBlockId?.let { id ->
                 blocks.firstOrNull { it.block.id == id }
             },
+            streetNames = byWay.values
+                .filter { it.name.isNotBlank() }
+                .associate { it.wayId to it.name },
+            // Same treatment as the sheets above: resolved live, so a name a
+            // neighbour confirms while the sheet is open updates under it.
+            selectedStreet = interactionState.selectedWayId?.let { wayId ->
+                val existing = byWay[wayId]
+                SelectedStreet(
+                    wayId = wayId,
+                    existing = existing,
+                    canEdit = existing == null || existing.canEdit(context.viewer),
+                    confirmedByMe = existing?.isConfirmedBy(context.viewer?.id) == true,
+                )
+            },
+            errorMessage = context.error,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MapUiState())
 
@@ -163,13 +241,60 @@ class MapViewModel @Inject constructor(
     fun selectBlock(blockId: String) =
         interaction.update { it.copy(selectedBlockId = blockId, selectedClusterId = null) }
 
-    fun dismissSheets() =
-        interaction.update { it.copy(selectedClusterId = null, selectedBlockId = null) }
+    fun dismissSheets() = interaction.update {
+        it.copy(selectedClusterId = null, selectedBlockId = null, selectedWayId = null)
+    }
+
+    // ------------------------------------------------------------ street names
+
+    /**
+     * Opens the naming sheet for a tapped road.
+     *
+     * The village's streets are not in any public dataset — OpenStreetMap names
+     * one way in the whole settlement — so this is where the names come from.
+     */
+    fun selectStreet(wayId: String) = interaction.update {
+        it.copy(selectedWayId = wayId, selectedClusterId = null, selectedBlockId = null)
+    }
+
+    fun dismissStreetSheet() = interaction.update { it.copy(selectedWayId = null) }
+
+    fun nameStreet(wayId: String, name: String) {
+        val author = viewer.value ?: return
+        viewModelScope.launch {
+            streetNameRepository.propose(wayId, name, author)
+                .onSuccess { dismissStreetSheet() }
+                .onFailure { error -> showError(error) }
+        }
+    }
+
+    fun toggleStreetConfirmation(wayId: String, confirmed: Boolean) {
+        val me = viewer.value ?: return
+        viewModelScope.launch {
+            streetNameRepository.setConfirmed(wayId, me.id, confirmed)
+                .onFailure { error -> showError(error) }
+        }
+    }
+
+    fun clearStreetName(wayId: String) {
+        viewModelScope.launch {
+            streetNameRepository.clear(wayId)
+                .onSuccess { dismissStreetSheet() }
+                .onFailure { error -> showError(error) }
+        }
+    }
+
+    fun clearError() = errors.update { null }
+
+    private fun showError(error: Throwable) {
+        errors.update { error.message ?: "" }
+    }
 
     private data class MapInteraction(
         val placingPin: Boolean = false,
         val pendingPin: GeoPoint? = null,
         val selectedClusterId: String? = null,
         val selectedBlockId: String? = null,
+        val selectedWayId: String? = null,
     )
 }

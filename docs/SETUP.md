@@ -219,7 +219,7 @@ down until the encoded image fits, so a large photo is never rejected — only
 made smaller. The rules enforce them again server-side, because a client is not
 the right place for the only copy of a limit.
 
-## The street network, and why nothing is labelled
+## The street network, and where its names come from
 
 `app/src/main/assets/village_roads.json` holds the village's roads, extracted
 from OpenStreetMap and drawn by the app itself on top of whichever basemap is
@@ -230,31 +230,46 @@ at all, and finding a pothole on an aerial photo without them is guesswork.
 and names exactly one — the Vilia–Porto Germeno road. The 33 residential
 streets, 6 living streets and 8 service roads inside the settlement are
 unnamed, and so is every one of them in Nominatim and in every public source
-checked. They are therefore drawn unlabelled. Inventing names for the streets
-of a real village of forty-six people would put words in its mouth, and the app
-would state them with the same confidence as facts.
+that can be reached. Inventing names for the streets of a real village would
+put words in its mouth, and the app would state them with the same confidence
+as facts.
 
-Two ways to change that, both real:
+Names were tried three times from the Greek state's valuation map
+(maps.gsis.gr), which does list this settlement's streets, by matching that list
+to ways by position — the WSW-ENE rows by north-to-south order, the cross
+streets by west-to-east order. All three attempts were wrong, and the reason is
+geometric: the settlement grid is rotated about 73 degrees, so "north to south"
+is not a well-defined order over these ways at all. Measured on the geometry,
+eight pairs of rows overlap the wrong way round, with a southern row's east end
+sitting north of a northern row's west end. Ordering cannot identify a street
+here, and a wrong street name is worse than a blank one — it is rendered with
+the same authority as a surveyed coordinate.
 
-1. **Add the names to OpenStreetMap.** Anyone can, from a phone, with an app
-   like StreetComplete or Vespucci. They then reach this file on the next
-   regeneration and every other map in the world as well.
-2. **Ask for a name layer residents can edit in the app** — the village knows
-   what it calls these roads even if no register does.
+So the names come from the people who live on them. Every feature in the asset
+carries its OpenStreetMap `wayId`; tapping a road on the map opens a sheet where
+a resident writes what the street is called, and neighbours confirm it. Those
+names live at `streetNames/{wayId}` in Firestore — see `StreetNameRepository`
+and the `streetNames` block in `firestore.rules`, which is the only collection
+in this app an ordinary resident may write to that is not their own, and is
+policed accordingly. Names the village confirms are also the ones worth
+contributing back to OpenStreetMap, which fixes this everywhere at once; anyone
+can, from a phone, with StreetComplete or Vespucci.
 
 Regenerate the asset after OpenStreetMap changes, with the query the extraction
 used:
 
 ```
 [out:json][timeout:120];
-way["highway"](38.1555,23.2820,38.1720,23.3020);
+way["highway"](38.1555,23.2810,38.1725,23.3020);
 out geom;
 ```
 
 Feed the result through the same filter: keep `secondary`/`tertiary`/
 `unclassified` as `main`, `residential`/`living_street`/`service` as `street`,
-`track` as `track`, drop everything with no geometry inside the camera bounds,
-and carry `name` across where OpenStreetMap has one.
+`track` as `track`, drop everything else, and carry `name` across only where
+OpenStreetMap itself has one. Keep the `wayId` — it is what resident-supplied
+names are keyed on, and regenerating without it orphans every name in
+Firestore.
 
 The data is © OpenStreetMap contributors under ODbL; the map already carries
 the attribution, which must stay.

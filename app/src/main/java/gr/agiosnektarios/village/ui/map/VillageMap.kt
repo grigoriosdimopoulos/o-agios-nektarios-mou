@@ -1,6 +1,7 @@
 package gr.agiosnektarios.village.ui.map
 
 import android.annotation.SuppressLint
+import android.graphics.RectF
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -53,11 +54,24 @@ private const val LAYER_ROAD_LINE = "village-road-line"
 private const val LAYER_ROAD_LABEL = "village-road-label"
 
 /**
+ * Half-width, in pixels, of the box a road tap is matched against.
+ *
+ * A street line is between one and nine pixels wide depending on zoom; a
+ * fingertip covers about forty. Without slop, naming a street would mean
+ * hitting a hairline exactly.
+ */
+private const val ROAD_TAP_SLOP = 22f
+
+/**
  * The bundled road network, parsed once for the life of the process.
  *
  * Read from assets rather than fetched: it is the same fifty kilobytes every
  * time, it must be there before the first frame, and the village's streets
  * should not depend on having signal.
+ *
+ * Geometry only. The asset carries a `wayId` per road and, with one exception,
+ * no names — see its header for why guessing them went wrong three times. Names
+ * arrive separately, from the residents, and are merged in by [withNames].
  */
 private val roadsGeoJson: (android.content.Context) -> FeatureCollection = run {
     var cached: FeatureCollection? = null
@@ -69,6 +83,36 @@ private val roadsGeoJson: (android.content.Context) -> FeatureCollection = run {
             }.getOrElse { FeatureCollection.fromFeatures(emptyList()) }.also { cached = it }
         }
     }
+}
+
+/**
+ * The road network with the village's own street names written onto it.
+ *
+ * Features are rebuilt rather than mutated: MapLibre's `Feature` is shared with
+ * the cached collection above, so setting a property on one would leave the
+ * previous set of names on the next caller who asked for a clean copy.
+ *
+ * A name already in the asset — OpenStreetMap's own — wins over a proposal, so
+ * a resident cannot rename the trunk road that the rest of the country knows
+ * under a different name.
+ */
+private fun FeatureCollection.withNames(names: Map<String, String>): FeatureCollection {
+    val source = features() ?: return this
+    return FeatureCollection.fromFeatures(
+        source.map { feature ->
+            val wayId = feature.getStringProperty("wayId")
+            val osmName = feature.getStringProperty("name")
+            val resident = wayId?.let(names::get)
+            val copy = Feature.fromGeometry(feature.geometry())
+            feature.properties()?.entrySet()?.forEach { (key, value) ->
+                copy.addProperty(key, value)
+            }
+            if (osmName.isNullOrBlank() && !resident.isNullOrBlank()) {
+                copy.addStringProperty("name", resident)
+            }
+            copy
+        },
+    )
 }
 
 internal fun GeoPoint.toLatLng() = LatLng(lat, lng)
@@ -95,9 +139,13 @@ fun VillageMap(
     darkTheme: Boolean,
     basemap: MapBasemap,
     greekLabels: Boolean,
+    streetNames: Map<String, String>,
+    /** False while a pin is being placed, when every tap belongs to the pin. */
+    allowRoadTaps: Boolean,
     onMapTap: (GeoPoint) -> Unit,
     onClusterTap: (String) -> Unit,
     onBlockTap: (String) -> Unit,
+    onRoadTap: (String) -> Unit,
     onZoomChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
     focusBounds: GeoBounds? = null,
@@ -110,7 +158,11 @@ fun VillageMap(
     val currentMapTap by rememberUpdatedState(onMapTap)
     val currentClusterTap by rememberUpdatedState(onClusterTap)
     val currentBlockTap by rememberUpdatedState(onBlockTap)
+    val currentRoadTap by rememberUpdatedState(onRoadTap)
     val currentZoomChanged by rememberUpdatedState(onZoomChanged)
+    // Read inside the click listener, which is registered once, so it has to
+    // track the latest value rather than the one captured at registration.
+    val roadTapsState by rememberUpdatedState(allowRoadTaps)
 
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -174,10 +226,33 @@ fun VillageMap(
                 map.addOnMapClickListener { point ->
                     val screen = map.projection.toScreenLocation(point)
                     val pin = map.queryRenderedFeatures(screen, LAYER_PINS).firstOrNull()
+                    // A road line is a few pixels wide, and a fingertip is not.
+                    // Querying a box around the touch rather than the point
+                    // itself is the difference between a tappable street and one
+                    // that only responds if you hit it exactly.
+                    val roadBox = RectF(
+                        screen.x - ROAD_TAP_SLOP,
+                        screen.y - ROAD_TAP_SLOP,
+                        screen.x + ROAD_TAP_SLOP,
+                        screen.y + ROAD_TAP_SLOP,
+                    )
+                    val road = if (roadTapsState) {
+                        map.queryRenderedFeatures(roadBox, LAYER_ROAD_LINE)
+                            .firstOrNull { it.getStringProperty("wayId") != null }
+                    } else {
+                        // While a report is being placed, every tap on the map
+                        // is the pin going down. Naming a street has to wait.
+                        null
+                    }
                     val block = map.queryRenderedFeatures(screen, LAYER_BLOCK_FILL).firstOrNull()
                     when {
                         pin?.getStringProperty("clusterId") != null ->
                             currentClusterTap(pin.getStringProperty("clusterId"))
+                        // Roads are checked before neighbourhoods because the
+                        // shading covers the whole village: a road always sits
+                        // inside a block, so block-first would swallow every
+                        // road tap there is.
+                        road != null -> currentRoadTap(road.getStringProperty("wayId"))
                         block?.getStringProperty("blockId") != null ->
                             currentBlockTap(block.getStringProperty("blockId"))
                         else -> currentMapTap(point.toGeoPoint())
@@ -203,6 +278,7 @@ fun VillageMap(
                 showBlocks = showBlocks,
                 pendingPin = pendingPin,
                 greekLabels = greekLabels,
+                streetNames = streetNames,
             )
             // Guarded: without this, every recomposition restarts the fly-to
             // and the camera never settles while a neighbourhood is open.
@@ -242,6 +318,9 @@ private class VillageMapState {
 
     /** Captured when the style loads; badge bitmaps are sized in device pixels. */
     private var metrics: android.util.DisplayMetrics? = null
+
+    /** The unnamed road geometry, kept so names can be re-merged onto it. */
+    private var roads: FeatureCollection? = null
 
     fun applyStyle(mapView: MapView, dark: Boolean, basemap: MapBasemap) {
         val map = map ?: return
@@ -308,9 +387,8 @@ private class VillageMapState {
             // basemap is showing. On satellite and terrain there are no road
             // lines at all underneath, and finding a pothole on aerial imagery
             // without them is guesswork.
-            loaded.addSource(
-                GeoJsonSource(SOURCE_ROADS, roadsGeoJson(mapView.context)),
-            )
+            roads = roadsGeoJson(mapView.context)
+            loaded.addSource(GeoJsonSource(SOURCE_ROADS, roads))
             loaded.addLayer(
                 LineLayer(LAYER_ROAD_CASING, SOURCE_ROADS).withProperties(
                     // A dark casing under a light line is what makes a road
@@ -414,6 +492,7 @@ private class VillageMapState {
         showBlocks: Boolean,
         pendingPin: GeoPoint?,
         greekLabels: Boolean,
+        streetNames: Map<String, String>,
     ) {
         // Cheap identity of the inputs. Clusters and summaries are rebuilt as
         // new instances each time the view model emits, so their contents —
@@ -421,7 +500,7 @@ private class VillageMapState {
         val signature = listOf(
             clusters.map { it.id to it.size },
             blocks.map { it.block.id to it.openCount },
-            showBlocks, pendingPin, greekLabels,
+            showBlocks, pendingPin, greekLabels, streetNames,
         ).hashCode()
         if (signature == lastRender && style != null) return
         lastRender = signature
@@ -430,10 +509,25 @@ private class VillageMapState {
             val loaded = style
             if (loaded != null) {
                 renderBlocks(loaded, blocks, showBlocks, greekLabels)
+                renderRoadNames(loaded, streetNames)
                 renderPins(loaded, clusters, pendingPin)
             }
         }
         if (style != null) work() else pending = work
+    }
+
+    /**
+     * Re-uploads the road network with the current set of resident-supplied
+     * names.
+     *
+     * Rebuilding 82 line features is not free, which is why it runs behind the
+     * same render signature as everything else rather than on every frame: it
+     * happens when a name changes, and not otherwise.
+     */
+    private fun renderRoadNames(style: Style, names: Map<String, String>) {
+        val source = style.getSourceAs<GeoJsonSource>(SOURCE_ROADS) ?: return
+        val roads = roads ?: return
+        source.setGeoJson(if (names.isEmpty()) roads else roads.withNames(names))
     }
 
     /** Reloading a style discards its sources, so the last upload is void too. */

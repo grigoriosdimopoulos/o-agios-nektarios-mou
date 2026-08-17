@@ -322,6 +322,69 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ---------------------------------------------------------- street names
+
+    /**
+     * The village naming its own streets, keyed by OpenStreetMap way id.
+     *
+     * No public dataset names these streets — OSM names one way in the whole
+     * settlement — so the residents supply them. That means an ordinary
+     * resident can write here, which is unusual for this app, and the rules
+     * carry the whole weight of keeping it honest.
+     *
+     * Three things are policed. A proposal must credit its actual author, so
+     * nobody can put words in a neighbour's mouth. Confirming is a write that
+     * may touch nothing but `confirmedBy` and `updatedAt`, and may only add or
+     * remove the confirmer's own uid — one resident cannot manufacture
+     * agreement out of other people's accounts. And rewriting an existing name
+     * is limited to the person who proposed it or a moderator, because a name
+     * with confirmations behind it is a small piece of shared knowledge, not a
+     * free-text field.
+     */
+    match /streetNames/{wayId} {
+      function namedByCaller() {
+        return request.resource.data.proposedById == uid()
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 60
+          // A fresh proposal starts with exactly one confirmation: its author.
+          // Seeding it with a crowd would fake a consensus that never happened.
+          && request.resource.data.confirmedBy == [uid()];
+      }
+
+      /**
+       * A confirmation, which is the only write a resident may make to someone
+       * else's proposal.
+       *
+       * `hasOnly` on the affected keys is what keeps this from being a way to
+       * edit the name: the diff has to be confined to the two fields, and the
+       * name that comes back has to be the name that was there.
+       */
+      function isConfirmationToggle() {
+        return touchesOnly(['confirmedBy', 'updatedAt'])
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.proposedById == resource.data.proposedById
+          && (
+            // Adding themselves, or removing themselves. Nothing else moves.
+            request.resource.data.confirmedBy.toSet()
+              .difference(resource.data.confirmedBy.toSet()) in [[].toSet(), [uid()].toSet()]
+            && resource.data.confirmedBy.toSet()
+              .difference(request.resource.data.confirmedBy.toSet()) in [[].toSet(), [uid()].toSet()]
+          );
+      }
+
+      allow read: if isActiveResident();
+      allow create: if isActiveResident() && namedByCaller();
+      allow update: if isActiveResident() && (
+        isConfirmationToggle()
+        || ((uid() == resource.data.proposedById || isModerator()) && namedByCaller())
+      );
+      // Only a moderator removes a name outright. A resident who thinks one is
+      // wrong proposes a correction instead, which keeps the history of who
+      // said what rather than leaving an unexplained blank.
+      allow delete: if isModerator();
+    }
+
     // ----------------------------------------------------------------- chats
 
     match /chats/{chatId} {

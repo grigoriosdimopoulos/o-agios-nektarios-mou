@@ -454,6 +454,65 @@ await check("member updates the conversation preview",
 await check("outsider cannot touch the conversation preview",
   assertFails(updateDoc(doc(outsider, "chats/giorgos_maria"), { lastMessage: "spam" })));
 
+// ---- residents naming their own streets
+//
+// This is the one collection an ordinary resident may write to that is not
+// theirs, so it gets the most adversarial run in this file: every way someone
+// could name a street on a neighbour's behalf, fake agreement with it, or
+// quietly rewrite a name other people had already confirmed.
+const streetProposal = (uid, name) => ({
+  name, proposedById: uid, proposedByName: uid, confirmedBy: [uid],
+  createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+});
+
+await check("resident names an unnamed street",
+  assertSucceeds(setDoc(doc(maria, "streetNames/852314600"),
+    streetProposal("maria", "Ελατιάς"))));
+await check("resident cannot propose under a neighbour's name",
+  assertFails(setDoc(doc(giorgos, "streetNames/852314601"),
+    streetProposal("maria", "Διονύσου"))));
+await check("a proposal cannot arrive pre-confirmed by others",
+  assertFails(setDoc(doc(giorgos, "streetNames/852314602"),
+    { ...streetProposal("giorgos", "Ζήρα"), confirmedBy: ["giorgos", "maria", "boss"] })));
+await check("an empty street name is refused",
+  assertFails(setDoc(doc(giorgos, "streetNames/852314603"),
+    streetProposal("giorgos", ""))));
+await check("an overlong street name is refused",
+  assertFails(setDoc(doc(giorgos, "streetNames/852314604"),
+    streetProposal("giorgos", "Ελ".repeat(40)))));
+await check("signed-out visitor cannot read street names",
+  assertFails(getDoc(doc(anon, "streetNames/852314600"))));
+
+await check("neighbour confirms the name",
+  assertSucceeds(updateDoc(doc(giorgos, "streetNames/852314600"),
+    { confirmedBy: ["maria", "giorgos"], updatedAt: serverTimestamp() })));
+await check("neighbour withdraws their confirmation",
+  assertSucceeds(updateDoc(doc(giorgos, "streetNames/852314600"),
+    { confirmedBy: ["maria"], updatedAt: serverTimestamp() })));
+await check("nobody may confirm on someone else's behalf",
+  assertFails(updateDoc(doc(giorgos, "streetNames/852314600"),
+    { confirmedBy: ["maria", "boss"], updatedAt: serverTimestamp() })));
+await check("nobody may strike out a neighbour's confirmation",
+  assertFails(updateDoc(doc(giorgos, "streetNames/852314600"),
+    { confirmedBy: [], updatedAt: serverTimestamp() })));
+await check("a confirmation cannot smuggle in a new name",
+  assertFails(updateDoc(doc(giorgos, "streetNames/852314600"),
+    { name: "Σκρα", confirmedBy: ["maria", "giorgos"], updatedAt: serverTimestamp() })));
+
+await check("a neighbour cannot rewrite a confirmed name",
+  assertFails(setDoc(doc(giorgos, "streetNames/852314600"),
+    streetProposal("giorgos", "Σκρα"))));
+await check("the proposer may correct their own street name",
+  assertSucceeds(setDoc(doc(maria, "streetNames/852314600"),
+    streetProposal("maria", "Ελατείας"))));
+await check("a moderator may correct any street name",
+  assertSucceeds(setDoc(doc(boss, "streetNames/852314600"),
+    streetProposal("boss", "Ελατιάς"))));
+await check("a resident cannot delete a street name",
+  assertFails(deleteDoc(doc(maria, "streetNames/852314600"))));
+await check("a moderator may delete a street name",
+  assertSucceeds(deleteDoc(doc(boss, "streetNames/852314600"))));
+
 await env.cleanup();
 
 const failed = results.filter(([ok]) => !ok);

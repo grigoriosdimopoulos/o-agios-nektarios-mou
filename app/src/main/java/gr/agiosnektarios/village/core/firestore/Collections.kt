@@ -13,6 +13,7 @@ object Collections {
     const val ANNOUNCEMENTS = "announcements"
     const val CHATS = "chats"
     const val MESSAGES = "messages"
+    const val STREET_NAMES = "streetNames"
 }
 
 /** FCM topics every signed-in device subscribes to. */

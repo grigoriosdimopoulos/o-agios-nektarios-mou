@@ -213,12 +213,18 @@ fun IssueComposeScreen(
                         darkTheme = LocalIsDarkTheme.current,
                         basemap = MapBasemap.STREETS,
                         greekLabels = greek,
+                        // The picker's only job is to place one pin, so every
+                        // tap is the pin: roads are drawn, but not tappable, and
+                        // their names are not fetched for a thumbnail map.
+                        streetNames = emptyMap(),
+                        allowRoadTaps = false,
                         focusBounds = state.position?.let {
                             GeoBounds(it.lat, it.lng, it.lat, it.lng)
                         },
                         onMapTap = viewModel::setPosition,
                         onClusterTap = {},
                         onBlockTap = {},
+                        onRoadTap = {},
                         onZoomChanged = {},
                     )
                 }

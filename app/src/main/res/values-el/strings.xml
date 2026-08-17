@@ -241,4 +241,20 @@
     <string name="map_basemap_satellite">Δορυφόρος</string>
     <string name="map_basemap_terrain">Ανάγλυφο</string>
     <string name="splash_quote_translation">τα βράχια του Κιθαιρώνα</string>
+
+    <!-- Ονόματα οδών: κανένας δημόσιος χάρτης δεν έχει τα ονόματα του οικισμού,
+         οπότε τα βάζουν οι κάτοικοι. Βλ. assets/village_roads.json. -->
+    <string name="street_name_unknown">Αυτός ο δρόμος δεν έχει ακόμη όνομα</string>
+    <string name="street_name_title">Όνομα οδού</string>
+    <string name="street_name_explainer">Κανένας χάρτης δεν έχει τα ονόματα των δρόμων μας, γι\' αυτό τα βάζουμε εμείς. Γράψε πώς λέγεται αυτός ο δρόμος και οι γείτονες μπορούν να το επιβεβαιώσουν.</string>
+    <string name="street_name_field">Όνομα οδού</string>
+    <string name="street_name_placeholder">π.χ. Ελατιάς</string>
+    <string name="street_name_save">Αποθήκευση ονόματος</string>
+    <string name="street_name_confirm">Σωστό είναι</string>
+    <string name="street_name_confirmed">Το επιβεβαίωσες</string>
+    <string name="street_name_change">Πρότεινε άλλο όνομα</string>
+    <plurals name="street_name_confirmations">
+        <item quantity="one">%1$d κάτοικος το επιβεβαιώνει · το πρόσθεσε ο/η %2$s</item>
+        <item quantity="other">%1$d κάτοικοι το επιβεβαιώνουν · το πρόσθεσε ο/η %2$s</item>
+    </plurals>
 </resources>
