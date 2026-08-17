@@ -14,6 +14,10 @@ local.properties
 !keystore/debug.keystore
 captures/
 .cxx/
+# The Kotlin daemon writes a liveness marker per build under .kotlin/sessions
+# and deletes it again on exit, so a tracked one shows up as a change after
+# every single compile. Build scratch, never source.
+.kotlin/
 
 # Firebase config — project-specific and contains client identifiers.
 # Every developer supplies their own; see docs/SETUP.md.
