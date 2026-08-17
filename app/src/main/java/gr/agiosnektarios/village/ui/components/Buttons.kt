@@ -94,7 +94,18 @@ fun PrimaryButton(
         enabled = enabled && !loading,
         interactionSource = interactionSource,
         shape = MaterialTheme.shapes.large,
-        colors = ButtonDefaults.buttonColors(),
+        // A loading button is disabled to the touch but must not *look*
+        // disabled: Material's disabled colours are a flat grey fill with
+        // grey-on-grey content, which rendered the spinner all but invisible.
+        // While loading, keep the live colours and only slightly recede them.
+        colors = if (loading) {
+            ButtonDefaults.buttonColors(
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+        } else {
+            ButtonDefaults.buttonColors()
+        },
     ) {
         // Extracted rather than written inline: a Button's content lambda is
         // `RowScope.() -> Unit`, so RowScope stays an implicit receiver inside

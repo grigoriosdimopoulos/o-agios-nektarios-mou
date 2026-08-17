@@ -1,6 +1,7 @@
 package gr.agiosnektarios.village.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -55,14 +56,34 @@ fun IssueCard(
         label = "issueCardScale",
     )
 
+    // Dark and light need opposite tricks to make a card read as a card.
+    //
+    // On dark, raising the fill is enough — a lighter block on near-black
+    // separates by itself. On light it is not: this palette's page is cream and
+    // every raised container is within a couple of percent of it, so the cards
+    // were dissolving into the background. Light therefore goes the other way —
+    // the card is pure white, brighter than the page, and carries a hairline
+    // outline. That is how a grouped list looks on iOS, and it is why cards
+    // there read as objects on a surface rather than as paragraphs.
+    val onDark = MaterialTheme.colorScheme.surface.isDark()
+
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().scale(scale),
         interactionSource = interactionSource,
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = if (onDark) {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLowest
+            },
         ),
+        border = if (onDark) {
+            null
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column {

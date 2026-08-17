@@ -64,14 +64,29 @@ fun SplashScreen(modifier: Modifier = Modifier) {
     var stage by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        delay(140)
+        // No opening delay. Every alpha on this screen is driven from `stage`,
+        // so while it is 0 the screen is genuinely blank — an empty tinted
+        // rectangle is the *first* thing the app shows, which is the worst
+        // possible place for it. The fade still reads as a fade because
+        // animateFloatAsState starts at 0 and springs up from there.
         stage = 1
-        delay(440)
+        delay(560)
         stage = 2
         delay(380)
         stage = 3
     }
 
+    SplashContent(stage = stage, modifier = modifier)
+}
+
+/**
+ * The splash at an explicit point in its sequence.
+ *
+ * Split out from the timed wrapper purely so it can be rendered and looked at:
+ * a screenshot of [SplashScreen] catches frame zero, which shows nothing.
+ */
+@Composable
+internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
     val greekAlpha by animateFloatAsState(
         targetValue = if (stage >= 1) 1f else 0f,
         animationSpec = Motion.slow(),

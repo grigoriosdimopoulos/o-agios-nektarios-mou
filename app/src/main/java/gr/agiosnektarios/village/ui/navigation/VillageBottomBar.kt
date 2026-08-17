@@ -53,11 +53,10 @@ fun VillageBottomBar(
     // Glass rather than an opaque bar: content scrolling beneath tints through
     // it, which is what makes chrome feel like it is floating above the app
     // instead of being a wall the app stops at.
-    GlassSurface(
-        modifier = modifier,
-        tint = MaterialTheme.colorScheme.surfaceContainer,
-        alpha = 0.86f,
-    ) {
+    // The tint is left to GlassSurface's default, which picks a container that
+    // contrasts with the page. Naming one here is how the bar previously ended
+    // up nearly the same colour as the screen behind it.
+    GlassSurface(modifier = modifier) {
     NavigationBar(
         containerColor = Color.Transparent,
         tonalElevation = 0.dp,
