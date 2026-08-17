@@ -204,7 +204,14 @@ fun VillageMap(
                 pendingPin = pendingPin,
                 greekLabels = greekLabels,
             )
-            focusBounds?.let { state.focus(it) }
+            // Guarded: without this, every recomposition restarts the fly-to
+            // and the camera never settles while a neighbourhood is open.
+            if (focusBounds != null && focusBounds != state.lastFocus) {
+                state.lastFocus = focusBounds
+                state.focus(focusBounds)
+            } else if (focusBounds == null) {
+                state.lastFocus = null
+            }
         },
     )
 }
@@ -226,6 +233,9 @@ private class VillageMapState {
     var styleBasemap: MapBasemap? = null
         private set
 
+    /** The bounds the camera was last sent to, so it is not sent again. */
+    var lastFocus: GeoBounds? = null
+
     private var style: Style? = null
     private var pending: (() -> Unit)? = null
     private val registeredBadges = mutableSetOf<String>()
@@ -242,6 +252,7 @@ private class VillageMapState {
         // reference makes render() queue its work instead of writing into a
         // style that is on its way out.
         style = null
+        invalidateRender()
         metrics = mapView.resources.displayMetrics
 
         val builder = when (basemap) {
@@ -385,6 +396,18 @@ private class VillageMapState {
         }
     }
 
+    /**
+     * What was last uploaded to the map, so identical work is not repeated.
+     *
+     * `AndroidView`'s update block runs on *every* recomposition, and this one
+     * rebuilds a Feature per report and per neighbourhood and hands the lot to
+     * the renderer. Doing that on a recomposition caused by something unrelated
+     * — a snackbar, a theme value, a badge — is a full geometry upload for no
+     * change at all, which is exactly what a map stuttering under your finger
+     * feels like.
+     */
+    private var lastRender: Int? = null
+
     fun render(
         clusters: List<IssueCluster>,
         blocks: List<BlockSummary>,
@@ -392,6 +415,17 @@ private class VillageMapState {
         pendingPin: GeoPoint?,
         greekLabels: Boolean,
     ) {
+        // Cheap identity of the inputs. Clusters and summaries are rebuilt as
+        // new instances each time the view model emits, so their contents —
+        // not their references — decide whether anything actually moved.
+        val signature = listOf(
+            clusters.map { it.id to it.size },
+            blocks.map { it.block.id to it.openCount },
+            showBlocks, pendingPin, greekLabels,
+        ).hashCode()
+        if (signature == lastRender && style != null) return
+        lastRender = signature
+
         val work = {
             val loaded = style
             if (loaded != null) {
@@ -400,6 +434,11 @@ private class VillageMapState {
             }
         }
         if (style != null) work() else pending = work
+    }
+
+    /** Reloading a style discards its sources, so the last upload is void too. */
+    fun invalidateRender() {
+        lastRender = null
     }
 
     private fun renderBlocks(

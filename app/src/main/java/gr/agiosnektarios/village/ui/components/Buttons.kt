@@ -29,6 +29,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.ui.theme.Motion
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 
 /**
  * The app's main call to action.
@@ -54,9 +58,37 @@ fun PrimaryButton(
         label = "primaryButtonScale",
     )
 
+    // A press dims the fill as well as shrinking it. Scale alone reads as the
+    // button moving away; scale plus a darker face reads as it being pushed
+    // *in*, which is the difference between an animation and a control.
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = Motion.snap(),
+        label = "primaryButtonPress",
+    )
+
     Button(
         onClick = onClick,
-        modifier = modifier.height(54.dp).scale(scale),
+        modifier = modifier
+            .height(54.dp)
+            .scale(scale)
+            .clip(MaterialTheme.shapes.large)
+            .drawWithContent {
+                drawContent()
+                // Top-down sheen: lighter across the upper third, so the face
+                // is lit rather than filled. Flat colour is what makes a
+                // Material button look like a rectangle and an iOS button look
+                // like an object.
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.16f),
+                        0.5f to Color.Transparent,
+                    ),
+                )
+                if (press > 0f) {
+                    drawRect(color = Color.Black.copy(alpha = 0.13f * press))
+                }
+            },
         // Stays clickable-looking but inert while loading, so a double tap
         // cannot submit a report twice.
         enabled = enabled && !loading,
