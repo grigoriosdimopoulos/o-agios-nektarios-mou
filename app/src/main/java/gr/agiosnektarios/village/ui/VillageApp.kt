@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import gr.agiosnektarios.village.data.session.SessionState
 import gr.agiosnektarios.village.ui.components.LoadingState
 import gr.agiosnektarios.village.ui.navigation.Routes
+import gr.agiosnektarios.village.ui.navigation.edgeSwipeBack
 import gr.agiosnektarios.village.ui.navigation.TopLevelDestination
 import gr.agiosnektarios.village.ui.navigation.VillageBottomBar
 import gr.agiosnektarios.village.ui.navigation.VillageNavHost
@@ -161,7 +162,17 @@ private fun SignedInApp(
         // stays correct if a slot is ever filled. Critically it can no longer
         // *change*: nothing occupies a Scaffold slot, so this padding has
         // nothing to animate and cannot resize the graph mid-transition.
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                // Below Android 14 the system's predictive back gesture never
+                // reports progress, so Navigation's seeking never runs and a
+                // swipe does nothing. This recognises the gesture instead.
+                // Only where there is something to go back to: on a top-level
+                // tab it must not fire. See EdgeSwipeBack.
+                .edgeSwipeBack(enabled = !showBottomBar) { navController.popBackStack() },
+        ) {
             VillageNavHost(
                 navController = navController,
                 startDestination = Routes.MAP,
