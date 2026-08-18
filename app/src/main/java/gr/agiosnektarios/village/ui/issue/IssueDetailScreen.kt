@@ -198,8 +198,9 @@ fun IssueDetailScreen(
     }
 }
 
+/** Stateless already; internal so it can be rendered off-device. */
 @Composable
-private fun IssueDetailContent(
+internal fun IssueDetailContent(
     issue: Issue,
     comments: List<Comment>,
     photos: List<IssuePhoto>,

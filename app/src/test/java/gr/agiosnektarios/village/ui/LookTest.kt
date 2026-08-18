@@ -215,9 +215,9 @@ private fun EmptyGallery() {
     )
 }
 
-private fun at(minutesAgo: Long) = Date(1_755_000_000_000L - minutesAgo * 60_000L)
+internal fun at(minutesAgo: Long) = Date(1_755_000_000_000L - minutesAgo * 60_000L)
 
-private val sampleIssues = listOf(
+internal val sampleIssues = listOf(
     Issue(
         id = "1",
         title = "Σπασμένος στύλος φωτισμού στην κεντρική",

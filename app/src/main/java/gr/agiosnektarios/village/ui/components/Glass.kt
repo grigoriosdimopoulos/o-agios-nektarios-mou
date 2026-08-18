@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.ui.theme.isDark
 
 /**
  * The translucent material platform chrome is made of.
@@ -112,10 +113,6 @@ private fun separatorColor(dark: Boolean): Color =
  */
 fun Modifier.glassBlur(radius: Dp = 24.dp): Modifier =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) blur(radius) else this
-
-/** Rough perceptual luminance test, to decide which way a highlight should go. */
-internal fun Color.isDark(): Boolean =
-    (0.299f * red + 0.587f * green + 0.114f * blue) < 0.5f
 
 /**
  * A scrim that fades content out under chrome instead of cutting it off.

@@ -52,7 +52,16 @@ fun ChatsScreen(
     viewModel: ChatsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ChatsContent(state = state, onOpenChat = onOpenChat, onNewChat = onNewChat)
+}
 
+/** Stateless, so the screen can be rendered without Hilt or a device. */
+@Composable
+internal fun ChatsContent(
+    state: ChatsUiState,
+    onOpenChat: (String) -> Unit,
+    onNewChat: () -> Unit,
+) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(

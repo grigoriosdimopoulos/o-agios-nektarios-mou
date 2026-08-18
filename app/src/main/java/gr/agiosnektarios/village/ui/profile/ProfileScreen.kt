@@ -40,6 +40,10 @@ import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.TagPill
 import gr.agiosnektarios.village.ui.components.isGreekLocale
 import gr.agiosnektarios.village.ui.theme.Motion
+import androidx.compose.foundation.border
+import gr.agiosnektarios.village.ui.components.ScreenHeader
+import gr.agiosnektarios.village.ui.theme.raisedContainer
+import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 
 @Composable
@@ -51,6 +55,26 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ProfileContent(
+        state = state,
+        onOpenIssue = onOpenIssue,
+        onEditProfile = onEditProfile,
+        onOpenSettings = onOpenSettings,
+        onOpenAdmin = onOpenAdmin,
+        onSignOut = viewModel::signOut,
+    )
+}
+
+/** Stateless, so the screen can be rendered without Hilt or a device. */
+@Composable
+internal fun ProfileContent(
+    state: ProfileUiState,
+    onOpenIssue: (String) -> Unit,
+    onEditProfile: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenAdmin: () -> Unit,
+    onSignOut: () -> Unit,
+) {
     val profile = state.profile
     val greek = isGreekLocale()
 
@@ -60,10 +84,12 @@ fun ProfileScreen(
         contentPadding = PaddingValues(bottom = BottomBarDefaults.contentPadding() + 24.dp),
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
+            // A title, like every other top-level screen. Without one this was
+            // the only tab that opened on a row of unexplained icons floating
+            // in the corner, which is why it read as a different app.
+            ScreenHeader(
+                title = stringResource(R.string.profile_title),
+                actions = {
                 if (profile?.isAdmin == true) {
                     IconButton(onClick = onOpenAdmin) {
                         Icon(
@@ -84,13 +110,14 @@ fun ProfileScreen(
                         contentDescription = stringResource(R.string.settings_title),
                     )
                 }
-                IconButton(onClick = viewModel::signOut) {
+                IconButton(onClick = onSignOut) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Logout,
                         contentDescription = stringResource(R.string.sign_out),
                     )
                 }
-            }
+                },
+            )
         }
 
         item {
@@ -201,10 +228,22 @@ private fun StatTile(
         label = "statTile",
     )
 
+    val outline = raisedOutline
+
     Column(
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .background(raisedContainer)
+            // Same treatment as every other raised surface; see Surfaces.kt.
+            // These tiles were surfaceContainerLow on a cream page, which is
+            // the third time that particular colour has been invisible.
+            .then(
+                if (outline != null) {
+                    Modifier.border(outline, MaterialTheme.shapes.medium)
+                } else {
+                    Modifier
+                },
+            )
             .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

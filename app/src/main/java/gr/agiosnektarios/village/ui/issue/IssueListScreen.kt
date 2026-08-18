@@ -57,16 +57,44 @@ fun IssueListScreen(
     viewModel: IssueListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    IssueListContent(
+        state = state,
+        onOpenIssue = onOpenIssue,
+        onQueryChange = viewModel::onQueryChange,
+        onSortChange = viewModel::onSortChange,
+        onToggleStatus = viewModel::toggleStatus,
+        onToggleCategory = viewModel::toggleCategory,
+    )
+}
 
+/**
+ * The screen with its state handed in rather than collected.
+ *
+ * Split out so it can be rendered without Hilt, a repository or a device.
+ * Every screen-level defect found so far — chrome the colour of the page,
+ * screens showing through each other — was invisible while the only things
+ * that could be rendered were individual components.
+ */
+@Composable
+internal fun IssueListContent(
+    state: IssueListUiState,
+    onOpenIssue: (String) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onSortChange: (IssueSort) -> Unit,
+    onToggleStatus: (IssueStatus) -> Unit,
+    onToggleCategory: (IssueCategory) -> Unit,
+    /** Rows already shown. Pre-fill it to render the list in its settled state. */
+    revealed: MutableSet<String> = rememberRevealedRows(),
+) {
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         ScreenHeader(
             title = stringResource(R.string.issues_title),
-            actions = { SortMenu(current = state.sort, onSelect = viewModel::onSortChange) },
+            actions = { SortMenu(current = state.sort, onSelect = onSortChange) },
         )
 
         VillageTextField(
             value = state.query,
-            onValueChange = viewModel::onQueryChange,
+            onValueChange = onQueryChange,
             label = stringResource(R.string.issues_search),
             leadingIcon = Icons.Filled.Search,
             imeAction = ImeAction.Search,
@@ -81,7 +109,7 @@ fun IssueListScreen(
                 StatusChip(
                     status = status,
                     selected = status in state.statuses,
-                    onClick = { viewModel.toggleStatus(status) },
+                    onClick = { onToggleStatus(status) },
                 )
             }
         }
@@ -94,7 +122,7 @@ fun IssueListScreen(
                 CategoryChip(
                     category = category,
                     selected = category in state.categories,
-                    onClick = { viewModel.toggleCategory(category) },
+                    onClick = { onToggleCategory(category) },
                 )
             }
         }
@@ -121,7 +149,7 @@ fun IssueListScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                itemsIndexedStaggered(state.issues.map { it.id }) { index, _ ->
+                itemsIndexedStaggered(state.issues.map { it.id }, revealed) { index, _ ->
                     val issue = state.issues[index]
                     IssueCard(issue = issue, onClick = { onOpenIssue(issue.id) })
                 }
@@ -130,30 +158,62 @@ fun IssueListScreen(
     }
 }
 
+/** Survives item recycling, because it lives above the list rather than in it. */
+@Composable
+private fun rememberRevealedRows(): MutableSet<String> =
+    // A snapshot-backed list wrapped as a set: adding a key has to trigger
+    // recomposition of the row watching it, which a plain mutableSetOf does not.
+    remember { androidx.compose.runtime.mutableStateListOf<String>().asMutableSet() }
+
+/** Minimal set view over a snapshot list — the app only ever adds and tests. */
+private fun androidx.compose.runtime.snapshots.SnapshotStateList<String>.asMutableSet():
+    MutableSet<String> = object : AbstractMutableSet<String>() {
+        override val size: Int get() = this@asMutableSet.size
+        override fun iterator(): MutableIterator<String> = this@asMutableSet.iterator()
+        override fun add(element: String): Boolean =
+            if (this@asMutableSet.contains(element)) false else this@asMutableSet.add(element)
+    }
+
 /**
- * Items fade and rise in sequence the first time they appear.
+ * Items fade and rise in sequence the first time the list appears.
  *
- * The stagger is capped at [Motion.MAX_STAGGERED_ITEMS] so a long list does not
- * take a second to finish arriving — beyond the first screenful the effect is
- * invisible anyway, and paying for it would just delay content.
+ * "The first time the list appears" is the whole difficulty, and the previous
+ * version got it wrong in a way that is worse than having no animation at all.
+ * It held the visibility flag in `remember(key)` *inside* the item — and a
+ * LazyColumn destroys an item's composition as soon as it scrolls off. Scroll
+ * down and back and the flag was gone, so every row faded and slid in again,
+ * every time, for the life of the screen. A list whose rows animate on every
+ * scroll does not read as polish; it reads as a list that cannot keep up.
+ *
+ * The set of rows that have already arrived is therefore held *above* the
+ * LazyColumn, where recycling cannot touch it. Each row animates exactly once.
+ *
+ * [revealed] is hoisted for a second reason: at frame zero every row is
+ * invisible, so a screenshot of this screen is a blank page — which is exactly
+ * how the empty list was found. A caller that wants the settled state passes
+ * a pre-filled set.
  */
 private fun androidx.compose.foundation.lazy.LazyListScope.itemsIndexedStaggered(
     keys: List<String>,
+    revealed: MutableSet<String>,
     content: @Composable (index: Int, key: String) -> Unit,
 ) {
     items(count = keys.size, key = { keys[it] }) { index ->
-        val visible: MutableState<Boolean> = remember(keys[index]) { mutableStateOf(false) }
-        androidx.compose.runtime.LaunchedEffect(keys[index]) {
-            kotlinx.coroutines.delay(
-                (index.coerceAtMost(Motion.MAX_STAGGERED_ITEMS) * Motion.STAGGER_MS).toLong(),
-            )
-            visible.value = true
+        val key = keys[index]
+        val alreadyHere = key in revealed
+        androidx.compose.runtime.LaunchedEffect(key) {
+            if (!alreadyHere) {
+                kotlinx.coroutines.delay(
+                    (index.coerceAtMost(Motion.MAX_STAGGERED_ITEMS) * Motion.STAGGER_MS).toLong(),
+                )
+                revealed.add(key)
+            }
         }
         AnimatedVisibility(
-            visible = visible.value,
+            visible = key in revealed,
             enter = fadeIn(tween(280)) + slideInVertically(tween(280)) { it / 6 },
         ) {
-            content(index, keys[index])
+            content(index, key)
         }
     }
 }

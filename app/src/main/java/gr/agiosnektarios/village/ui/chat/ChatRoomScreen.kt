@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,7 +61,6 @@ fun ChatRoomScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    var menuExpanded by remember { mutableStateOf(false) }
 
     // New message arriving while the room is open: scroll to it and clear the
     // unread badge, since the user is demonstrably reading.
@@ -70,6 +70,29 @@ fun ChatRoomScreen(
             viewModel.markRead()
         }
     }
+
+    ChatRoomContent(
+        state = state,
+        listState = listState,
+        onBack = onBack,
+        onDraftChange = viewModel::onDraftChange,
+        onSend = viewModel::send,
+        onLeave = { viewModel.leave(onBack) },
+    )
+}
+
+/** Stateless, so the busiest screen in the app can be rendered off-device. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ChatRoomContent(
+    state: ChatRoomUiState,
+    onBack: () -> Unit,
+    onDraftChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onLeave: () -> Unit,
+    listState: LazyListState = rememberLazyListState(),
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -105,7 +128,7 @@ fun ChatRoomScreen(
                                     text = { Text(stringResource(R.string.chat_leave)) },
                                     onClick = {
                                         menuExpanded = false
-                                        viewModel.leave(onBack)
+                                        onLeave()
                                     },
                                 )
                             }
@@ -124,8 +147,8 @@ fun ChatRoomScreen(
                 )
                 MessageComposer(
                     draft = state.draft,
-                    onDraftChange = viewModel::onDraftChange,
-                    onSend = viewModel::send,
+                    onDraftChange = onDraftChange,
+                    onSend = onSend,
                 )
             }
         },
@@ -144,7 +167,13 @@ fun ChatRoomScreen(
                 start = 12.dp,
                 end = 12.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            // Bottom-anchored, which is the single thing that separates a
+            // conversation from a list of messages. `Arrangement.Bottom` only
+            // takes effect when the content is shorter than the viewport, so a
+            // short conversation sits on the composer instead of floating at
+            // the top of an empty screen; once it overflows, this is a no-op
+            // and normal scrolling takes over.
+            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.Bottom),
         ) {
             items(state.messages, key = { it.id }) { message ->
                 when {
