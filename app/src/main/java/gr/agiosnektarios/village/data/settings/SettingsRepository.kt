@@ -58,6 +58,14 @@ data class AppSettings(
     val showBlocksLayer: Boolean = true,
     val basemap: MapBasemap = MapBasemap.STREETS,
     val hasSeenOnboarding: Boolean = false,
+    /**
+     * Whether the resident has been shown that streets can be named by tapping.
+     *
+     * The village's streets are not in any public dataset, so the map ships
+     * with none — and a feature nobody can find is the same as a feature that
+     * does not exist. The hint appears once, over the map, until dismissed.
+     */
+    val hasSeenStreetHint: Boolean = false,
 )
 
 @Singleton
@@ -75,6 +83,7 @@ class SettingsRepository @Inject constructor(
         val BLOCKS_LAYER = booleanPreferencesKey("blocks_layer")
         val BASEMAP = stringPreferencesKey("basemap")
         val ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+        val STREET_HINT = booleanPreferencesKey("has_seen_street_hint")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -92,6 +101,7 @@ class SettingsRepository @Inject constructor(
                 showBlocksLayer = prefs[Keys.BLOCKS_LAYER] ?: true,
                 basemap = MapBasemap.fromId(prefs[Keys.BASEMAP]),
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
+                hasSeenStreetHint = prefs[Keys.STREET_HINT] ?: false,
             )
         }
 
@@ -104,6 +114,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setBasemap(basemap: MapBasemap) = edit { it[Keys.BASEMAP] = basemap.id }
 
     suspend fun setOnboardingSeen() = edit { it[Keys.ONBOARDING] = true }
+
+    suspend fun setStreetHintSeen() = edit { it[Keys.STREET_HINT] = true }
 
     suspend fun setNotificationPref(pref: NotificationPref, enabled: Boolean) = edit {
         it[pref.key] = enabled

@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,7 +38,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -51,6 +55,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,6 +68,7 @@ import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.core.model.StreetName
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
+import gr.agiosnektarios.village.ui.components.GlassSurface
 import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
@@ -69,6 +76,8 @@ import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.core.MapBasemap
 import gr.agiosnektarios.village.ui.components.isGreekLocale
+import gr.agiosnektarios.village.ui.components.pressable
+import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 
 /**
@@ -128,6 +137,7 @@ fun MapScreen(
             onStartPlacing = viewModel::startPlacingPin,
             onCancelPlacing = viewModel::cancelPlacingPin,
             onConfirmPlacement = { point -> onCreateIssueAt(point.lat, point.lng) },
+            onDismissStreetHint = viewModel::dismissStreetHint,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -343,39 +353,59 @@ private fun MapOverlay(
     onStartPlacing: () -> Unit,
     onCancelPlacing: () -> Unit,
     onConfirmPlacement: (GeoPoint) -> Unit,
+    onDismissStreetHint: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        Column(
+        // One glass column with hairline dividers rather than three floating
+        // pucks. Grouping controls that belong together into a single piece of
+        // material — and letting the map show through it — is the difference
+        // between "buttons placed on a map" and "a map with controls".
+        GlassSurface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(12.dp)
+                .width(48.dp),
+            shape = RoundedCornerShape(16.dp),
+            alpha = 0.92f,
+            // No top hairline: that separator exists to divide chrome from the
+            // content it is flush against. On a rounded thing floating over a
+            // map it reads as a stray line.
+            edge = false,
         ) {
-            FilledTonalIconButton(onClick = onToggleFilters) {
-                Icon(
-                    imageVector = Icons.Filled.FilterList,
+            Column {
+                MapControl(
+                    icon = Icons.Filled.FilterList,
                     contentDescription = stringResource(R.string.map_filter),
-                    tint = if (state.filters.isActive) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    active = state.filters.isActive,
+                    onClick = onToggleFilters,
                 )
-            }
-            BasemapButton(current = state.basemap, onSelect = onSelectBasemap)
-            FilledTonalIconButton(onClick = onToggleBlocks) {
-                Icon(
-                    imageVector = Icons.Filled.Layers,
+                ControlDivider()
+                BasemapButton(current = state.basemap, onSelect = onSelectBasemap)
+                ControlDivider()
+                MapControl(
+                    icon = Icons.Filled.Layers,
                     contentDescription = stringResource(R.string.map_blocks_layer),
-                    tint = if (state.showBlocks) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    active = state.showBlocks,
+                    onClick = onToggleBlocks,
                 )
             }
+        }
+
+        // The village's streets carry no names in any public dataset, so the
+        // map ships with none and the only way to get one is to tap a road.
+        // A feature nobody can find is the same as a feature that is not there.
+        AnimatedVisibility(
+            visible = state.showStreetHint,
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, end = 88.dp)
+                .padding(bottom = BottomBarDefaults.contentPadding() + 16.dp),
+        ) {
+            StreetNamingHint(onDismiss = onDismissStreetHint)
         }
 
         // Placement mode replaces the FAB with an instruction banner plus a
@@ -420,7 +450,12 @@ private fun MapOverlay(
                     else -> Unit
                 }
             },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            // The navigation bar is drawn over the map rather than beside it,
+            // so nothing reserves its height: the FAB clears it itself.
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .padding(bottom = BottomBarDefaults.contentPadding()),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
@@ -532,17 +567,18 @@ private fun BasemapButton(current: MapBasemap, onSelect: (MapBasemap) -> Unit) {
     var open by remember { mutableStateOf(false) }
 
     Box {
-        FilledTonalIconButton(onClick = { open = true }) {
-            Icon(
-                imageVector = when (current) {
-                    MapBasemap.STREETS -> Icons.Filled.Map
-                    MapBasemap.SATELLITE -> Icons.Filled.Satellite
-                    MapBasemap.TERRAIN -> Icons.Filled.Terrain
-                },
-                contentDescription = stringResource(R.string.map_basemap),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        // Same shape as its neighbours in the cluster: the basemap switcher is
+        // one control among three, not a puck that happens to sit near them.
+        MapControl(
+            icon = when (current) {
+                MapBasemap.STREETS -> Icons.Filled.Map
+                MapBasemap.SATELLITE -> Icons.Filled.Satellite
+                MapBasemap.TERRAIN -> Icons.Filled.Terrain
+            },
+            contentDescription = stringResource(R.string.map_basemap),
+            active = false,
+            onClick = { open = true },
+        )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             MapBasemap.entries.forEach { option ->
                 DropdownMenuItem(
@@ -580,4 +616,80 @@ private fun BasemapButton(current: MapBasemap, onSelect: (MapBasemap) -> Unit) {
             }
         }
     }
+}
+
+/**
+ * The one affordance that makes street naming discoverable.
+ *
+ * Extracted and internal so it can be rendered on its own — chrome that only
+ * exists on top of a live MapView is chrome nobody ever looks at closely.
+ */
+@Composable
+internal fun StreetNamingHint(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    GlassSurface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        alpha = 0.94f,
+        edge = false,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.street_hint),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.action_dismiss),
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickableNoRipple(onDismiss)
+                    .padding(6.dp)
+                    .size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** One control in the map's glass cluster. */
+@Composable
+internal fun MapControl(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    active: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clickableNoRipple(onClick)
+            .pressable(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (active) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.size(21.dp),
+        )
+    }
+}
+
+/** The hairline between grouped controls, as an inset rule rather than a full one. */
+@Composable
+internal fun ControlDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 10.dp),
+        thickness = Dp.Hairline,
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
 }

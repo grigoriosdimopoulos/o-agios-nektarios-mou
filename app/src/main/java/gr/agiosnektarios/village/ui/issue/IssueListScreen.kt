@@ -49,6 +49,7 @@ import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
+import gr.agiosnektarios.village.ui.components.ScreenHeader
 
 @Composable
 fun IssueListScreen(
@@ -58,18 +59,10 @@ fun IssueListScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.issues_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.weight(1f),
-            )
-            SortMenu(current = state.sort, onSelect = viewModel::onSortChange)
-        }
+        ScreenHeader(
+            title = stringResource(R.string.issues_title),
+            actions = { SortMenu(current = state.sort, onSelect = viewModel::onSortChange) },
+        )
 
         VillageTextField(
             value = state.query,

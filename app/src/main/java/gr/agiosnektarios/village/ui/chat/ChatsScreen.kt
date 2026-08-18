@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +43,7 @@ import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
+import gr.agiosnektarios.village.ui.components.ScreenHeader
 
 @Composable
 fun ChatsScreen(
@@ -52,20 +55,25 @@ fun ChatsScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = onNewChat) {
+            FloatingActionButton(
+                onClick = onNewChat,
+                // Clears the navigation bar, which is drawn over this screen
+                // rather than occupying a slot beside it.
+                modifier = Modifier.padding(bottom = BottomBarDefaults.contentPadding()),
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = stringResource(R.string.chat_new),
                 )
             }
         },
+        // Only the top inset belongs to this Scaffold: the app's navigation
+        // bar is drawn over the screen, so its height is added by whatever
+        // must clear it rather than reserved here.
+        contentWindowInsets = WindowInsets.statusBars,
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Text(
-                text = stringResource(R.string.chat_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            ScreenHeader(title = stringResource(R.string.chat_title))
 
             when {
                 state.loading -> ListSkeleton()

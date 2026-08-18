@@ -12,6 +12,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
@@ -23,9 +29,13 @@ import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.GlassSurface
 import gr.agiosnektarios.village.ui.components.IssueCard
 import gr.agiosnektarios.village.ui.components.PrimaryButton
+import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.VoteBar
+import gr.agiosnektarios.village.ui.map.ControlDivider
+import gr.agiosnektarios.village.ui.map.MapControl
+import gr.agiosnektarios.village.ui.map.StreetNamingHint
 import gr.agiosnektarios.village.ui.theme.VillageTheme
 import java.util.Date
 import org.junit.Rule
@@ -95,6 +105,10 @@ class LookTest {
 
     @Test fun form_dark() = render(dark = true) { FormGallery() }
 
+    @Test fun map_chrome_light() = render { MapChrome() }
+
+    @Test fun map_chrome_dark() = render(dark = true) { MapChrome() }
+
     @Test fun empty_light() = render { EmptyGallery() }
 
     @Test fun empty_dark() = render(dark = true) { EmptyGallery() }
@@ -155,12 +169,15 @@ private fun GlassGallery() {
 
 @Composable
 private fun Feed() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        sampleIssues.forEach { issue ->
-            IssueCard(issue = issue, onClick = {})
+    Column {
+        ScreenHeader(title = "Αναφορές", subtitle = "4 ανοιχτές στο χωριό")
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            sampleIssues.forEach { issue ->
+                IssueCard(issue = issue, onClick = {})
+            }
         }
     }
 }
@@ -246,3 +263,50 @@ private val sampleIssues = listOf(
         createdAt = at(60 * 24 * 9),
     ),
 )
+
+/**
+ * The map's own chrome, rendered off the map.
+ *
+ * These float over a live MapView, which no snapshot can draw, so they were
+ * never actually looked at — the glass cluster and the naming hint are the two
+ * things a resident sees first on the screen the app opens with.
+ */
+@Composable
+internal fun MapChrome() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalAlignment = Alignment.End,
+    ) {
+        GlassSurface(
+            modifier = Modifier.width(48.dp),
+            shape = RoundedCornerShape(16.dp),
+            alpha = 0.92f,
+            edge = false,
+        ) {
+            Column {
+                MapControl(
+                    icon = Icons.Filled.FilterList,
+                    contentDescription = "filter",
+                    active = true,
+                    onClick = {},
+                )
+                ControlDivider()
+                MapControl(
+                    icon = Icons.Filled.Map,
+                    contentDescription = "basemap",
+                    active = false,
+                    onClick = {},
+                )
+                ControlDivider()
+                MapControl(
+                    icon = Icons.Filled.Layers,
+                    contentDescription = "blocks",
+                    active = false,
+                    onClick = {},
+                )
+            }
+        }
+        StreetNamingHint(onDismiss = {}, modifier = Modifier.width(280.dp))
+    }
+}

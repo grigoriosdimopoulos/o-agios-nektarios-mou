@@ -16,9 +16,18 @@
         android:name="android.hardware.location.gps"
         android:required="false" />
 
+    <!--
+      enableOnBackInvokedCallback is what turns the back gesture from an event
+      into a gesture. Without it the screen leaves only when you lift your
+      finger and nothing moves while you drag. Navigation Compose 2.8 seeks the
+      pop transition with the swipe — the leaving screen tracks your thumb, the
+      one underneath slides back in, and releasing halfway returns you to where
+      you were — but that whole mechanism is inert until the activity opts in.
+    -->
     <application
         android:name=".VillageApplication"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

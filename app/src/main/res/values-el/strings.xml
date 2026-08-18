@@ -257,4 +257,6 @@
         <item quantity="one">%1$d κάτοικος το επιβεβαιώνει · το πρόσθεσε ο/η %2$s</item>
         <item quantity="other">%1$d κάτοικοι το επιβεβαιώνουν · το πρόσθεσε ο/η %2$s</item>
     </plurals>
+    <string name="street_hint">Πάτησε έναν δρόμο για να του δώσεις όνομα</string>
+    <string name="action_dismiss">Κλείσιμο</string>
 </resources>

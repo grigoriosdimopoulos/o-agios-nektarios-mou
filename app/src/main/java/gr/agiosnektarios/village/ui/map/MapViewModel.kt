@@ -56,6 +56,8 @@ data class MapUiState(
     val streetNames: Map<String, String> = emptyMap(),
     /** The street whose naming sheet is open, if any. */
     val selectedStreet: SelectedStreet? = null,
+    /** Whether to offer the "tap a street to name it" hint over the map. */
+    val showStreetHint: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -181,6 +183,11 @@ class MapViewModel @Inject constructor(
                 )
             },
             errorMessage = context.error,
+            // Only worth showing while there is something to name, and only
+            // when the resident is not in the middle of placing a pin.
+            showStreetHint = !context.settings.hasSeenStreetHint &&
+                !interactionState.placingPin &&
+                interactionState.selectedWayId == null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MapUiState())
 
@@ -282,6 +289,10 @@ class MapViewModel @Inject constructor(
                 .onSuccess { dismissStreetSheet() }
                 .onFailure { error -> showError(error) }
         }
+    }
+
+    fun dismissStreetHint() {
+        viewModelScope.launch { settingsRepository.setStreetHintSeen() }
     }
 
     fun clearError() = errors.update { null }

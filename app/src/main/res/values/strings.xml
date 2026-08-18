@@ -283,4 +283,6 @@
         <item quantity="one">%1$d resident confirms it · added by %2$s</item>
         <item quantity="other">%1$d residents confirm it · added by %2$s</item>
     </plurals>
+    <string name="street_hint">Tap a street to give it its name</string>
+    <string name="action_dismiss">Dismiss</string>
 </resources>
