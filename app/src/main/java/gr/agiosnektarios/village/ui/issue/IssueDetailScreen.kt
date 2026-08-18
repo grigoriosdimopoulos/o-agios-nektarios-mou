@@ -73,6 +73,9 @@ import androidx.compose.foundation.border
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.IssueTimeline
 import androidx.compose.material.icons.filled.PanTool
+import gr.agiosnektarios.village.ui.components.sharedElementOrNone
+import gr.agiosnektarios.village.ui.components.sharedBoundsOrNone
+import gr.agiosnektarios.village.ui.components.SharedKeys
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -259,6 +262,9 @@ internal fun IssueDetailContent(
                 modifier = Modifier
                     .padding(horizontal = Space.page, vertical = Space.gutter)
                     .fillMaxWidth()
+                    // The other half of the transition: the card you tapped
+                    // grows into this. See SharedTransition.kt.
+                    .sharedBoundsOrNone(SharedKeys.issueCard(issue.id))
                     .clip(MaterialTheme.shapes.medium)
                     .background(raisedContainer)
                     .then(
@@ -272,7 +278,11 @@ internal fun IssueDetailContent(
                     CategoryChip(category = issue.category)
                     StatusChip(status = issue.status)
                 }
-                Text(text = issue.title, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = issue.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.sharedElementOrNone(SharedKeys.issueTitle(issue.id)),
+                )
                 if (issue.description.isNotBlank()) {
                     Text(
                         text = issue.description,

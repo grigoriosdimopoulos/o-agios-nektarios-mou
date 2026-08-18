@@ -72,6 +72,10 @@ fun IssueCard(
             // Depth in the light theme, where a hairline alone was not enough
             // to lift a white card off a cream page. Zero in the dark theme,
             // which separates by value instead. See Surfaces.kt.
+            // The card and the detail page's header carry the same key, so
+            // tapping does not slide a new screen over this one — this one
+            // becomes it.
+            .sharedBoundsOrNone(SharedKeys.issueCard(issue.id))
             .then(
                 if (lift > 0.dp) {
                     Modifier.shadow(
@@ -118,6 +122,7 @@ fun IssueCard(
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.sharedElementOrNone(SharedKeys.issueTitle(issue.id)),
                     )
                     if (issue.description.isNotBlank()) {
                         Text(

@@ -51,6 +51,11 @@ import gr.agiosnektarios.village.ui.profile.ProfileScreen
 import gr.agiosnektarios.village.ui.settings.ChangePasswordScreen
 import gr.agiosnektarios.village.ui.settings.SettingsScreen
 import gr.agiosnektarios.village.ui.theme.Motion
+import gr.agiosnektarios.village.ui.components.LocalSharedTransitionScope
+import gr.agiosnektarios.village.ui.components.LocalAnimatedVisibilityScope
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 
 /**
  * The push. A new screen slides in from the trailing edge while the one it
@@ -179,7 +184,12 @@ private fun NavGraphBuilder.screen(
     popEnterTransition = { if (motion == ScreenMotion.TAB) tabEnter() else popEnter() },
     popExitTransition = { if (motion == ScreenMotion.TAB) tabExit() else popExit() },
 ) { entry ->
-    ScreenBackdrop(motion) { content(entry) }
+    // Each destination publishes its own AnimatedVisibilityScope, which is the
+    // half of a shared transition that knows *when* the element is arriving or
+    // leaving. Without it a shared key is inert.
+    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+        ScreenBackdrop(motion) { content(entry) }
+    }
 }
 
 /**
@@ -189,6 +199,7 @@ private fun NavGraphBuilder.screen(
  * destinations slide in from the side, so the direction of travel is always
  * legible.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun VillageNavHost(
     navController: NavHostController,
@@ -197,10 +208,15 @@ fun VillageNavHost(
     profile: UserProfile?,
     showSnackbar: (String) -> Unit,
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-    ) {
+    // Everything the graph draws lives inside one SharedTransitionLayout, which
+    // is what lets a card on one screen and a header on the next be understood
+    // as the same object rather than two similar rectangles.
+    SharedTransitionLayout {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+            ) {
         // ------------------------------------------------------------ auth
         screen(Routes.SIGN_IN) {
             // No onSignedIn callback: SessionState swaps the whole graph.
@@ -361,6 +377,7 @@ fun VillageNavHost(
                 showSnackbar = showSnackbar,
             )
         }
+            }
+        }
     }
 }
-
