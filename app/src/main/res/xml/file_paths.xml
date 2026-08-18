@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Where the camera is allowed to write.
+
+  One directory, inside the app's own cache, holding nothing but the frame
+  just captured. A photo taken for a report is read straight back, re-encoded
+  into the report document by ImageCodec, and the file is then rubbish — it
+  never belongs in the phone's gallery, and it must not survive the report.
+-->
+<paths>
+    <cache-path name="captures" path="captures/" />
+</paths>

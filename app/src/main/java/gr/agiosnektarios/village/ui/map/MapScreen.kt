@@ -71,6 +71,8 @@ import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.GlassSurface
 import gr.agiosnektarios.village.ui.components.IssueRow
+import gr.agiosnektarios.village.ui.issue.QuickReportSheet
+import gr.agiosnektarios.village.ui.issue.QuickReportViewModel
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
@@ -80,6 +82,10 @@ import gr.agiosnektarios.village.ui.components.isGreekLocale
 import gr.agiosnektarios.village.ui.components.pressable
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
+import gr.agiosnektarios.village.data.media.CaptureFile
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 
 /**
  * The village map: reports as pins, neighbourhoods as tinted polygons with
@@ -91,11 +97,14 @@ fun MapScreen(
     onOpenIssue: (String) -> Unit,
     onCreateIssueAt: (Double, Double) -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
+    quickReport: QuickReportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val darkTheme = LocalIsDarkTheme.current
     val greek = isGreekLocale()
     var showFilters by remember { mutableStateOf(false) }
+    val quick by quickReport.uiState.collectAsStateWithLifecycle()
+    var showQuickReport by remember { mutableStateOf(false) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -139,8 +148,78 @@ fun MapScreen(
             onCancelPlacing = viewModel::cancelPlacingPin,
             onConfirmPlacement = { point -> onCreateIssueAt(point.lat, point.lng) },
             onDismissStreetHint = viewModel::dismissStreetHint,
+            onStartQuickReport = {
+                quickReport.start()
+                showQuickReport = true
+            },
             modifier = Modifier.fillMaxSize(),
         )
+    }
+
+    if (showQuickReport) {
+        val context = LocalContext.current
+        var captureUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+        val camera = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture(),
+        ) { saved -> if (saved) captureUri?.let(quickReport::onPhotoTaken) }
+
+        fun openCamera() {
+            val uri = CaptureFile.create(context)
+            captureUri = uri
+            camera.launch(uri)
+        }
+
+        // Location is asked for at the moment it is used, not at launch: a
+        // permission prompt on first open, before the app has explained
+        // anything, is the fastest way to have it denied for good.
+        val locationPermission = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) { quickReport.locate() }
+
+        LaunchedEffect(showQuickReport) {
+            if (showQuickReport) {
+                locationPermission.launch(
+                    arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                )
+                openCamera()
+            }
+        }
+
+        // Filed: close the sheet and open what was just written, so the
+        // resident sees their report exist rather than being returned to a map
+        // and left to wonder.
+        LaunchedEffect(quick.savedIssueId) {
+            quick.savedIssueId?.let { id ->
+                showQuickReport = false
+                onOpenIssue(id)
+            }
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showQuickReport = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            QuickReportSheet(
+                state = quick,
+                onTextChange = quickReport::onTextChange,
+                onRetakePhoto = { openCamera() },
+                onRetryLocation = quickReport::locate,
+                onPickOnMap = {
+                    showQuickReport = false
+                    viewModel.startPlacingPin()
+                },
+                onSubmit = quickReport::submit,
+                onOpenFullForm = {
+                    showQuickReport = false
+                    quick.position?.let { onCreateIssueAt(it.lat, it.lng) }
+                        ?: viewModel.startPlacingPin()
+                },
+            )
+        }
     }
 
     if (showFilters) {
@@ -355,6 +434,7 @@ private fun MapOverlay(
     onCancelPlacing: () -> Unit,
     onConfirmPlacement: (GeoPoint) -> Unit,
     onDismissStreetHint: () -> Unit,
+    onStartQuickReport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -443,12 +523,16 @@ private fun MapOverlay(
         }
 
         ExtendedFloatingActionButton(
+            // The common case is someone standing at the problem, so this
+            // opens the camera rather than an empty form. Placing a pin by
+            // hand is still there, one tap inside the sheet, for reporting
+            // something you are not standing next to.
             onClick = {
                 val pin = state.pendingPin
                 when {
-                    !state.placingPin -> onStartPlacing()
-                    pin != null -> onConfirmPlacement(pin)
-                    else -> Unit
+                    state.placingPin && pin != null -> onConfirmPlacement(pin)
+                    state.placingPin -> Unit
+                    else -> onStartQuickReport()
                 }
             },
             // The navigation bar is drawn over the map rather than beside it,

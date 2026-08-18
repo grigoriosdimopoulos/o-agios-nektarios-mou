@@ -259,4 +259,17 @@
     </plurals>
     <string name="street_hint">Πάτησε έναν δρόμο για να του δώσεις όνομα</string>
     <string name="action_dismiss">Κλείσιμο</string>
+
+    <!-- Γρήγορη αναφορά: ο δρόμος των δέκα δευτερολέπτων. -->
+    <string name="quick_report_title">Γρήγορη αναφορά</string>
+    <string name="quick_report_hint">Τι συμβαίνει; Μία γραμμή αρκεί.</string>
+    <string name="quick_report_add_photo">Τράβα φωτογραφία</string>
+    <string name="quick_report_retake">Ξανά</string>
+    <string name="quick_report_send">Στείλ\' το</string>
+    <string name="quick_report_locating">Βρίσκω πού είσαι…</string>
+    <string name="quick_report_here">Θα καταχωρηθεί εκεί που στέκεσαι</string>
+    <string name="quick_report_no_fix">Δεν βρέθηκε τοποθεσία</string>
+    <string name="quick_report_change">Στον χάρτη</string>
+    <string name="quick_report_pick">Ξαναδοκίμασε</string>
+    <string name="quick_report_full_form">Πρόσθεσε κατηγορία και λεπτομέρειες</string>
 </resources>

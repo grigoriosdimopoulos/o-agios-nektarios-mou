@@ -17,7 +17,10 @@ import gr.agiosnektarios.village.ui.chat.ChatRoomContent
 import gr.agiosnektarios.village.ui.chat.ChatRoomUiState
 import gr.agiosnektarios.village.ui.chat.ChatsContent
 import gr.agiosnektarios.village.ui.chat.ChatsUiState
+import gr.agiosnektarios.village.ui.issue.FixState
 import gr.agiosnektarios.village.ui.issue.IssueDetailContent
+import gr.agiosnektarios.village.ui.issue.QuickReportSheet
+import gr.agiosnektarios.village.ui.issue.QuickReportUiState
 import gr.agiosnektarios.village.ui.issue.IssueListContent
 import gr.agiosnektarios.village.ui.issue.IssueListUiState
 import gr.agiosnektarios.village.ui.profile.ProfileContent
@@ -70,6 +73,12 @@ class ScreenTest {
 
     @Test fun chat_room_dark() = render(dark = true) { ChatRoom() }
 
+    @Test fun quick_report_light() = render { QuickReport() }
+
+    @Test fun quick_report_dark() = render(dark = true) { QuickReport() }
+
+    @Test fun quick_report_no_photo_light() = render { QuickReportEmpty() }
+
     @Test fun profile_light() = render { Profile() }
 
     @Test fun profile_dark() = render(dark = true) { Profile() }
@@ -117,6 +126,33 @@ private fun ChatRoom() = ChatRoomContent(
     onDraftChange = {},
     onSend = {},
     onLeave = {},
+)
+
+@Composable
+private fun QuickReport() = QuickReportSheet(
+    state = QuickReportUiState(
+        photo = null,
+        text = "Πεσμένο δέντρο κλείνει τον δρόμο κάτω από τη στροφή",
+        position = gr.agiosnektarios.village.core.geo.GeoPoint(38.1640, 23.2920),
+        fix = FixState.FOUND,
+    ),
+    onTextChange = {},
+    onRetakePhoto = {},
+    onRetryLocation = {},
+    onPickOnMap = {},
+    onSubmit = {},
+    onOpenFullForm = {},
+)
+
+@Composable
+private fun QuickReportEmpty() = QuickReportSheet(
+    state = QuickReportUiState(fix = FixState.LOCATING),
+    onTextChange = {},
+    onRetakePhoto = {},
+    onRetryLocation = {},
+    onPickOnMap = {},
+    onSubmit = {},
+    onOpenFullForm = {},
 )
 
 @Composable

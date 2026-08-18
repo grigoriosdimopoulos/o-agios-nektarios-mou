@@ -285,4 +285,17 @@
     </plurals>
     <string name="street_hint">Tap a street to give it its name</string>
     <string name="action_dismiss">Dismiss</string>
+
+    <!-- Quick report: the ten-second path, for someone standing at the problem. -->
+    <string name="quick_report_title">Quick report</string>
+    <string name="quick_report_hint">What is wrong? One line is enough.</string>
+    <string name="quick_report_add_photo">Take a photo</string>
+    <string name="quick_report_retake">Retake</string>
+    <string name="quick_report_send">Send it</string>
+    <string name="quick_report_locating">Finding where you are…</string>
+    <string name="quick_report_here">It will be filed where you are standing</string>
+    <string name="quick_report_no_fix">No location yet</string>
+    <string name="quick_report_change">On the map</string>
+    <string name="quick_report_pick">Try again</string>
+    <string name="quick_report_full_form">Add category and details instead</string>
 </resources>

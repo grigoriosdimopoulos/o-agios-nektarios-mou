@@ -55,6 +55,23 @@
                 tools:node="remove" />
         </provider>
 
+        <!--
+          Hands the camera app a writable URI for exactly one file at a time.
+          A camera intent cannot write into another app's private storage, and
+          the alternative — MediaStore — would leave every report photo in the
+          phone's gallery, which is not what someone reporting a pothole
+          expects to happen to their pictures.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.captures"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
