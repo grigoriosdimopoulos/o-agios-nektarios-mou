@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import gr.agiosnektarios.village.ui.theme.Space
 
 /**
  * The large title every top-level screen opens with.
@@ -46,7 +47,7 @@ fun ScreenHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 12.dp, top = 18.dp, bottom = 6.dp),
+            .padding(start = Space.page, end = Space.page - 8.dp, top = 18.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

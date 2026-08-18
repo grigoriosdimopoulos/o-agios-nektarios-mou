@@ -45,6 +45,7 @@ import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
+import gr.agiosnektarios.village.ui.theme.Space
 
 @Composable
 fun ProfileScreen(
@@ -166,8 +167,8 @@ internal fun ProfileContent(
 
         item {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.page),
+                horizontalArrangement = Arrangement.spacedBy(Space.gutter),
             ) {
                 StatTile(
                     value = state.myIssues.size,
@@ -191,7 +192,7 @@ internal fun ProfileContent(
             Text(
                 text = stringResource(R.string.profile_my_issues),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(horizontal = Space.page, vertical = 16.dp),
             )
         }
 
@@ -205,7 +206,7 @@ internal fun ProfileContent(
                     issue = issue,
                     onClick = { onOpenIssue(issue.id) },
                     showPhoto = false,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = Space.page, vertical = 6.dp),
                 )
             }
         }

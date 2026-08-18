@@ -14,12 +14,13 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Badge
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +46,7 @@ import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
+import gr.agiosnektarios.village.ui.theme.Space
 
 @Composable
 fun ChatsScreen(
@@ -99,12 +102,25 @@ internal fun ChatsContent(
                         bottom = BottomBarDefaults.contentPadding(),
                     ),
                 ) {
-                    items(state.chats, key = { it.id }) { chat ->
+                    itemsIndexed(state.chats, key = { _, chat -> chat.id }) { index, chat ->
                         ChatRow(
                             chat = chat,
                             currentUserId = state.currentUserId,
                             onClick = { onOpenChat(chat.id) },
                         )
+                        // Inset separator, starting where the text starts
+                        // rather than at the screen edge, and absent after the
+                        // last row. Without it the conversations float on the
+                        // page with nothing to say where one ends and the next
+                        // begins — which is the difference between a list and
+                        // some text that happens to be stacked.
+                        if (index < state.chats.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = Space.separatorInset),
+                                thickness = Dp.Hairline,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -127,7 +143,7 @@ private fun ChatRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Space.page, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

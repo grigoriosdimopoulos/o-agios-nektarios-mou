@@ -50,6 +50,7 @@ import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
+import gr.agiosnektarios.village.ui.theme.Space
 
 @Composable
 fun IssueListScreen(
@@ -98,11 +99,11 @@ internal fun IssueListContent(
             label = stringResource(R.string.issues_search),
             leadingIcon = Icons.Filled.Search,
             imeAction = ImeAction.Search,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = Space.page),
         )
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(horizontal = Space.page, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(IssueStatus.entries.toList()) { status ->
@@ -115,7 +116,7 @@ internal fun IssueListContent(
         }
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = Space.page),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(IssueCategory.entries.toList()) { category ->
@@ -142,12 +143,12 @@ internal fun IssueListContent(
             else -> LazyColumn(
                 // Clears the overlaid navigation bar; see BottomBarDefaults.
                 contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp,
-                    bottom = BottomBarDefaults.contentPadding() + 16.dp,
+                    start = Space.page,
+                    end = Space.page,
+                    top = Space.gutter,
+                    bottom = BottomBarDefaults.contentPadding() + Space.page,
                 ),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(Space.gutter),
             ) {
                 itemsIndexedStaggered(state.issues.map { it.id }, revealed) { index, _ ->
                     val issue = state.issues[index]
