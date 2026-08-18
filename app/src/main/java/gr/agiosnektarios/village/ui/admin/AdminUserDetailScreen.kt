@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui.admin
 
+import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -123,7 +124,7 @@ fun AdminUserDetailScreen(
 
             item {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
@@ -154,7 +155,7 @@ fun AdminUserDetailScreen(
 
             item {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     SecondaryButton(
@@ -192,7 +193,7 @@ fun AdminUserDetailScreen(
                 Text(
                     text = stringResource(R.string.profile_my_issues),
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                 )
             }
 
@@ -201,7 +202,7 @@ fun AdminUserDetailScreen(
                     issue = issue,
                     onClick = { onOpenIssue(issue.id) },
                     showPhoto = false,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                 )
             }
         }

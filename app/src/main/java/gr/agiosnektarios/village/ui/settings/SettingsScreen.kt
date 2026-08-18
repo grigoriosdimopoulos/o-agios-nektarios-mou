@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui.settings
 
+import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -213,7 +214,7 @@ fun SettingsScreen(
                         indication = null,
                         onClick = onVersionTap,
                     )
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Space.page),
             )
         }
     }
@@ -251,7 +252,7 @@ private fun SectionHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier.padding(horizontal = Space.page, vertical = 10.dp),
     )
 }
 
@@ -261,7 +262,7 @@ private fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onSelect)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = Space.page, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -276,7 +277,7 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = Space.page, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -302,6 +303,6 @@ private fun ActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = Space.page, vertical = 14.dp),
     )
 }

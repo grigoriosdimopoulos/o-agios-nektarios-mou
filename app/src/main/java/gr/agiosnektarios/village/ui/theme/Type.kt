@@ -5,6 +5,7 @@ import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import gr.agiosnektarios.village.R
@@ -30,9 +31,9 @@ import androidx.compose.ui.unit.sp
  * serif title over a sans body is what gives a civic register its voice, and
  * it is the contrast the app had none of.
  *
- * Both are variable fonts, so one file covers every weight instead of four,
- * and both are subset to Latin plus Greek: 574 KiB for the pair rather than
- * the 1.2 MiB the full files cost. Variable weight axes need API 26, which is
+ * All three are variable fonts, so one file covers every weight instead of
+ * four, and all are subset to Latin plus Greek: 801 KiB for the three
+ * files rather than the 1.7 MiB the full ones cost. Variable weight axes need API 26, which is
  * this app's minimum.
  *
  * SIL Open Font License, both of them; the licences are in /licenses.
@@ -61,8 +62,38 @@ private val Text = FontFamily(
     ),
 )
 
+/**
+ * The serif carries a real italic file, not a skew.
+ *
+ * The splash sets the translation in italic, and with no italic bundled
+ * Compose synthesises one by slanting the roman. Synthetic italic on a serif
+ * is among the most recognisable cheap tells in typography — the stems lean
+ * but the letterforms never change, so an `a` stays a roman `a` where a real
+ * italic draws a different letter — and it was on the first screen the app
+ * shows. Alegreya ships a drawn italic with full Greek; this is it.
+ *
+ * W400 is declared too. Without it, body text asking for Normal weight
+ * silently resolved to the 500 instance, which is a fallback nobody chose.
+ */
 @OptIn(ExperimentalTextApi::class)
 private val Display = FontFamily(
+    Font(
+        R.font.alegreya_variable,
+        weight = FontWeight.Normal,
+        variationSettings = FontVariation.Settings(FontVariation.weight(400)),
+    ),
+    Font(
+        R.font.alegreya_italic_variable,
+        weight = FontWeight.Normal,
+        style = FontStyle.Italic,
+        variationSettings = FontVariation.Settings(FontVariation.weight(400)),
+    ),
+    Font(
+        R.font.alegreya_italic_variable,
+        weight = FontWeight.Medium,
+        style = FontStyle.Italic,
+        variationSettings = FontVariation.Settings(FontVariation.weight(500)),
+    ),
     Font(
         R.font.alegreya_variable,
         weight = FontWeight.Medium,

@@ -33,6 +33,25 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
+      # Paparazzi renders the UI to PNG and compares against the committed
+      # goldens. This is separate from the line above on purpose:
+      # testDebugUnitTest *runs* the snapshot tests but neither records nor
+      # verifies them — it renders and throws the result away, so a commit that
+      # changes a colour without re-recording passes. That happened, and this
+      # is the step that would have caught it.
+      #
+      # On failure the delta images say exactly what moved, so they are worth
+      # uploading.
+      - name: Verify UI snapshots
+        run: ./gradlew verifyPaparazziDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: paparazzi-failures
+          path: app/build/paparazzi/failures/
+          if-no-files-found: ignore
+
       # Exercises R8 shrinking against the ProGuard rules and lint's fatal
       # checks — neither of which the debug build touches, and both of which
       # have caught real bugs here.

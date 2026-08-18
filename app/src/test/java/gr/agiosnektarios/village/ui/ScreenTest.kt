@@ -83,9 +83,6 @@ private fun IssueList() = IssueListContent(
     onSortChange = {},
     onToggleStatus = {},
     onToggleCategory = {},
-    // Settled state: at frame zero every row is still behind its entrance
-    // animation, which is how the blank list was found in the first place.
-    revealed = sampleIssues.map { it.id }.toMutableSet(),
 )
 
 @Composable

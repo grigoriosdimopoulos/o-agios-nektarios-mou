@@ -91,7 +91,7 @@ fun NewChatScreen(
 
             if (state.selected.isNotEmpty()) {
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(horizontal = Space.page),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(state.selected, key = { it.id }) { profile ->

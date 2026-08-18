@@ -62,6 +62,12 @@ val raisedOutline: BorderStroke?
  * The shadow is tinted rather than black. Compose's default shadow is pure
  * black, which over a cream page goes grey and dirty; pulling it toward the
  * scheme's own ink keeps it warm.
+ *
+ * The tint itself needs API 28 — `ambientColor`/`spotColor` map to
+ * `RenderNode.setAmbientShadowColor`, added in P. On API 26 and 27, inside
+ * this app's own minimum, the colour is ignored and the shadow falls back to
+ * black. It is a 2dp shadow, so the difference is slight, but the comment
+ * should not claim a warmth those two versions do not get.
  */
 @Composable
 @ReadOnlyComposable

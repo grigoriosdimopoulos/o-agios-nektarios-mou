@@ -325,7 +325,9 @@ private fun MessageComposer(
             onClick = onSend,
             enabled = ready,
             modifier = Modifier
-                .size(44.dp)
+                // 48dp, not 44. This is the one control the screen exists for
+                // and it was under the minimum touch target.
+                .size(48.dp)
                 .scale(sendScale)
                 .clip(CircleShape)
                 .background(

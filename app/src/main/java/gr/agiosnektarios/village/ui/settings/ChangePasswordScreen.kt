@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui.settings
 
+import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize

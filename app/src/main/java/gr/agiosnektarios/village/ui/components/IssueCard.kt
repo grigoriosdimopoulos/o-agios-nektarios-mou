@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.core.model.Issue
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedShadow
 import gr.agiosnektarios.village.ui.theme.shadowTint

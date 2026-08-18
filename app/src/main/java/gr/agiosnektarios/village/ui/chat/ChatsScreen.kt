@@ -70,7 +70,7 @@ internal fun ChatsContent(
             FloatingActionButton(
                 onClick = onNewChat,
                 // Explicit, not M3's default primaryContainer: that is a pale
-                // mint which measured 1.35:1 against the cream page, so the
+                // mint which measures 1.26:1 against the cream page, so the
                 // only way to start a conversation looked like a disabled
                 // control. This is the same green as every other primary
                 // action in the app.

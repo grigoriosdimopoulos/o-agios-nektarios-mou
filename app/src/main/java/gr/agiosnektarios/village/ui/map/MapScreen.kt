@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui.map
 
+import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -155,7 +156,7 @@ fun MapScreen(
     state.selectedCluster?.let { cluster ->
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(onDismissRequest = viewModel::dismissSheets, sheetState = sheetState) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+            Column(modifier = Modifier.padding(horizontal = Space.page).padding(bottom = 24.dp)) {
                 Text(
                     text = stringResource(R.string.map_grouped_issues, cluster.size),
                     style = MaterialTheme.typography.titleMedium,
@@ -189,7 +190,7 @@ fun MapScreen(
         // numbers in this sheet and the area on the map always agree.
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(onDismissRequest = viewModel::dismissSheets, sheetState = sheetState) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+            Column(modifier = Modifier.padding(horizontal = Space.page).padding(bottom = 24.dp)) {
                 Text(
                     text = summary.block.localizedName(greek),
                     style = MaterialTheme.typography.headlineSmall,
@@ -423,7 +424,7 @@ private fun MapOverlay(
                         MaterialTheme.colorScheme.inverseSurface,
                         MaterialTheme.shapes.large,
                     )
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = Space.page, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -486,7 +487,7 @@ private fun FilterSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Space.page)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
