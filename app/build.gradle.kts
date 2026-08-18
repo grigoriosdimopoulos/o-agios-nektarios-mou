@@ -10,6 +10,33 @@ plugins {
     alias(libs.plugins.paparazzi)
 }
 
+/**
+ * Which commit a build came from, stamped into the APK.
+ *
+ * Every build used to call itself versionCode 1, versionName "1.0.0". The APK
+ * is handed over as a file at a fixed URL, so with an identical version there
+ * was no way — from the download, from the installer, or from Settings — to
+ * tell a new build from the one already on the phone. "Is this the same APK?"
+ * was a reasonable question with no available answer.
+ *
+ * Commit count is monotonic, which is what versionCode has to be for an
+ * install to be treated as an update. The short SHA is what actually
+ * identifies the source, and it is the half a person can check against the
+ * repository.
+ *
+ * Falls back cleanly: a build from a source archive has no git metadata, and
+ * that must not fail the build.
+ */
+fun git(vararg args: String): String? = runCatching {
+    providers.exec {
+        commandLine("git", *args)
+        workingDir = rootDir
+    }.standardOutput.asText.get().trim().ifBlank { null }
+}.getOrNull()
+
+val gitCount = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 1
+val gitSha = git("rev-parse", "--short=7", "HEAD") ?: "nogit"
+
 android {
     namespace = "gr.agiosnektarios.village"
     compileSdk = 35
@@ -18,8 +45,8 @@ android {
         applicationId = "gr.agiosnektarios.village"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = gitCount
+        versionName = "1.0.$gitCount ($gitSha)"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += setOf("en", "el")
