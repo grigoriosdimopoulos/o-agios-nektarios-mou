@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import gr.agiosnektarios.village.BuildConfig
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.VillageDisplayFamily
@@ -175,6 +176,24 @@ internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.alpha(tailAlpha),
             )
+
+            // Which build this is, on the screen you cannot miss.
+            //
+            // "Is this the same APK?" has been asked twice and answered wrong
+            // once. The version lives in Settings > About, which is four taps
+            // away and no use at all when the question is whether the install
+            // even took. On a build handed to a tester it belongs where the
+            // app opens. Suppressed for a real release, where a build number
+            // over a Euripides quotation would be graffiti.
+            if (BuildConfig.APPLICATION_ID.endsWith(".debug")) {
+                Text(
+                    text = BuildConfig.VERSION_NAME,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 20.dp).alpha(tailAlpha),
+                )
+            }
 
             Text(
                 text = stringResource(R.string.splash_quote_source),
