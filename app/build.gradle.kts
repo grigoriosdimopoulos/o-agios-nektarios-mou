@@ -28,10 +28,21 @@ plugins {
  * that must not fail the build.
  */
 fun git(vararg args: String): String? = runCatching {
-    providers.exec {
+    val result = providers.exec {
         commandLine("git", *args)
         workingDir = rootDir
-    }.standardOutput.asText.get().trim().ifBlank { null }
+        // Without this, a non-zero exit is raised by Gradle when the provider
+        // is realised — which, with the configuration cache on, happens
+        // outside this runCatching and fails the build outright. A source
+        // archive has no .git, git exits 128, and the fallback below never got
+        // the chance to run despite the comment promising it would.
+        isIgnoreExitValue = true
+    }
+    if (result.result.get().exitValue != 0) {
+        null
+    } else {
+        result.standardOutput.asText.get().trim().ifBlank { null }
+    }
 }.getOrNull()
 
 val gitCount = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 1

@@ -11,8 +11,17 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 
-/** How far in from the leading edge a drag has to start to count as a back gesture. */
-private val EDGE_WIDTH = 24.dp
+/**
+ * How far in from the leading edge a drag has to start to count as a back
+ * gesture.
+ *
+ * Deliberately narrower than [gr.agiosnektarios.village.ui.theme.Space.page],
+ * the 20dp margin every screen keeps clear. At 24dp this band reached *past*
+ * that margin and into content — including the map embedded in the report
+ * composer, where a 90dp pan would have popped the screen and thrown away a
+ * half-written report.
+ */
+private val EDGE_WIDTH = 16.dp
 
 /** How far it has to travel before it commits. */
 private val COMMIT_DISTANCE = 90.dp
@@ -37,7 +46,14 @@ private val COMMIT_DISTANCE = 90.dp
  * because the real thing is better and two handlers would fight.
  *
  * Guards, in order of how much trouble they save:
- *  - Only from the leading 24dp, so it cannot swallow a horizontal list.
+ *  - Only from the leading 16dp, which is inside the page margin, so it
+ *    cannot reach content that respects it.
+ *  - Abandoned the moment anything else claims the drag. A horizontal strip —
+ *    the photos on a report, the people in a new chat — has touch bounds that
+ *    start at x=0 whatever its content padding, so a narrow band alone is not
+ *    enough. Watching on the final pass and checking `isConsumed` lets the
+ *    scroller win, which is right: if you are dragging a row of photos, that
+ *    is what you meant.
  *  - Only when [enabled], which the caller sets from "is there anywhere to go
  *    back to" — on a top-level tab this must never fire.
  *  - Only when the drag is more horizontal than vertical, so a diagonal scroll
@@ -62,16 +78,19 @@ fun Modifier.edgeSwipeBack(enabled: Boolean, onBack: () -> Unit): Modifier = com
             var dy = 0f
             var fired = false
             while (true) {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
+                // Final pass: everything else — scrollable rows, the map view —
+                // has already had its say by now, so a consumed change means
+                // some other gesture owns this drag and this one must let go.
+                val event = awaitPointerEvent(PointerEventPass.Final)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                 if (!change.pressed) break
+                if (!fired && change.isConsumed) return@awaitEachGesture
                 dx += change.position.x - change.previousPosition.x
                 dy += change.position.y - change.previousPosition.y
                 if (!fired && dx > commitPx && dx > abs(dy)) {
                     fired = true
                     onBack()
                 }
-                if (fired) change.consume()
             }
         }
     }

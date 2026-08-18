@@ -123,12 +123,16 @@ object Motion {
     const val UNDERLAY_DIM = 0.28f
 
     // ------------------------------------------------------------------ lists
-
-    /** Stagger between list items entering. Short: 45 ms already reads as a wave. */
-    const val STAGGER_MS = 38
-
-    /** Cap it, or a long list takes a second to finish arriving. */
-    const val MAX_STAGGERED_ITEMS = 8
+    //
+    // There is deliberately no list-entrance spec here any more.
+    //
+    // Rows used to fade and rise in sequence, and the mechanism was an
+    // AnimatedVisibility that starts hidden — which composes nothing and
+    // measures 0x0. A row you had not scrolled to yet was therefore zero
+    // pixels tall until its delay elapsed, LazyColumn filled the gap with the
+    // next row, which was also zero-height, and a fast scroll produced a run
+    // of empty rows that popped to full height together. The animation was
+    // costing the thing it was decorating. A list should simply be there.
 
     // ----------------------------------------------------------------- presses
 

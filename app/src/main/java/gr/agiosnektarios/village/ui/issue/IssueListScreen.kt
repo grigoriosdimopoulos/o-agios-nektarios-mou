@@ -1,9 +1,5 @@
 package gr.agiosnektarios.village.ui.issue
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,7 +22,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +44,6 @@ import gr.agiosnektarios.village.ui.components.fadingEdges
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VillageTextField
-import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.Space

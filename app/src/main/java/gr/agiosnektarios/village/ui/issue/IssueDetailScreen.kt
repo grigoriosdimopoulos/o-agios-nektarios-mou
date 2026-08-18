@@ -395,7 +395,10 @@ private fun CommentRow(
             Text(text = comment.text, style = MaterialTheme.typography.bodyMedium)
         }
         if (canDelete) {
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            // 48dp, the minimum for anything a finger has to hit. The icon
+            // inside stays small; it is the target that has to be big. This
+            // was 32 — the same defect just fixed on the send button.
+            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = stringResource(R.string.action_delete),
