@@ -256,21 +256,39 @@ service cloud.firestore {
        * must be the caller's own. Taking requires the report to be unclaimed;
        * releasing requires you to be the one holding it, or a moderator.
        *
-       * A claim is not an assignment handed down by anyone — nobody can put
-       * a neighbour's name on a job.
+       * A claim is not an assignment handed down by anyone: the uid written
+       * must be the caller's own, so nobody can put a neighbour *account* on a
+       * job. The display name beside it is bounded but not verified against
+       * the profile — exactly as `authorName` and `assigneeName` are treated
+       * everywhere else in this schema, because a resident's display name is
+       * not a stable key and reconstructing it in a rule would be guesswork.
+       * The uid is the identity; the name is a label.
        */
       function isTakeOrRelease() {
         return isActiveResident()
           && touchesOnly(['assigneeId', 'assigneeName', 'assignedAt', 'updatedAt'])
           && (
             // Taking an unclaimed report, in your own name.
-            (resource.data.assigneeId == ''
+            //
+            // `get(field, default)` rather than `resource.data.field`: every
+            // report filed before this feature existed has no assignment keys
+            // at all, and reading a missing property is an evaluation error
+            // that denies the whole write. Written the direct way, this rule
+            // worked on new reports and refused every old one — and the test
+            // suite could not see it, because every fixture seeded the fields.
+            (resource.data.get('assigneeId', '') == ''
               && request.resource.data.assigneeId == uid()
               && request.resource.data.assigneeName is string
-              && request.resource.data.assigneeName.size() > 0)
+              && request.resource.data.assigneeName.size() > 0
+              && request.resource.data.assigneeName.size() <= 80
+              // A finished report is not available to take on.
+              && resource.data.get('statusId', 'OPEN') in ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'])
             // Or giving back one you hold — moderators may unstick any.
+            // The name goes with the claim; leaving it behind would show a
+            // resident's name against a job nobody holds.
             || (request.resource.data.assigneeId == ''
-              && (resource.data.assigneeId == uid() || isModerator()))
+              && request.resource.data.assigneeName == ''
+              && (resource.data.get('assigneeId', '') == uid() || isModerator()))
           );
       }
 

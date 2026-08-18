@@ -7,7 +7,19 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.CAMERA" />
+    <!--
+      CAMERA is deliberately NOT declared.
+
+      This app never touches the camera hardware; it sends an
+      ACTION_IMAGE_CAPTURE intent and lets whatever camera app the phone has
+      take the picture. That needs no permission — but Android's contract for
+      that action says an app which *declares* CAMERA and does not hold it at
+      runtime gets a SecurityException. The declaration was inert legacy from
+      the first commit, harmless while the only photo path was the gallery
+      picker, and became a guaranteed failure the moment a capture intent was
+      added. Removing it is the fix; requesting it at runtime would be asking
+      the resident for something the app does not use.
+    -->
 
     <uses-feature
         android:name="android.hardware.camera"

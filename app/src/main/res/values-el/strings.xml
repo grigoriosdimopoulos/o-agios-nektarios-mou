@@ -279,4 +279,8 @@
         <item quantity="one">%1$d αναφορά στο χωριό</item>
         <item quantity="other">%1$d αναφορές στο χωριό</item>
     </plurals>
+    <string name="timeline_reported">Το ανέφερε</string>
+    <string name="timeline_taken">Το ανέλαβε</string>
+    <string name="timeline_resolved">Το έλυσε</string>
+    <string name="timeline_closed">Το έκλεισε</string>
 </resources>

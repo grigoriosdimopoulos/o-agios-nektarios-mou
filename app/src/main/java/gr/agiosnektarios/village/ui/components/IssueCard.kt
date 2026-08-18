@@ -53,6 +53,15 @@ fun IssueCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showPhoto: Boolean = true,
+    /**
+     * Whether this card claims the shared-element key for its report.
+     *
+     * Two cards for the same report composed at once — the Reports tab's list
+     * and the map's drawer, during a tab cross-fade — would put two live
+     * elements on one key. Only one list may claim it, and it is the one that
+     * owns the report's identity: the Reports list.
+     */
+    shareKey: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -75,7 +84,13 @@ fun IssueCard(
             // The card and the detail page's header carry the same key, so
             // tapping does not slide a new screen over this one — this one
             // becomes it.
-            .sharedBoundsOrNone(SharedKeys.issueCard(issue.id))
+            .then(
+                if (shareKey) {
+                    Modifier.sharedBoundsOrNone(SharedKeys.issueCard(issue.id))
+                } else {
+                    Modifier
+                },
+            )
             .then(
                 if (lift > 0.dp) {
                     Modifier.shadow(
@@ -122,7 +137,11 @@ fun IssueCard(
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.sharedElementOrNone(SharedKeys.issueTitle(issue.id)),
+                        modifier = if (shareKey) {
+                            Modifier.sharedElementOrNone(SharedKeys.issueTitle(issue.id))
+                        } else {
+                            Modifier
+                        },
                     )
                     if (issue.description.isNotBlank()) {
                         Text(

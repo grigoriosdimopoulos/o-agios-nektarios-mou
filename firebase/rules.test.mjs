@@ -549,6 +549,37 @@ await check("a bystander cannot release someone else's claim",
 await check("the holder may give it back",
   assertSucceeds(updateDoc(doc(maria, "issues/takeable"),
     { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+// A report filed before assignment existed: no assigneeId key at all. Every
+// other fixture here seeds the field, which is exactly why the suite stayed
+// green while this case was denied on every real document in the database.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  const { assigneeId, assigneeName, ...legacy } = { ...issue, authorId: "boss", assigneeId: "", assigneeName: "" };
+  await ctx.firestore().doc("issues/legacy").set(legacy);
+});
+await check("a report filed before assignment existed can still be taken",
+  assertSucceeds(updateDoc(doc(maria, "issues/legacy"),
+    { assigneeId: "maria", assigneeName: "Maria Test", assignedAt: serverTimestamp(),
+      updatedAt: serverTimestamp() })));
+
+// Releasing must clear the name with the id, or a resident's name stays
+// printed against a job nobody holds.
+await check("releasing cannot leave the name behind",
+  assertFails(updateDoc(doc(maria, "issues/legacy"),
+    { assigneeId: "", updatedAt: serverTimestamp() })));
+await check("releasing clears both",
+  assertSucceeds(updateDoc(doc(maria, "issues/legacy"),
+    { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+
+// A finished report is not work anyone can pick up.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("issues/done").set({
+    ...issue, authorId: "boss", statusId: "RESOLVED", assigneeId: "", assigneeName: "",
+  });
+});
+await check("a resolved report cannot be taken on",
+  assertFails(updateDoc(doc(maria, "issues/done"),
+    { assigneeId: "maria", assigneeName: "Maria Test", updatedAt: serverTimestamp() })));
+
 await check("a moderator may unstick any claim",
   assertSucceeds(updateDoc(doc(boss, "issues/takeable"),
     { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));

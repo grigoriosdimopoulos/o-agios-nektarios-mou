@@ -7,6 +7,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,10 +69,17 @@ fun QuickReportSheet(
     onSubmit: () -> Unit,
     onOpenFullForm: () -> Unit,
     modifier: Modifier = Modifier,
+    offerFullForm: Boolean = true,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
+            // Scrollable, because this sheet has to survive two things at
+            // once that it was not sized for: a resident with accessibility
+            // text at 2x, and the keyboard taking half the screen while they
+            // type. Without it there is simply nowhere for the send button to
+            // be.
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = Space.page)
             .padding(bottom = 24.dp)
             .navigationBarsPadding()
@@ -111,16 +120,18 @@ fun QuickReportSheet(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Text(
-            text = stringResource(R.string.quick_report_full_form),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .clip(MaterialTheme.shapes.small)
-                .clickable(onClick = onOpenFullForm)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-        )
+        if (offerFullForm) {
+            Text(
+                text = stringResource(R.string.quick_report_full_form),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(MaterialTheme.shapes.small)
+                    .clickable(onClick = onOpenFullForm)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            )
+        }
     }
 }
 

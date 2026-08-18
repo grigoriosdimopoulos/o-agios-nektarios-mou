@@ -64,7 +64,6 @@ import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.LoadingState
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VoteBar
-import gr.agiosnektarios.village.ui.components.absoluteDateTime
 import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.theme.raisedContainer

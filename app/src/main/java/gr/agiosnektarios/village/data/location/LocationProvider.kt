@@ -17,7 +17,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -71,16 +70,19 @@ class LocationProvider @Inject constructor(
         if (!hasPermission || !isEnabled) return@withContext null
         val lm = manager ?: return@withContext null
 
-        lastKnownFresh(lm)?.let { return@withContext it.toGeoPoint() }
+        // The bounds check is applied to every path, including this one.
+        //
+        // It used to return the cached fix unconditionally, with the guard on
+        // the two paths below it — so the comment about Athens sat directly
+        // above the only branch that enforced it, while the branch that fires
+        // most often walked straight past. A resident who opened the app in
+        // town within the last ninety seconds would have filed onto their own
+        // street, which is exactly the case the guard was written for.
+        lastKnownFresh(lm)?.inVillage()?.let { return@withContext it }
 
-        val fix = runCatching {
-            withTimeoutOrNull(timeoutMs) { awaitSingleFix(lm) }
-        }.getOrNull()
+        val fix = withTimeoutOrNull(timeoutMs) { awaitSingleFix(lm) }
 
-        // A fix from outside the village is a fix from somewhere else — a
-        // resident in Athens must not file a report onto their own street.
-        fix?.toGeoPoint()?.takeIf { it in VillageConfig.BOUNDS }
-            ?: lastKnown(lm)?.toGeoPoint()?.takeIf { it in VillageConfig.BOUNDS }
+        fix?.inVillage() ?: lastKnown(lm)?.inVillage()
     }
 
     private fun lastKnownFresh(lm: LocationManager): Location? =
@@ -143,7 +145,15 @@ class LocationProvider @Inject constructor(
             }
         }
 
-    private fun Location.toGeoPoint() = GeoPoint(latitude, longitude)
+    /**
+     * This position, but only if it is somewhere this app is about.
+     *
+     * A fix from anywhere else is not a worse fix — it is a different
+     * question, and answering it would put a report on a street in another
+     * town.
+     */
+    private fun Location.inVillage(): GeoPoint? =
+        GeoPoint(latitude, longitude).takeIf { it in VillageConfig.BOUNDS }
 
     private companion object {
         /** Older than this and it is worth waiting for the hardware. */

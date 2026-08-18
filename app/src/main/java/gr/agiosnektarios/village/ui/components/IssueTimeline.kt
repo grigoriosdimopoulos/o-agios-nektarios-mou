@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.ui.theme.Motion
@@ -30,6 +32,7 @@ import java.util.Date
 
 /** One thing that happened to a report. */
 data class TimelineEntry(
+    val role: String,
     val label: String,
     val detail: String?,
     val at: Date?,
@@ -55,6 +58,7 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
     val entries = buildList {
         add(
             TimelineEntry(
+                role = stringResource(R.string.timeline_reported),
                 label = issue.authorName.ifBlank { "—" },
                 detail = null,
                 at = issue.createdAt,
@@ -65,6 +69,7 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
         if (issue.isTaken) {
             add(
                 TimelineEntry(
+                    role = stringResource(R.string.timeline_taken),
                     label = issue.assigneeName,
                     detail = null,
                     at = issue.assignedAt,
@@ -76,6 +81,13 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
         if (issue.status.isTerminal) {
             add(
                 TimelineEntry(
+                    role = stringResource(
+                        if (issue.status == IssueStatus.RESOLVED) {
+                            R.string.timeline_resolved
+                        } else {
+                            R.string.timeline_closed
+                        },
+                    ),
                     label = issue.resolvedByName.ifBlank { issue.assigneeName },
                     detail = issue.resolutionNote.takeIf { it.isNotBlank() },
                     at = issue.updatedAt,
@@ -107,6 +119,15 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(start = 10.dp, bottom = 10.dp).weight(1f),
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {
+                    // The role, then the name. Two bare names distinguished
+                    // only by the colour of a dot is not something to ask a
+                    // reader in their seventies to decode, and it was what
+                    // replacing "Reported by X" with the timeline had left.
+                    Text(
+                        text = entry.role,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = scheme.onSurfaceVariant,
+                    )
                     Text(
                         text = entry.label,
                         style = MaterialTheme.typography.bodyMedium.copy(

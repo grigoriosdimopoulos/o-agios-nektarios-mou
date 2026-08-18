@@ -305,4 +305,8 @@
         <item quantity="one">%1$d report in the village</item>
         <item quantity="other">%1$d reports in the village</item>
     </plurals>
+    <string name="timeline_reported">Reported by</string>
+    <string name="timeline_taken">Taken on by</string>
+    <string name="timeline_resolved">Resolved by</string>
+    <string name="timeline_closed">Closed by</string>
 </resources>

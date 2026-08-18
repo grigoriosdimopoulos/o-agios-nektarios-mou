@@ -1,6 +1,5 @@
 package gr.agiosnektarios.village.ui.map
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -22,15 +21,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
@@ -42,6 +38,11 @@ import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.Space
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.animation.core.Animatable
 
 /** Where the sheet can rest. Only three, because a drag should always land somewhere. */
 enum class SheetStop { PEEK, HALF, FULL }
@@ -67,50 +68,59 @@ fun MapSheet(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
+        val scope = rememberCoroutineScope()
         val fullHeight = maxHeight
         val barClearance = BottomBarDefaults.contentPadding()
 
         // Peek shows the handle and the count; half is the reading position;
         // full leaves a strip of map so it never feels like a different screen.
-        val stops = remember(fullHeight, barClearance) {
-            mapOf(
-                SheetStop.PEEK to fullHeight - (96.dp + barClearance),
-                SheetStop.HALF to fullHeight * 0.45f,
-                SheetStop.FULL to 64.dp,
-            )
+        val stops: Map<SheetStop, Float> = remember(fullHeight, barClearance, density) {
+            with(density) {
+                mapOf(
+                    SheetStop.PEEK to (fullHeight - MapSheetDefaults.peekHeight - barClearance).toPx(),
+                    SheetStop.HALF to (fullHeight * 0.45f).toPx(),
+                    SheetStop.FULL to 64.dp.toPx(),
+                )
+            }
         }
 
-        var stop by remember { mutableStateOf(SheetStop.PEEK) }
-        var drag by remember { mutableStateOf(0f) }
-
-        val resting = stops.getValue(stop)
-        val settled by animateDpAsState(
-            targetValue = resting,
-            animationSpec = Motion.gentle(),
-            label = "sheetOffset",
-        )
-        // While a finger is down the pane tracks it exactly; the spring only
-        // takes over on release. Animating during the drag is what makes a
-        // sheet feel like it is being negotiated with rather than moved.
-        val offset = if (drag != 0f) {
-            (settled + with(density) { drag.toDp() }).coerceIn(stops.getValue(SheetStop.FULL), stops.getValue(SheetStop.PEEK))
-        } else {
-            settled
+        // One Animatable holds the position, and it is the *only* thing that
+        // does.
+        //
+        // The first version kept the resting stop in one state and the live
+        // drag in another, then added them. Two bugs came out of that and both
+        // were visible on every single drag: the release position was computed
+        // with the finger's travel counted twice, and because the resting
+        // value had never moved, letting go snapped the pane back to where the
+        // gesture started before springing to the new stop. A pane that jumps
+        // backwards when you release it is worse than one that does not move
+        // at all.
+        val offset = remember { Animatable(stops.getValue(SheetStop.PEEK)) }
+        LaunchedEffect(stops) {
+            offset.updateBounds(
+                lowerBound = stops.getValue(SheetStop.FULL),
+                upperBound = stops.getValue(SheetStop.PEEK),
+            )
         }
 
         GlassSurface(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(0, with(density) { offset.roundToPx() }) }
+                .offset { IntOffset(0, offset.value.roundToInt()) }
                 .height(fullHeight)
                 .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
                 .draggable(
-                    state = rememberDraggableState { delta -> drag += delta },
-                    orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
+                    state = rememberDraggableState { delta ->
+                        // snapTo, not animateTo: while a finger is down the
+                        // pane must track it exactly. Animating during the drag
+                        // is the difference between a sheet being negotiated
+                        // with and a sheet being operated.
+                        scope.launch { offset.snapTo(offset.value + delta) }
+                    },
+                    orientation = Orientation.Vertical,
                     onDragStopped = { velocity ->
-                        val landed = with(density) { (offset + drag.toDp()) }
-                        stop = nearestStop(stops, landed, velocity)
-                        drag = 0f
+                        val target = stops.getValue(nearestStop(stops, offset.value, velocity))
+                        scope.launch { offset.animateTo(target, Motion.gentle()) }
                     },
                 ),
             shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
@@ -133,12 +143,21 @@ fun MapSheet(
                     verticalArrangement = Arrangement.spacedBy(Space.gutter),
                 ) {
                     items(issues, key = { it.id }) { issue ->
-                        IssueCard(issue = issue, onClick = { onOpenIssue(issue.id) })
+                        // No shared-element key here. The Reports tab's list
+                        // already claims these keys, and two live elements on
+                        // one key inside a single SharedTransitionLayout is an
+                        // artefact waiting to happen when the tabs cross-fade.
+                        IssueCard(issue = issue, onClick = { onOpenIssue(issue.id) }, shareKey = false)
                     }
                 }
             }
         }
     }
+}
+
+/** What the sheet leaves visible when it is closed, so callers can clear it. */
+object MapSheetDefaults {
+    val peekHeight = 96.dp
 }
 
 /**
@@ -149,12 +168,12 @@ fun MapSheet(
  * halfway. Below that threshold it is simply the nearest stop.
  */
 private fun nearestStop(
-    stops: Map<SheetStop, Dp>,
-    landed: Dp,
+    stops: Map<SheetStop, Float>,
+    landed: Float,
     velocity: Float,
 ): SheetStop {
     val order = listOf(SheetStop.FULL, SheetStop.HALF, SheetStop.PEEK)
-    val nearest = order.minByOrNull { abs(stops.getValue(it).value - landed.value) }
+    val nearest = order.minByOrNull { abs(stops.getValue(it) - landed) }
         ?: SheetStop.PEEK
     if (abs(velocity) < FLICK_VELOCITY) return nearest
     val index = order.indexOf(nearest)

@@ -105,6 +105,9 @@ fun MapScreen(
     var showFilters by remember { mutableStateOf(false) }
     val quick by quickReport.uiState.collectAsStateWithLifecycle()
     var showQuickReport by remember { mutableStateOf(false) }
+    // True while the resident is choosing a point *for a quick report already
+    // in progress*, as opposed to starting a full one from scratch.
+    var awaitingPin by remember { mutableStateOf(false) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -158,7 +161,16 @@ fun MapScreen(
             onSelectBasemap = viewModel::setBasemap,
             onStartPlacing = viewModel::startPlacingPin,
             onCancelPlacing = viewModel::cancelPlacingPin,
-            onConfirmPlacement = { point -> onCreateIssueAt(point.lat, point.lng) },
+            onConfirmPlacement = { point ->
+                if (awaitingPin) {
+                    awaitingPin = false
+                    quickReport.setPosition(point)
+                    viewModel.cancelPlacingPin()
+                    showQuickReport = true
+                } else {
+                    onCreateIssueAt(point.lat, point.lng)
+                }
+            },
             onDismissStreetHint = viewModel::dismissStreetHint,
             onStartQuickReport = {
                 quickReport.start()
@@ -221,7 +233,12 @@ fun MapScreen(
                 onRetakePhoto = { openCamera() },
                 onRetryLocation = quickReport::locate,
                 onPickOnMap = {
+                    // Hide the sheet, do not discard it. The photo lives in
+                    // the view model, and the resident gets it back with the
+                    // point they chose — before this, the one escape from a
+                    // failed GPS fix silently threw their picture away.
                     showQuickReport = false
+                    awaitingPin = true
                     viewModel.startPlacingPin()
                 },
                 onSubmit = quickReport::submit,
@@ -230,6 +247,11 @@ fun MapScreen(
                     quick.position?.let { onCreateIssueAt(it.lat, it.lng) }
                         ?: viewModel.startPlacingPin()
                 },
+                // The full composer is reached by navigation, and a photo's
+                // bytes cannot ride a navigation argument. Rather than lose it
+                // quietly, the way through is only offered while there is
+                // nothing to lose.
+                offerFullForm = quick.photo == null,
             )
         }
     }
@@ -547,12 +569,17 @@ private fun MapOverlay(
                     else -> onStartQuickReport()
                 }
             },
-            // The navigation bar is drawn over the map rather than beside it,
-            // so nothing reserves its height: the FAB clears it itself.
+            // Clears the navigation bar *and* the sheet's peek strip. The
+            // bar is drawn over the map rather than beside it, and the sheet
+            // now rests 96dp above that — with only the bar accounted for the
+            // FAB sat squarely on top of the sheet's own count row.
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-                .padding(bottom = BottomBarDefaults.contentPadding()),
+                .padding(
+                    bottom = BottomBarDefaults.contentPadding() +
+                        if (state.placingPin) 0.dp else MapSheetDefaults.peekHeight,
+                ),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
