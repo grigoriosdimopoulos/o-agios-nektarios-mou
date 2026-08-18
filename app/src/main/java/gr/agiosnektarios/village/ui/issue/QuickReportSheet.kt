@@ -1,8 +1,5 @@
 package gr.agiosnektarios.village.ui.issue
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +9,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,6 +58,7 @@ import gr.agiosnektarios.village.ui.theme.raisedOutline
  * Anything missing can be corrected afterwards by the author or a moderator,
  * and a vague report that exists beats a precise one nobody filed.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuickReportSheet(
     state: QuickReportUiState,
@@ -214,67 +214,75 @@ private fun PhotoSlot(state: QuickReportUiState, onRetakePhoto: () -> Unit) {
  * when there is no fix this states it plainly and offers the map instead of
  * quietly dropping a pin in the middle of the village.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LocationLine(
     state: QuickReportUiState,
     onRetryLocation: () -> Unit,
     onPickOnMap: () -> Unit,
 ) {
-    Row(
+    // A column of two rows, not one row of four things.
+    //
+    // Putting the status text and two actions side by side worked at the
+    // default text size and collapsed at every size above it: unweighted
+    // children are measured first, so at 1.5x in Greek the two links ate the
+    // row, "Δεν βρέθηκε τοποθεσία" was squeezed to zero width and vanished,
+    // and the send button was pushed off the bottom of the screen. That is the
+    // configuration this village's residents actually use, on the one state
+    // this whole path exists to rescue.
+    //
+    // Stacked, the text has the full width and the actions wrap among
+    // themselves, so nothing can be crushed out of existence by anything else.
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        AnimatedVisibility(visible = state.fix == FixState.LOCATING, enter = fadeIn(), exit = fadeOut()) {
-            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-        }
-        if (state.fix != FixState.LOCATING) {
-            Icon(
-                imageVector = if (state.position != null) {
-                    Icons.Filled.MyLocation
-                } else {
-                    Icons.Filled.LocationOff
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (state.fix == FixState.LOCATING) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(
+                    imageVector = if (state.position != null) {
+                        Icons.Filled.MyLocation
+                    } else {
+                        Icons.Filled.LocationOff
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = if (state.position != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                )
+            }
+            Text(
+                text = when {
+                    state.fix == FixState.LOCATING -> stringResource(R.string.quick_report_locating)
+                    state.position != null -> stringResource(R.string.quick_report_here)
+                    else -> stringResource(R.string.quick_report_no_fix)
                 },
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = if (state.position != null) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
             )
         }
-        Text(
-            text = when {
-                state.fix == FixState.LOCATING -> stringResource(R.string.quick_report_locating)
-                state.position != null -> stringResource(R.string.quick_report_here)
-                else -> stringResource(R.string.quick_report_no_fix)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        // Without a fix, BOTH ways out are offered — and the map is the one
-        // that matters.
-        //
-        // This line used to offer the map only when a position already
-        // existed, and retry otherwise. Combined with hiding the full-form
-        // link once a photo was taken, that produced a state with no exit at
-        // all: photograph the fallen tree, get no fix (indoors, no sky,
-        // location switched off — the ordinary case for this audience), and
-        // send is disabled, the map is unreachable, and the only remaining
-        // action is to dismiss the sheet and lose the picture. The escape was
-        // hidden from exactly the situation it was written for.
-        if (state.position == null && state.fix != FixState.LOCATING) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (state.position == null && state.fix != FixState.LOCATING) {
+                LocationAction(
+                    text = stringResource(R.string.quick_report_pick),
+                    onClick = onRetryLocation,
+                )
+            }
             LocationAction(
-                text = stringResource(R.string.quick_report_pick),
-                onClick = onRetryLocation,
+                text = stringResource(R.string.quick_report_change),
+                onClick = onPickOnMap,
             )
         }
-        LocationAction(
-            text = stringResource(R.string.quick_report_change),
-            onClick = onPickOnMap,
-        )
     }
 }
 

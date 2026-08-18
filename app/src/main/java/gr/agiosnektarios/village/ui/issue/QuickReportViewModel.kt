@@ -119,10 +119,16 @@ class QuickReportViewModel @Inject constructor(
         viewModelScope.launch {
             val point = locationProvider.current()
             _uiState.update {
-                if (point == null) {
-                    it.copy(fix = FixState.UNAVAILABLE)
-                } else {
-                    it.copy(position = point, fix = FixState.FOUND)
+                when {
+                    // Re-checked on arrival, not only on entry. The lookup can
+                    // take eight seconds, and the map picker is reachable
+                    // throughout — so a resident could choose a point by hand
+                    // and have the hardware overwrite it when it finally
+                    // answered. The guard at the top of this function cannot
+                    // see a choice made after it ran.
+                    it.positionIsManual -> it
+                    point == null -> it.copy(fix = FixState.UNAVAILABLE)
+                    else -> it.copy(position = point, fix = FixState.FOUND)
                 }
             }
         }

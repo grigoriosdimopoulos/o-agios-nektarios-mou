@@ -218,7 +218,17 @@ private val me = UserProfile(
     role = Role.USER.id,
 )
 
-private fun ago(minutes: Long) = Date(System.currentTimeMillis() - minutes * 60_000L)
+/**
+ * Times for fixtures, relative to a fixed instant rather than to now.
+ *
+ * Chat bubbles render an absolute clock time, so a wall-clock base meant the
+ * chat goldens changed every time anyone re-recorded — which quietly erodes
+ * the point of verifying them, because a diff nobody can explain is a diff
+ * everybody starts ignoring.
+ */
+private const val FIXTURE_NOW = 1_755_000_000_000L
+
+private fun ago(minutes: Long) = Date(FIXTURE_NOW - minutes * 60_000L)
 
 private val sampleComments = listOf(
     gr.agiosnektarios.village.core.model.Comment(

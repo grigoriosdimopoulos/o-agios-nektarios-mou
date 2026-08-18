@@ -199,28 +199,40 @@ fun MapScreen(
         )
     }
 
-    if (showQuickReport) {
-        val context = LocalContext.current
-        var captureUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    // Camera, permission and the effect that fires them live ABOVE the sheet's
+    // `if`, not inside it.
+    //
+    // Keying an effect only suppresses re-runs while the effect stays in the
+    // composition. Everything inside `if (showQuickReport)` is disposed the
+    // moment the sheet hides, so a LaunchedEffect declared in there was a
+    // brand-new node on the way back from the map and ran again whatever its
+    // key said — reopening the camera, and re-asking for location permission,
+    // every single time the resident went to place a pin. Hoisted, it is the
+    // same node for the life of the screen, and the key does what keys do.
+    val context = LocalContext.current
+    var captureUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var launchedForSession by remember { mutableIntStateOf(0) }
 
-        val camera = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.TakePicture(),
-        ) { saved -> if (saved) captureUri?.let(quickReport::onPhotoTaken) }
+    val camera = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+    ) { saved -> if (saved) captureUri?.let(quickReport::onPhotoTaken) }
 
-        fun openCamera() {
-            val uri = CaptureFile.create(context)
-            captureUri = uri
-            camera.launch(uri)
-        }
+    fun openCamera() {
+        val uri = CaptureFile.create(context)
+        captureUri = uri
+        camera.launch(uri)
+    }
 
-        // Location is asked for at the moment it is used, not at launch: a
-        // permission prompt on first open, before the app has explained
-        // anything, is the fastest way to have it denied for good.
-        val locationPermission = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions(),
-        ) { quickReport.locate() }
+    // Location is asked for at the moment it is used, not at launch: a
+    // permission prompt on first open, before the app has explained anything,
+    // is the fastest way to have it denied for good.
+    val locationPermission = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { quickReport.locate() }
 
-        LaunchedEffect(reportSession) {
+    LaunchedEffect(reportSession) {
+        if (reportSession > launchedForSession) {
+            launchedForSession = reportSession
             locationPermission.launch(
                 arrayOf(
                     android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -229,7 +241,9 @@ fun MapScreen(
             )
             openCamera()
         }
+    }
 
+    if (showQuickReport) {
         // Filed: close the sheet and open what was just written, so the
         // resident sees their report exist rather than being returned to a map
         // and left to wonder.
