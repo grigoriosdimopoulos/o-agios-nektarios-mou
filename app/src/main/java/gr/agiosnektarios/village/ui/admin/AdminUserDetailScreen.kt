@@ -200,6 +200,10 @@ fun AdminUserDetailScreen(
             items(state.issues, key = { it.id }) { issue ->
                 IssueCard(
                     issue = issue,
+                    // Only the Reports list claims a report's shared-element key;
+                    // two live elements on one key is an artefact waiting for a
+                    // tab cross-fade. See IssueCard's shareKey.
+                    shareKey = false,
                     onClick = { onOpenIssue(issue.id) },
                     showPhoto = false,
                     modifier = Modifier.padding(horizontal = Space.page),

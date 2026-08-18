@@ -76,10 +76,18 @@ fun MapSheet(
         // full leaves a strip of map so it never feels like a different screen.
         val stops: Map<SheetStop, Float> = remember(fullHeight, barClearance, density) {
             with(density) {
+                // Ordered, and never inverted. updateBounds throws if lower
+                // exceeds upper, which a window shorter than the peek strip
+                // plus the navigation bar would produce — unreachable on a
+                // phone, reachable in a resizable multi-window.
+                val top = 64.dp.toPx()
+                val peek = (fullHeight - MapSheetDefaults.peekHeight - barClearance)
+                    .toPx()
+                    .coerceAtLeast(top)
                 mapOf(
-                    SheetStop.PEEK to (fullHeight - MapSheetDefaults.peekHeight - barClearance).toPx(),
-                    SheetStop.HALF to (fullHeight * 0.45f).toPx(),
-                    SheetStop.FULL to 64.dp.toPx(),
+                    SheetStop.PEEK to peek,
+                    SheetStop.HALF to (fullHeight * 0.45f).toPx().coerceIn(top, peek),
+                    SheetStop.FULL to top,
                 )
             }
         }

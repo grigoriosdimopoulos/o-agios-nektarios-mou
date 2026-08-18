@@ -252,20 +252,43 @@ private fun LocationLine(
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f, fill = false),
         )
-        Text(
-            text = stringResource(
-                if (state.position != null) R.string.quick_report_change else R.string.quick_report_pick,
-            ),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.small)
-                .clickable { if (state.position != null) onPickOnMap() else onRetryLocation() }
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+        // Without a fix, BOTH ways out are offered — and the map is the one
+        // that matters.
+        //
+        // This line used to offer the map only when a position already
+        // existed, and retry otherwise. Combined with hiding the full-form
+        // link once a photo was taken, that produced a state with no exit at
+        // all: photograph the fallen tree, get no fix (indoors, no sky,
+        // location switched off — the ordinary case for this audience), and
+        // send is disabled, the map is unreachable, and the only remaining
+        // action is to dismiss the sheet and lose the picture. The escape was
+        // hidden from exactly the situation it was written for.
+        if (state.position == null && state.fix != FixState.LOCATING) {
+            LocationAction(
+                text = stringResource(R.string.quick_report_pick),
+                onClick = onRetryLocation,
+            )
+        }
+        LocationAction(
+            text = stringResource(R.string.quick_report_change),
+            onClick = onPickOnMap,
         )
     }
+}
+
+@Composable
+private fun LocationAction(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+    )
 }
 
 /** Border helper: BorderStroke needs a shape, and repeating that reads badly inline. */

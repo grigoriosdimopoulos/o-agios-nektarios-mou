@@ -79,6 +79,13 @@ class ScreenTest {
 
     @Test fun quick_report_no_photo_light() = render { QuickReportEmpty() }
 
+    /**
+     * A photo taken and no location — the state that had no exit at all until
+     * the fourth review found it, and that no fixture covered because both of
+     * the others pass `photo = null`.
+     */
+    @Test fun quick_report_stuck_light() = render { QuickReportStuck() }
+
     @Test fun map_sheet_light() = render { MapSheetPreview() }
 
     @Test fun map_sheet_dark() = render(dark = true) { MapSheetPreview() }
@@ -161,6 +168,23 @@ private fun QuickReportEmpty() = QuickReportSheet(
     onPickOnMap = {},
     onSubmit = {},
     onOpenFullForm = {},
+)
+
+@Composable
+private fun QuickReportStuck() = QuickReportSheet(
+    state = QuickReportUiState(
+        photo = ByteArray(64),
+        text = "Πεσμένο δέντρο",
+        position = null,
+        fix = FixState.UNAVAILABLE,
+    ),
+    onTextChange = {},
+    onRetakePhoto = {},
+    onRetryLocation = {},
+    onPickOnMap = {},
+    onSubmit = {},
+    onOpenFullForm = {},
+    offerFullForm = false,
 )
 
 @Composable

@@ -48,6 +48,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,6 +109,14 @@ fun MapScreen(
     // True while the resident is choosing a point *for a quick report already
     // in progress*, as opposed to starting a full one from scratch.
     var awaitingPin by remember { mutableStateOf(false) }
+    // Counts reports, not sheet openings.
+    //
+    // The camera is opened once per report. Everything inside the sheet's
+    // `if` is disposed when the sheet hides, so an effect keyed on the sheet's
+    // visibility re-ran on the way back from picking a point on the map and
+    // threw the resident straight into the camera again. This only changes
+    // when a genuinely new report starts.
+    var reportSession by remember { mutableIntStateOf(0) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -159,8 +168,17 @@ fun MapScreen(
             onToggleFilters = { showFilters = true },
             onToggleBlocks = viewModel::toggleBlocksLayer,
             onSelectBasemap = viewModel::setBasemap,
-            onStartPlacing = viewModel::startPlacingPin,
-            onCancelPlacing = viewModel::cancelPlacingPin,
+            onCancelPlacing = {
+                viewModel.cancelPlacingPin()
+                // Backing out of the map returns the resident to the report
+                // they were writing. Without this the flag stayed set and the
+                // photo was thrown away by the next tap of the button, which
+                // is the loss this whole path exists to prevent.
+                if (awaitingPin) {
+                    awaitingPin = false
+                    showQuickReport = true
+                }
+            },
             onConfirmPlacement = { point ->
                 if (awaitingPin) {
                     awaitingPin = false
@@ -174,6 +192,7 @@ fun MapScreen(
             onDismissStreetHint = viewModel::dismissStreetHint,
             onStartQuickReport = {
                 quickReport.start()
+                reportSession++
                 showQuickReport = true
             },
             modifier = Modifier.fillMaxSize(),
@@ -201,16 +220,14 @@ fun MapScreen(
             contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) { quickReport.locate() }
 
-        LaunchedEffect(showQuickReport) {
-            if (showQuickReport) {
-                locationPermission.launch(
-                    arrayOf(
-                        android.Manifest.permission.ACCESS_FINE_LOCATION,
-                        android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                    ),
-                )
-                openCamera()
-            }
+        LaunchedEffect(reportSession) {
+            locationPermission.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+            openCamera()
         }
 
         // Filed: close the sheet and open what was just written, so the
@@ -464,7 +481,6 @@ private fun MapOverlay(
     onToggleFilters: () -> Unit,
     onToggleBlocks: () -> Unit,
     onSelectBasemap: (MapBasemap) -> Unit,
-    onStartPlacing: () -> Unit,
     onCancelPlacing: () -> Unit,
     onConfirmPlacement: (GeoPoint) -> Unit,
     onDismissStreetHint: () -> Unit,

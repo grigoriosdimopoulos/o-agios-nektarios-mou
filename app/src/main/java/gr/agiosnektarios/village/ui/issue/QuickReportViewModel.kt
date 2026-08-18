@@ -29,6 +29,8 @@ data class QuickReportUiState(
     val text: String = "",
     val position: GeoPoint? = null,
     val fix: FixState = FixState.IDLE,
+    /** True once the resident has chosen the point themselves. */
+    val positionIsManual: Boolean = false,
     val category: IssueCategory = IssueCategory.OTHER,
     val encoding: Boolean = false,
     val submitting: Boolean = false,
@@ -48,6 +50,7 @@ data class QuickReportUiState(
         return photo.contentEqualsOrNull(other.photo) &&
             thumbnail.contentEqualsOrNull(other.thumbnail) &&
             text == other.text && position == other.position && fix == other.fix &&
+            positionIsManual == other.positionIsManual &&
             category == other.category && encoding == other.encoding &&
             submitting == other.submitting && savedIssueId == other.savedIssueId &&
             errorMessage == other.errorMessage
@@ -103,6 +106,11 @@ class QuickReportViewModel @Inject constructor(
     }
 
     fun locate() {
+        // A point the resident placed by hand outranks anything the hardware
+        // says afterwards. The permission callback calls this again on the way
+        // back from the map, and without this guard a late fix would quietly
+        // replace the spot they had just chosen.
+        if (_uiState.value.positionIsManual) return
         if (!locationProvider.hasPermission || !locationProvider.isEnabled) {
             _uiState.update { it.copy(fix = FixState.UNAVAILABLE) }
             return
@@ -145,7 +153,9 @@ class QuickReportViewModel @Inject constructor(
 
     /** Used when the resident says "I am not there" and picks a spot by hand. */
     fun setPosition(point: GeoPoint) =
-        _uiState.update { it.copy(position = point, fix = FixState.FOUND) }
+        _uiState.update {
+            it.copy(position = point, fix = FixState.FOUND, positionIsManual = true)
+        }
 
     fun submit() {
         val state = _uiState.value
