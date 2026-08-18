@@ -46,6 +46,7 @@ import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.TagPill
 import gr.agiosnektarios.village.ui.components.relativeTime
+import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 
 @Composable
 fun AnnouncementsScreen(
@@ -82,10 +83,11 @@ fun AnnouncementsScreen(
                     title = stringResource(R.string.announcements_empty),
                 )
                 else -> LazyColumn(
+                    // Clears the overlaid navigation bar; see BottomBarDefaults.
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = padding.calculateBottomPadding() + 88.dp,
+                        bottom = BottomBarDefaults.contentPadding(),
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {

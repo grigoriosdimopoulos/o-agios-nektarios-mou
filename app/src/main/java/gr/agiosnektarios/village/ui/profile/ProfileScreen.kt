@@ -40,6 +40,7 @@ import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.TagPill
 import gr.agiosnektarios.village.ui.components.isGreekLocale
 import gr.agiosnektarios.village.ui.theme.Motion
+import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 
 @Composable
 fun ProfileScreen(
@@ -55,7 +56,8 @@ fun ProfileScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        // Clears the overlaid navigation bar; see BottomBarDefaults.
+        contentPadding = PaddingValues(bottom = BottomBarDefaults.contentPadding() + 24.dp),
     ) {
         item {
             Row(

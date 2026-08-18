@@ -48,6 +48,7 @@ import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.theme.Motion
+import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 
 @Composable
 fun IssueListScreen(
@@ -118,7 +119,13 @@ fun IssueListScreen(
                 ),
             )
             else -> LazyColumn(
-                contentPadding = PaddingValues(16.dp),
+                // Clears the overlaid navigation bar; see BottomBarDefaults.
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = BottomBarDefaults.contentPadding() + 16.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 itemsIndexedStaggered(state.issues.map { it.id }) { index, _ ->

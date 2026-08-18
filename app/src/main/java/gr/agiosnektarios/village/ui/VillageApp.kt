@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -151,24 +152,15 @@ private fun SignedInApp(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            // The bar slides away on detail screens instead of disappearing, so
-            // the transition reads as "going deeper" rather than as a redraw.
-            AnimatedVisibility(
-                visible = showBottomBar,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
-            ) {
-                VillageBottomBar(
-                    currentRoute = currentRoute,
-                    onSelect = { destination -> navController.switchTab(destination) },
-                )
-            }
-        },
         // The map draws its own edge-to-edge surface, so content insets are
         // consumed per-screen rather than globally here.
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
     ) { padding ->
+        // All zeros today — no top bar, no bottom bar slot, and content insets
+        // are consumed per screen — but applied rather than discarded so it
+        // stays correct if a slot is ever filled. Critically it can no longer
+        // *change*: nothing occupies a Scaffold slot, so this padding has
+        // nothing to animate and cannot resize the graph mid-transition.
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             VillageNavHost(
                 navController = navController,
@@ -188,6 +180,32 @@ private fun SignedInApp(
                     }
                 },
             )
+
+            // The bar floats over the content instead of occupying a slot in
+            // the Scaffold.
+            //
+            // In the slot, its height was part of the layout: AnimatedVisibility
+            // kept the bar measured for the whole of its exit and then removed
+            // it in one step, which changed Scaffold's content padding from
+            // 80dp to 0 instantly. Every screen inside the NavHost — the one
+            // arriving and the one leaving — grew 80dp taller in a single
+            // frame, halfway through a 380ms push. That was the tearing.
+            //
+            // Overlaid, the bar's height leaves the layout entirely. Screens
+            // that need to scroll clear of it ask for BottomBarDefaults, which
+            // is a constant: a tab always has the bar, a detail screen never
+            // does, so nothing resizes because of it, ever.
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                VillageBottomBar(
+                    currentRoute = currentRoute,
+                    onSelect = { destination -> navController.switchTab(destination) },
+                )
+            }
         }
     }
 }

@@ -1,15 +1,29 @@
 package gr.agiosnektarios.village.ui.navigation
 
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDeepLink
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -46,36 +60,127 @@ import gr.agiosnektarios.village.ui.theme.Motion
  * screens swapping; a partial slide with the outgoing screen still visible and
  * darkened reads as depth — one thing on top of another. It is the most
  * recognisable single detail of iOS navigation and costs four functions.
+ *
+ * **Nothing here fades the moving screen, and that is deliberate.** Two full
+ * screens are composed at once for the length of a push. An arriving screen at
+ * 60% alpha is a window onto the one it is covering, and the result is both
+ * screens' text legible on top of each other — which is what "the components
+ * break" looks like. The screens are opaque; only the underlay dims, and it
+ * dims because it is *behind*, not because it is on its way out.
  */
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.pushEnter(): EnterTransition =
     slideInHorizontally(
         animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
         initialOffsetX = { it },
-    ) + fadeIn(animationSpec = tween(Motion.PUSH_MS / 2, easing = Motion.enter))
+    )
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.pushExit(): ExitTransition =
     slideOutHorizontally(
         animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
         targetOffsetX = { -it / Motion.PARALLAX_FRACTION },
-    ) + fadeOut(
-        animationSpec = tween(Motion.PUSH_MS, easing = Motion.enter),
-        targetAlpha = 1f - Motion.UNDERLAY_DIM,
     )
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.popEnter(): EnterTransition =
     slideInHorizontally(
         animationSpec = tween(Motion.POP_MS, easing = Motion.enter),
         initialOffsetX = { -it / Motion.PARALLAX_FRACTION },
-    ) + fadeIn(
-        animationSpec = tween(Motion.POP_MS, easing = Motion.enter),
-        initialAlpha = 1f - Motion.UNDERLAY_DIM,
     )
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.popExit(): ExitTransition =
     slideOutHorizontally(
         animationSpec = tween(Motion.POP_MS, easing = Motion.exit),
         targetOffsetX = { it },
-    ) + fadeOut(animationSpec = tween(Motion.POP_MS, easing = Motion.exit), targetAlpha = 0.6f)
+    )
+
+/**
+ * Tabs are siblings, not a hierarchy, so they cross-fade rather than push.
+ *
+ * This used to be described in a comment and implemented nowhere: every
+ * destination inherited the push, so switching tabs slid the whole map
+ * sideways with a parallax meant for going one level deeper. Worse, the tab
+ * switcher pops back to the start destination, so half the tab switches were
+ * *pops* — the map came in from the left, the others from the right, and the
+ * direction of travel meant nothing.
+ */
+private fun tabEnter(): EnterTransition =
+    fadeIn(animationSpec = tween(Motion.TAB_MS, easing = Motion.standardEasing))
+
+private fun tabExit(): ExitTransition =
+    fadeOut(animationSpec = tween(Motion.TAB_MS, easing = Motion.standardEasing))
+
+/** Which motion a destination arrives with. */
+private enum class ScreenMotion { PUSH, TAB }
+
+/**
+ * An opaque floor under every screen, plus the dim that makes a push read as
+ * depth.
+ *
+ * Screens in this app root themselves in whatever suits them — a Scaffold, a
+ * Column, a LazyColumn — and a Column paints nothing. During a push that meant
+ * the screen being left showed straight through the screen arriving. Rather
+ * than requiring twenty screens to remember a background, the graph gives each
+ * destination one.
+ *
+ * The dim is drawn here rather than expressed as alpha in the transition
+ * spec, because alpha on an opaque screen blends it toward whatever is behind
+ * — in the light theme, toward cream. That washes the underlay out and makes
+ * it look like it is dissolving. A scrim darkens it in both themes, which is
+ * what "behind" looks like.
+ */
+@Composable
+private fun AnimatedContentScope.ScreenBackdrop(
+    motion: ScreenMotion,
+    content: @Composable () -> Unit,
+) {
+    // Only a push has an underlay. Tabs cross-fade, and dimming a screen that
+    // is already fading out just makes the swap look like a flicker.
+    val dim by transition.animateFloat(
+        transitionSpec = { tween(Motion.PUSH_MS, easing = Motion.enter) },
+        label = "underlayDim",
+    ) { state ->
+        if (motion == ScreenMotion.PUSH && state == EnterExitState.PostExit) {
+            Motion.UNDERLAY_DIM
+        } else {
+            0f
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .drawWithContent {
+                drawContent()
+                if (dim > 0f) drawRect(color = Color.Black.copy(alpha = dim))
+            },
+    ) {
+        content()
+    }
+}
+
+/**
+ * A destination, with a floor under it and the right motion attached.
+ *
+ * Wrapping `composable` rather than repeating four transition arguments and a
+ * background at twenty-two call sites: the ones that were meant to differ were
+ * the four tabs, and before this they silently did not.
+ */
+private fun NavGraphBuilder.screen(
+    route: String,
+    motion: ScreenMotion = ScreenMotion.PUSH,
+    arguments: List<NamedNavArgument> = emptyList(),
+    deepLinks: List<NavDeepLink> = emptyList(),
+    content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit,
+) = composable(
+    route = route,
+    arguments = arguments,
+    deepLinks = deepLinks,
+    enterTransition = { if (motion == ScreenMotion.TAB) tabEnter() else pushEnter() },
+    exitTransition = { if (motion == ScreenMotion.TAB) tabExit() else pushExit() },
+    popEnterTransition = { if (motion == ScreenMotion.TAB) tabEnter() else popEnter() },
+    popExitTransition = { if (motion == ScreenMotion.TAB) tabExit() else popExit() },
+) { entry ->
+    ScreenBackdrop(motion) { content(entry) }
+}
 
 /**
  * The whole navigation graph.
@@ -95,35 +200,31 @@ fun VillageNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { pushEnter() },
-        exitTransition = { pushExit() },
-        popEnterTransition = { popEnter() },
-        popExitTransition = { popExit() },
     ) {
         // ------------------------------------------------------------ auth
-        composable(Routes.SIGN_IN) {
+        screen(Routes.SIGN_IN) {
             // No onSignedIn callback: SessionState swaps the whole graph.
             SignInScreen(
                 onNavigateToSignUp = { navController.navigate(Routes.SIGN_UP) },
                 onNavigateToForgotPassword = { navController.navigate(Routes.FORGOT_PASSWORD) },
             )
         }
-        composable(Routes.SIGN_UP) {
+        screen(Routes.SIGN_UP) {
             SignUpScreen(onBack = navController::popBackStack)
         }
-        composable(
+        screen(
             Routes.FORGOT_PASSWORD,
         ) {
             ForgotPasswordScreen(onBack = navController::popBackStack)
         }
-        composable(Routes.COMPLETE_PROFILE) {
+        screen(Routes.COMPLETE_PROFILE) {
             CompleteProfileScreen()
         }
 
         if (!signedIn) return@NavHost
 
         // ------------------------------------------------------- main tabs
-        composable(Routes.MAP) {
+        screen(Routes.MAP, motion = ScreenMotion.TAB) {
             MapScreen(
                 onOpenIssue = { navController.navigate(Routes.issueDetail(it)) },
                 onCreateIssueAt = { lat, lng ->
@@ -131,13 +232,14 @@ fun VillageNavHost(
                 },
             )
         }
-        composable(Routes.ISSUES) {
+        screen(Routes.ISSUES, motion = ScreenMotion.TAB) {
             IssueListScreen(
                 onOpenIssue = { navController.navigate(Routes.issueDetail(it)) },
             )
         }
-        composable(
+        screen(
             route = Routes.ANNOUNCEMENTS,
+            motion = ScreenMotion.TAB,
             deepLinks = listOf(navDeepLink { uriPattern = "$DEEP_LINK_SCHEME/announcements" }),
         ) {
             AnnouncementsScreen(
@@ -146,13 +248,13 @@ fun VillageNavHost(
                 onEdit = { navController.navigate(Routes.announcementCompose(it)) },
             )
         }
-        composable(Routes.CHATS) {
+        screen(Routes.CHATS, motion = ScreenMotion.TAB) {
             ChatsScreen(
                 onOpenChat = { navController.navigate(Routes.chatRoom(it)) },
                 onNewChat = { navController.navigate(Routes.NEW_CHAT) },
             )
         }
-        composable(Routes.PROFILE) {
+        screen(Routes.PROFILE, motion = ScreenMotion.TAB) {
             ProfileScreen(
                 onOpenIssue = { navController.navigate(Routes.issueDetail(it)) },
                 onEditProfile = { navController.navigate(Routes.EDIT_PROFILE) },
@@ -162,7 +264,7 @@ fun VillageNavHost(
         }
 
         // ----------------------------------------------------- issue detail
-        composable(
+        screen(
             route = Routes.ISSUE_DETAIL,
             arguments = listOf(navArgument("issueId") { type = NavType.StringType }),
             deepLinks = listOf(
@@ -177,7 +279,7 @@ fun VillageNavHost(
                 showSnackbar = showSnackbar,
             )
         }
-        composable(
+        screen(
             route = Routes.ISSUE_COMPOSE,
             arguments = listOf(
                 navArgument("issueId") { type = NavType.StringType; defaultValue = "" },
@@ -196,14 +298,14 @@ fun VillageNavHost(
         }
 
         // ------------------------------------------------------------ chat
-        composable(
+        screen(
             route = Routes.CHAT_ROOM,
             arguments = listOf(navArgument("chatId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "$DEEP_LINK_SCHEME/chat/{chatId}" }),
         ) {
             ChatRoomScreen(onBack = navController::popBackStack)
         }
-        composable(Routes.NEW_CHAT) {
+        screen(Routes.NEW_CHAT) {
             NewChatScreen(
                 onBack = navController::popBackStack,
                 onChatReady = { chatId ->
@@ -214,29 +316,29 @@ fun VillageNavHost(
         }
 
         // -------------------------------------------------- profile & admin
-        composable(Routes.EDIT_PROFILE) {
+        screen(Routes.EDIT_PROFILE) {
             EditProfileScreen(onBack = navController::popBackStack, showSnackbar = showSnackbar)
         }
-        composable(Routes.SETTINGS) {
+        screen(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = navController::popBackStack,
                 onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
                 showSnackbar = showSnackbar,
             )
         }
-        composable(
+        screen(
             Routes.CHANGE_PASSWORD,
         ) {
             ChangePasswordScreen(onBack = navController::popBackStack, showSnackbar = showSnackbar)
         }
-        composable(Routes.ADMIN) {
+        screen(Routes.ADMIN) {
             AdminScreen(
                 onBack = navController::popBackStack,
                 onOpenUser = { navController.navigate(Routes.adminUser(it)) },
                 onOpenIssue = { navController.navigate(Routes.issueDetail(it)) },
             )
         }
-        composable(
+        screen(
             route = Routes.ADMIN_USER_DETAIL,
             arguments = listOf(navArgument("userId") { type = NavType.StringType }),
         ) {
@@ -248,7 +350,7 @@ fun VillageNavHost(
         }
 
         // --------------------------------------------------- announcements
-        composable(
+        screen(
             route = Routes.ANNOUNCEMENT_COMPOSE,
             arguments = listOf(
                 navArgument("announcementId") { type = NavType.StringType; defaultValue = "" },

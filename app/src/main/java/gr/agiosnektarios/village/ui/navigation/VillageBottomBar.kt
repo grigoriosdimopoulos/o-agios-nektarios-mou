@@ -7,6 +7,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -20,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -40,6 +44,24 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import androidx.compose.ui.graphics.Color
 import gr.agiosnektarios.village.ui.components.GlassSurface
+
+/**
+ * How much room the bar takes at the bottom of the screen.
+ *
+ * The bar floats *over* the content rather than occupying a slot in the
+ * Scaffold, so nothing reserves this space automatically: a list that should
+ * scroll clear of the bar asks for it here. Static per screen — a tab always
+ * has the bar, a detail screen never does — so no layout ever changes size
+ * because of it, which is what the slot version did mid-transition.
+ */
+object BottomBarDefaults {
+    /** Material's NavigationBar height, which this bar does not override. */
+    val BarHeight = 80.dp
+
+    @Composable
+    fun contentPadding(): Dp =
+        BarHeight + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+}
 
 @Composable
 fun VillageBottomBar(

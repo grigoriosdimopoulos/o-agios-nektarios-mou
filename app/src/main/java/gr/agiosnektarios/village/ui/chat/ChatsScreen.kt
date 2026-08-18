@@ -40,6 +40,7 @@ import gr.agiosnektarios.village.ui.components.Avatar
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.relativeTime
+import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 
 @Composable
 fun ChatsScreen(
@@ -73,8 +74,12 @@ fun ChatsScreen(
                     title = stringResource(R.string.chat_empty),
                 )
                 else -> LazyColumn(
+                    // Clears the overlaid navigation bar. A constant, not the
+                    // Scaffold's padding: the bar is drawn over the content
+                    // rather than measured beside it, so nothing reports its
+                    // height and nothing resizes when it slides away.
                     contentPadding = PaddingValues(
-                        bottom = padding.calculateBottomPadding() + 88.dp,
+                        bottom = BottomBarDefaults.contentPadding(),
                     ),
                 ) {
                     items(state.chats, key = { it.id }) { chat ->

@@ -110,6 +110,15 @@ object Motion {
     const val PUSH_MS = 380
     const val POP_MS = 320
 
+    /**
+     * Tab switches, which cross-fade rather than push.
+     *
+     * Much shorter than a push on purpose: a push has distance to cover and
+     * earns its time, while a cross-fade that lingers just looks like the app
+     * is thinking. Anything past ~200ms on a fade reads as lag.
+     */
+    const val TAB_MS = 170
+
     /** How dark the screen being left behind goes. */
     const val UNDERLAY_DIM = 0.28f
 
