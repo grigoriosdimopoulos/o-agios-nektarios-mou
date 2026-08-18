@@ -104,7 +104,15 @@ fun PrimaryButton(
                 disabledContentColor = MaterialTheme.colorScheme.onPrimary,
             )
         } else {
-            ButtonDefaults.buttonColors()
+            // The disabled fill is named rather than left to Material, whose
+            // default derives from onSurface and lands on a neutral grey —
+            // the only cool colour anywhere in a palette built on cream and
+            // pine, and conspicuous for it. surfaceContainerHighest is the
+            // same warm family as everything around it.
+            ButtonDefaults.buttonColors(
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
         },
     ) {
         // Extracted rather than written inline: a Button's content lambda is
