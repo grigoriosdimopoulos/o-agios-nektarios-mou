@@ -139,6 +139,18 @@ fun MapScreen(
             onRoadTap = viewModel::selectStreet,
         )
 
+        // The reports, on a pane pulled up over the map. Hidden while a pin is
+        // being placed, when the map itself is the thing being used.
+        if (!state.placingPin) {
+            MapSheet(
+                issues = state.clusters.flatMap { it.issues }
+                    .distinctBy { it.id }
+                    .sortedByDescending { it.createdAt?.time ?: 0L },
+                onOpenIssue = onOpenIssue,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
         MapOverlay(
             state = state,
             onToggleFilters = { showFilters = true },

@@ -79,6 +79,10 @@ class ScreenTest {
 
     @Test fun quick_report_no_photo_light() = render { QuickReportEmpty() }
 
+    @Test fun map_sheet_light() = render { MapSheetPreview() }
+
+    @Test fun map_sheet_dark() = render(dark = true) { MapSheetPreview() }
+
     @Test fun profile_light() = render { Profile() }
 
     @Test fun profile_dark() = render(dark = true) { Profile() }
@@ -157,6 +161,12 @@ private fun QuickReportEmpty() = QuickReportSheet(
     onPickOnMap = {},
     onSubmit = {},
     onOpenFullForm = {},
+)
+
+@Composable
+private fun MapSheetPreview() = gr.agiosnektarios.village.ui.map.MapSheet(
+    issues = sampleIssues,
+    onOpenIssue = {},
 )
 
 @Composable

@@ -301,4 +301,8 @@
     <string name="issue_take_on">I\'ll take this on</string>
     <string name="issue_release">Hand it back</string>
     <string name="issue_taken_by">%1$s is dealing with this</string>
+    <plurals name="map_sheet_count">
+        <item quantity="one">%1$d report in the village</item>
+        <item quantity="other">%1$d reports in the village</item>
+    </plurals>
 </resources>

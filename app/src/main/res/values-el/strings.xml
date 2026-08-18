@@ -275,4 +275,8 @@
     <string name="issue_take_on">Το αναλαμβάνω</string>
     <string name="issue_release">Το αφήνω</string>
     <string name="issue_taken_by">Το έχει αναλάβει ο/η %1$s</string>
+    <plurals name="map_sheet_count">
+        <item quantity="one">%1$d αναφορά στο χωριό</item>
+        <item quantity="other">%1$d αναφορές στο χωριό</item>
+    </plurals>
 </resources>
