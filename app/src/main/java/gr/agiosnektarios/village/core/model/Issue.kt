@@ -50,6 +50,21 @@ data class Issue(
     /** upvotes - downvotes, denormalised so Firestore can order by popularity. */
     val score: Int = 0,
     val commentCount: Int = 0,
+    /**
+     * Who said they would deal with this, if anyone.
+     *
+     * The status field tracks what has happened to a report; this tracks who
+     * is doing it, and in a village of forty-six people that is the part that
+     * actually moves things. "Someone should clear that" is how a problem sits
+     * for a year. "Ο Δημήτρης το ανέλαβε" is how it gets cleared, and the app
+     * was recording the first and not the second.
+     *
+     * Any resident may take a report, and the person holding it may let it go
+     * again — this is a claim, not an assignment handed down by anyone.
+     */
+    val assigneeId: String = "",
+    val assigneeName: String = "",
+    val assignedAt: Date? = null,
     val resolutionNote: String = "",
     val resolvedById: String = "",
     val resolvedByName: String = "",
@@ -59,6 +74,18 @@ data class Issue(
     val category: IssueCategory get() = IssueCategory.fromId(categoryId)
     val status: IssueStatus get() = IssueStatus.fromId(statusId)
     val isOpen: Boolean get() = !status.isTerminal
+
+    val isTaken: Boolean get() = assigneeId.isNotBlank()
+
+    fun isTakenBy(viewer: UserProfile?): Boolean =
+        viewer != null && assigneeId == viewer.id
+
+    /** Anyone may take an open report; only the holder or a moderator lets it go. */
+    fun canTake(viewer: UserProfile?): Boolean =
+        viewer != null && isOpen && !isTaken
+
+    fun canRelease(viewer: UserProfile?): Boolean =
+        viewer != null && isTaken && (assigneeId == viewer.id || viewer.canModerate)
 
     fun canEdit(viewer: UserProfile?): Boolean =
         viewer != null && (viewer.id == authorId || viewer.canModerate)

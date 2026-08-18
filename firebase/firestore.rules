@@ -247,8 +247,35 @@ service cloud.firestore {
           && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
       }
 
+      /**
+       * A resident claiming a report, or letting one go.
+       *
+       * This is the one write on an issue that an ordinary resident may make
+       * to somebody else's document, so it is fenced tightly: the diff may
+       * touch nothing but the three assignment fields, and the name written
+       * must be the caller's own. Taking requires the report to be unclaimed;
+       * releasing requires you to be the one holding it, or a moderator.
+       *
+       * A claim is not an assignment handed down by anyone — nobody can put
+       * a neighbour's name on a job.
+       */
+      function isTakeOrRelease() {
+        return isActiveResident()
+          && touchesOnly(['assigneeId', 'assigneeName', 'assignedAt', 'updatedAt'])
+          && (
+            // Taking an unclaimed report, in your own name.
+            (resource.data.assigneeId == ''
+              && request.resource.data.assigneeId == uid()
+              && request.resource.data.assigneeName is string
+              && request.resource.data.assigneeName.size() > 0)
+            // Or giving back one you hold — moderators may unstick any.
+            || (request.resource.data.assigneeId == ''
+              && (resource.data.assigneeId == uid() || isModerator()))
+          );
+      }
+
       allow update: if imageWithin('thumbnail', 20000)
-        && (isContentEdit() || isVoteTallyWrite() || isCommentCountWrite());
+        && (isContentEdit() || isVoteTallyWrite() || isCommentCountWrite() || isTakeOrRelease());
 
       allow delete: if isActiveResident()
         && (resource.data.authorId == uid() || isModerator());

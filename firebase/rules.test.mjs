@@ -513,6 +513,46 @@ await check("a resident cannot delete a street name",
 await check("a moderator may delete a street name",
   assertSucceeds(deleteDoc(doc(boss, "streetNames/852314600"))));
 
+// ---- residents taking a report on
+//
+// The only write an ordinary resident may make to a neighbour's issue, so it
+// gets the same adversarial treatment as the street names.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("issues/takeable").set({
+    // Authored by neither maria nor giorgos, so that "can a bystander do X"
+    // actually tests the take/release rule rather than the author's own edit
+    // rights — which is what made three of these pass when they should not.
+    ...issue, authorId: "boss", authorName: "Boss", assigneeId: "", assigneeName: "",
+    upvotes: 0, downvotes: 0, score: 0, commentCount: 0,
+  });
+});
+
+await check("a resident takes an unclaimed report",
+  assertSucceeds(updateDoc(doc(maria, "issues/takeable"),
+    { assigneeId: "maria", assigneeName: "Maria Test", assignedAt: serverTimestamp(),
+      updatedAt: serverTimestamp() })));
+await check("nobody may put a neighbour's name on a job",
+  assertFails(updateDoc(doc(giorgos, "issues/takeable"),
+    { assigneeId: "maria", assigneeName: "Maria Test", updatedAt: serverTimestamp() })));
+await check("a second resident cannot take an already-claimed report",
+  assertFails(updateDoc(doc(giorgos, "issues/takeable"),
+    { assigneeId: "giorgos", assigneeName: "Giorgos Test", updatedAt: serverTimestamp() })));
+await check("taking cannot smuggle a title edit through",
+  assertFails(updateDoc(doc(giorgos, "issues/takeable"),
+    { assigneeId: "giorgos", assigneeName: "G", title: "hijacked", updatedAt: serverTimestamp() })));
+await check("taking cannot smuggle a vote through",
+  assertFails(updateDoc(doc(giorgos, "issues/takeable"),
+    { assigneeId: "giorgos", assigneeName: "G", upvotes: 99, updatedAt: serverTimestamp() })));
+await check("a bystander cannot release someone else's claim",
+  assertFails(updateDoc(doc(giorgos, "issues/takeable"),
+    { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+await check("the holder may give it back",
+  assertSucceeds(updateDoc(doc(maria, "issues/takeable"),
+    { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+await check("a moderator may unstick any claim",
+  assertSucceeds(updateDoc(doc(boss, "issues/takeable"),
+    { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+
 await env.cleanup();
 
 const failed = results.filter(([ok]) => !ok);

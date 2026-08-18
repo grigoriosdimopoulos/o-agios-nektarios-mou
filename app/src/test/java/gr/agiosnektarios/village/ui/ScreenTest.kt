@@ -96,7 +96,11 @@ private fun IssueList() = IssueListContent(
 
 @Composable
 private fun IssueDetail() = IssueDetailContent(
-    issue = sampleIssues[1],
+    issue = sampleIssues[1].copy(
+        assigneeId = "dimitris",
+        assigneeName = "Δημήτρης Α.",
+        assignedAt = ago(60 * 3),
+    ),
     comments = sampleComments,
     photos = emptyList(),
     viewer = me,

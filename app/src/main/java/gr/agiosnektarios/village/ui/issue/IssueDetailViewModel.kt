@@ -222,6 +222,29 @@ class IssueDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Take the report on, or hand it back.
+     *
+     * Taking also moves an untouched report to IN_PROGRESS, because those two
+     * things mean the same thing to everyone reading the list and asking the
+     * resident to do them separately is asking them to do bookkeeping. Handing
+     * it back leaves the status alone — work may well have happened.
+     */
+    fun toggleAssignment() {
+        val issue = uiState.value.issue ?: return
+        val me = sessionRepository.currentProfile ?: return
+        val taking = !issue.isTakenBy(me)
+        viewModelScope.launch {
+            issueRepository.setAssignee(issueId, if (taking) me else null)
+                .onSuccess {
+                    if (taking && issue.status == IssueStatus.OPEN) {
+                        issueRepository.setStatus(issueId, IssueStatus.IN_PROGRESS, me, "")
+                    }
+                }
+                .onFailure { error -> local.update { it.copy(errorMessage = error.message) } }
+        }
+    }
+
     fun deleteIssue(onDeleted: () -> Unit) {
         viewModelScope.launch {
             val result = issueRepository.deleteIssue(issueId)

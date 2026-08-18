@@ -70,6 +70,9 @@ import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.foundation.border
+import gr.agiosnektarios.village.ui.components.SecondaryButton
+import gr.agiosnektarios.village.ui.components.IssueTimeline
+import androidx.compose.material.icons.filled.PanTool
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,6 +162,7 @@ fun IssueDetailScreen(
                 onVote = viewModel::castVote,
                 onDeleteComment = viewModel::deleteComment,
                 contentPadding = padding,
+                onToggleAssignment = viewModel::toggleAssignment,
             )
         }
     }
@@ -213,6 +217,7 @@ internal fun IssueDetailContent(
     onVote: (Int) -> Unit,
     onDeleteComment: (String) -> Unit,
     contentPadding: PaddingValues,
+    onToggleAssignment: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -276,28 +281,16 @@ internal fun IssueDetailContent(
                     )
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Avatar(
-                        bytes = null,
-                        initials = issue.authorName.take(2).uppercase(),
-                        seed = issue.authorId,
-                        size = 36.dp,
-                    )
-                    Column {
-                        Text(
-                            text = stringResource(R.string.issue_reported_by, issue.authorName),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Text(
-                            text = absoluteDateTime(issue.createdAt),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                // The timeline replaces the "reported by X on date" line: it
+                // already says that, and it also says who took the job on and
+                // when it was cleared, which a single attribution line cannot.
+                IssueTimeline(issue = issue)
+
+                TakeItOn(
+                    issue = issue,
+                    viewer = viewer,
+                    onToggle = onToggleAssignment,
+                )
 
                 if (issue.status.isTerminal && issue.resolutionNote.isNotBlank()) {
                     Column(
@@ -559,4 +552,39 @@ private fun StatusDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
+}
+
+/**
+ * The button that actually moves things.
+ *
+ * A village of forty-six people does not need a workflow; it needs somebody to
+ * say out loud that they will deal with it. "Someone should clear that" is how
+ * a fallen branch sits for a year. A name against the job is how it gets
+ * cleared, and the app was recording every status change and none of that.
+ *
+ * Deliberately one control with three faces rather than a menu: take it if
+ * nobody has, hand it back if you hold it, and if a neighbour holds it, say so
+ * and offer nothing — there is nothing for a bystander to do here.
+ */
+@Composable
+private fun TakeItOn(issue: Issue, viewer: UserProfile?, onToggle: () -> Unit) {
+    when {
+        issue.canTake(viewer) -> SecondaryButton(
+            text = stringResource(R.string.issue_take_on),
+            onClick = onToggle,
+            icon = Icons.Filled.PanTool,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        issue.isTakenBy(viewer) -> SecondaryButton(
+            text = stringResource(R.string.issue_release),
+            onClick = onToggle,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        issue.isTaken -> Text(
+            text = stringResource(R.string.issue_taken_by, issue.assigneeName),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        else -> Unit
+    }
 }

@@ -298,4 +298,7 @@
     <string name="quick_report_change">On the map</string>
     <string name="quick_report_pick">Try again</string>
     <string name="quick_report_full_form">Add category and details instead</string>
+    <string name="issue_take_on">I\'ll take this on</string>
+    <string name="issue_release">Hand it back</string>
+    <string name="issue_taken_by">%1$s is dealing with this</string>
 </resources>

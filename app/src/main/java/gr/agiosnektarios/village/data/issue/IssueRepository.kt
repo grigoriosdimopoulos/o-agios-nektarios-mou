@@ -149,6 +149,28 @@ class IssueRepository @Inject constructor(
 
     // --------------------------------------------------------------- writes
 
+    /**
+     * A resident saying they will deal with this, or handing it back.
+     *
+     * Only the three assignment fields move, which is also what the rules
+     * enforce — so a claim can never carry an edit to the report itself with
+     * it. Passing a null profile releases.
+     */
+    suspend fun setAssignee(issueId: String, assignee: UserProfile?): Result<Unit> =
+        withContext(io) {
+            runCatching {
+                issues.document(issueId).update(
+                    mapOf(
+                        "assigneeId" to assignee?.id.orEmpty(),
+                        "assigneeName" to assignee?.displayName.orEmpty(),
+                        "assignedAt" to assignee?.let { FieldValue.serverTimestamp() },
+                        "updatedAt" to FieldValue.serverTimestamp(),
+                    ),
+                ).await()
+                Unit
+            }
+        }
+
     suspend fun createIssue(draft: IssueDraft, author: UserProfile): Result<String> =
         withContext(io) {
             runCatching {
@@ -171,6 +193,9 @@ class IssueRepository @Inject constructor(
                         "downvotes" to 0,
                         "score" to 0,
                         "commentCount" to 0,
+                        "assigneeId" to "",
+                        "assigneeName" to "",
+                        "assignedAt" to null,
                         "resolutionNote" to "",
                         "resolvedById" to "",
                         "resolvedByName" to "",

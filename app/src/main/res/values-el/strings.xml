@@ -272,4 +272,7 @@
     <string name="quick_report_change">Στον χάρτη</string>
     <string name="quick_report_pick">Ξαναδοκίμασε</string>
     <string name="quick_report_full_form">Πρόσθεσε κατηγορία και λεπτομέρειες</string>
+    <string name="issue_take_on">Το αναλαμβάνω</string>
+    <string name="issue_release">Το αφήνω</string>
+    <string name="issue_taken_by">Το έχει αναλάβει ο/η %1$s</string>
 </resources>
