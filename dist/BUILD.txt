@@ -1,0 +1,15 @@
+1.0.37 (5a596df)
+
+sha256  48b7b43a40b8de45aacedeb06c6f2809cea7e6201ed16375a4f1baab46aeb515
+bytes   17326813
+built   2026-08-18 12:39 UTC
+
+The same version string is shown inside the app under Settings > About, so
+what is installed on a phone can be compared against what is published here
+without reinstalling anything.
+
+The download URL never changes, which is what makes two different builds look
+like the same one. To check before installing: open this file on the phone
+and compare the version against Settings > About. To be certain the download
+is not a cached copy — the raw endpoint sends cache-control: max-age=300 —
+append anything to the URL as a query string, for example ?v=48b7b43
