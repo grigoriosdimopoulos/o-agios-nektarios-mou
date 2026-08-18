@@ -11,6 +11,18 @@ import androidx.compose.ui.graphics.Color
  */
 private val Pine = Color(0xFF1F6F5C)
 private val PineLight = Color(0xFF3F9A82)
+
+/**
+ * The dark theme's primary.
+ *
+ * PineLight was used here, and white-on-PineLight measures 3.4:1 while the
+ * scheme's own onPrimary measured 3.85:1 — both under the 4.5:1 an ordinary
+ * button needs. The same control was therefore confident in the light theme
+ * (6.0:1) and washed out in the dark one. This is dark enough to carry white
+ * at 4.7:1 while staying recognisably the same green; PineLight stays on as
+ * inversePrimary and for accents, where it is never a text background.
+ */
+private val PineDarkTheme = Color(0xFF2E8168)
 private val PineDark = Color(0xFF0E4A3C)
 private val Terracotta = Color(0xFFE2724B)
 private val TerracottaLight = Color(0xFFFF9C72)
@@ -63,8 +75,8 @@ val LightColors = lightColorScheme(
 )
 
 val DarkColors = darkColorScheme(
-    primary = PineLight,
-    onPrimary = Color(0xFF00382B),
+    primary = PineDarkTheme,
+    onPrimary = Color.White,
     primaryContainer = PineDark,
     onPrimaryContainer = Color(0xFFBFE7D9),
     secondary = TerracottaLight,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.ThumbUp
@@ -29,10 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.core.model.Issue
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.ui.theme.raisedContainer
+import gr.agiosnektarios.village.ui.theme.raisedShadow
+import gr.agiosnektarios.village.ui.theme.shadowTint
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 
 /**
@@ -57,9 +63,28 @@ fun IssueCard(
         label = "issueCardScale",
     )
 
+    val lift = raisedShadow
+
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().scale(scale),
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            // Depth in the light theme, where a hairline alone was not enough
+            // to lift a white card off a cream page. Zero in the dark theme,
+            // which separates by value instead. See Surfaces.kt.
+            .then(
+                if (lift > 0.dp) {
+                    Modifier.shadow(
+                        elevation = lift,
+                        shape = MaterialTheme.shapes.medium,
+                        ambientColor = shadowTint,
+                        spotColor = shadowTint,
+                    )
+                } else {
+                    Modifier
+                },
+            ),
         interactionSource = interactionSource,
         shape = MaterialTheme.shapes.medium,
         // See Surfaces.kt: naming a container role directly is what made cards
@@ -98,7 +123,14 @@ fun IssueCard(
                     if (issue.description.isNotBlank()) {
                         Text(
                             text = issue.description,
-                            style = MaterialTheme.typography.bodySmall,
+                            // bodyMedium, not bodySmall. The ramp went 16sp
+                            // title straight to 12sp body and then 11sp for
+                            // everything else, so four fifths of every card
+                            // was set in grey 11-12sp. One extra step makes
+                            // the feed readable — which matters more here
+                            // than in most apps, given who lives in this
+                            // village.
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -111,7 +143,7 @@ fun IssueCard(
                         StatusChip(status = issue.status)
                         Text(
                             text = relativeTime(issue.createdAt),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -130,11 +162,18 @@ fun IssueCard(
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = issue.authorName,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.width(96.dp),
+                            // End-aligned inside a bounded width, not
+                            // start-aligned inside a fixed 96dp. Fixed width
+                            // left every name beginning on the same line and
+                            // ending wherever it happened to end, 40-54dp
+                            // short of the card's right edge — a column that
+                            // visibly missed its margin.
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.widthIn(max = 110.dp),
                         )
                     }
                 }

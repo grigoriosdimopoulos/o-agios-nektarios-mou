@@ -66,6 +66,10 @@ import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VoteBar
 import gr.agiosnektarios.village.ui.components.absoluteDateTime
 import gr.agiosnektarios.village.ui.components.relativeTime
+import gr.agiosnektarios.village.ui.theme.raisedOutline
+import gr.agiosnektarios.village.ui.theme.raisedContainer
+import gr.agiosnektarios.village.ui.theme.Space
+import androidx.compose.foundation.border
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,7 +224,7 @@ internal fun IssueDetailContent(
         if (photos.isNotEmpty()) {
             item {
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(horizontal = Space.page),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(photos, key = { it.id }) { photo ->
@@ -239,8 +243,24 @@ internal fun IssueDetailContent(
         }
 
         item {
+            // The same raised card the feed uses.
+            //
+            // This screen laid chips, title, description, author and votes as
+            // raw text straight onto the page, with one grey rule under it. So
+            // you tapped a crisp white card in the feed and arrived somewhere
+            // with no card at all — the app changing its own vocabulary at the
+            // exact moment it should be confirming it.
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(horizontal = Space.page, vertical = Space.gutter)
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(raisedContainer)
+                    .then(
+                        raisedOutline?.let { Modifier.border(it, MaterialTheme.shapes.medium) }
+                            ?: Modifier,
+                    )
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -312,13 +332,11 @@ internal fun IssueDetailContent(
             }
         }
 
-        item { HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp)) }
-
         item {
             Text(
                 text = stringResource(R.string.issue_comments),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(horizontal = Space.page, vertical = 12.dp),
             )
         }
 
@@ -326,9 +344,9 @@ internal fun IssueDetailContent(
             item {
                 Text(
                     text = stringResource(R.string.issue_comments_empty),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                 )
             }
         } else {
@@ -350,7 +368,7 @@ private fun CommentRow(
     onDelete: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.page, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Avatar(

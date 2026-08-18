@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.Motion
+import gr.agiosnektarios.village.ui.theme.VillageDisplayFamily
 import kotlinx.coroutines.delay
 
 /** How long the splash holds before the app takes over. */
@@ -141,9 +142,13 @@ internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = stringResource(R.string.splash_quote_greek),
+                // The serif, explicitly. This line is not interface text —
+                // it is a quotation, and it should not look like a button
+                // label that happens to be large.
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Light,
-                    letterSpacing = 2.sp,
+                    fontFamily = VillageDisplayFamily,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 1.sp,
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
@@ -162,7 +167,10 @@ internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
 
             Text(
                 text = stringResource(R.string.splash_quote_translation),
-                style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = VillageDisplayFamily,
+                    fontStyle = FontStyle.Italic,
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.alpha(tailAlpha),

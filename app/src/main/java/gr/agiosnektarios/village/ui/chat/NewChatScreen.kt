@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui.chat
 
+import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -85,7 +86,7 @@ fun NewChatScreen(
                 onValueChange = viewModel::onQueryChange,
                 label = stringResource(R.string.chat_search_people),
                 leadingIcon = Icons.Filled.Search,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = Space.page),
             )
 
             if (state.selected.isNotEmpty()) {
@@ -111,7 +112,7 @@ fun NewChatScreen(
                     value = state.groupTitle,
                     onValueChange = viewModel::onGroupTitleChange,
                     label = stringResource(R.string.chat_group_name),
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = Space.page),
                 )
             }
 
@@ -141,7 +142,7 @@ fun NewChatScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { viewModel.toggleSelection(profile) }
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                                .padding(horizontal = Space.page, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
@@ -175,7 +176,7 @@ fun NewChatScreen(
 
             ErrorBanner(
                 message = state.errorMessage,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = Space.page),
             )
 
             PrimaryButton(
@@ -185,7 +186,7 @@ fun NewChatScreen(
                 loading = state.creating,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = Space.page)
                     .padding(bottom = 16.dp),
             )
         }

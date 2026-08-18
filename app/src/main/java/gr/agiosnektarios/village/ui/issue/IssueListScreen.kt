@@ -44,6 +44,7 @@ import gr.agiosnektarios.village.data.issue.IssueSort
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.IssueCard
+import gr.agiosnektarios.village.ui.components.fadingEdge
 import gr.agiosnektarios.village.ui.components.ListSkeleton
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.ui.components.VillageTextField
@@ -102,7 +103,13 @@ internal fun IssueListContent(
             modifier = Modifier.padding(horizontal = Space.page),
         )
 
+        // Both chip rows run off the right edge at scroll 0 — 4 statuses and
+        // 16 categories never fit — so a word is always cut in half at x=max.
+        // contentPadding cannot help; it only applies past the end of the
+        // content. A fade at the edge turns a severed word into an obvious
+        // "keep scrolling", which is what every platform does here.
         LazyRow(
+            modifier = Modifier.fadingEdge(),
             contentPadding = PaddingValues(horizontal = Space.page, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -116,6 +123,7 @@ internal fun IssueListContent(
         }
 
         LazyRow(
+            modifier = Modifier.fadingEdge(),
             contentPadding = PaddingValues(horizontal = Space.page),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {

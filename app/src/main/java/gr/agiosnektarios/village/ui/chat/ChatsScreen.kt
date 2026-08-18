@@ -69,6 +69,13 @@ internal fun ChatsContent(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNewChat,
+                // Explicit, not M3's default primaryContainer: that is a pale
+                // mint which measured 1.35:1 against the cream page, so the
+                // only way to start a conversation looked like a disabled
+                // control. This is the same green as every other primary
+                // action in the app.
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 // Clears the navigation bar, which is drawn over this screen
                 // rather than occupying a slot beside it.
                 modifier = Modifier.padding(bottom = BottomBarDefaults.contentPadding()),

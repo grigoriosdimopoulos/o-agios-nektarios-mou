@@ -52,6 +52,11 @@ import gr.agiosnektarios.village.ui.components.Avatar
 import gr.agiosnektarios.village.ui.components.ErrorBanner
 import gr.agiosnektarios.village.ui.components.LoadingState
 import gr.agiosnektarios.village.ui.components.timeOfDay
+import gr.agiosnektarios.village.ui.theme.Motion
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -297,17 +302,48 @@ private fun MessageComposer(
             onValueChange = onDraftChange,
             modifier = Modifier.weight(1f),
             placeholder = { Text(stringResource(R.string.chat_message_hint)) },
-            shape = MaterialTheme.shapes.large,
+            // shapes.medium, like every other text field in the app. This
+            // was shapes.large, so the composer and the search field one
+            // screen away were the same control at two different radii.
+            shape = MaterialTheme.shapes.medium,
             maxLines = 5,
         )
-        IconButton(onClick = onSend, enabled = draft.isNotBlank()) {
+        // A filled circle that arrives when there is something to send.
+        //
+        // The old version was a bare icon tinted primary when enabled and
+        // onSurfaceVariant when not — two dark colours of near-identical
+        // weight, so the button looked the same whether the field was empty
+        // or full. Send is the one thing this screen exists for; it should be
+        // unmistakable when it is live and quiet when it is not.
+        val ready = draft.isNotBlank()
+        val sendScale by animateFloatAsState(
+            targetValue = if (ready) 1f else 0.82f,
+            animationSpec = Motion.standard(),
+            label = "sendScale",
+        )
+        IconButton(
+            onClick = onSend,
+            enabled = ready,
+            modifier = Modifier
+                .size(44.dp)
+                .scale(sendScale)
+                .clip(CircleShape)
+                .background(
+                    if (ready) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    },
+                ),
+        ) {
             Icon(
                 imageVector = Icons.Filled.Send,
                 contentDescription = stringResource(R.string.action_send),
-                tint = if (draft.isNotBlank()) {
-                    MaterialTheme.colorScheme.primary
+                modifier = Modifier.size(20.dp),
+                tint = if (ready) {
+                    MaterialTheme.colorScheme.onPrimary
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 },
             )
         }

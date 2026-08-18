@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -47,6 +48,30 @@ val raisedContainer: Color
 
 val raisedOutline: BorderStroke?
     @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.raisedOutline()
+
+/**
+ * The lift under a raised surface in the light theme, and nothing in the dark.
+ *
+ * Dark schemes separate by value — a lighter block on near-black is already
+ * "above" the page — and adding a shadow there only muddies it. Light schemes
+ * separate by *depth*, and this app had none: every card was elevation 0 with
+ * a hairline, so the light theme read as a printed page while the dark one
+ * read as an app. That difference is most of why one felt finished and the
+ * other did not.
+ *
+ * The shadow is tinted rather than black. Compose's default shadow is pure
+ * black, which over a cream page goes grey and dirty; pulling it toward the
+ * scheme's own ink keeps it warm.
+ */
+@Composable
+@ReadOnlyComposable
+fun ColorScheme.raisedShadow(): Dp = if (surface.isDark()) 0.dp else 2.dp
+
+/** Warm ink rather than black, so the shadow does not go grey over cream. */
+val shadowTint: Color = Color(0xFF2C2418)
+
+val raisedShadow: Dp
+    @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.raisedShadow()
 
 /** Rough perceptual luminance test, to decide which way a treatment should go. */
 fun Color.isDark(): Boolean =
