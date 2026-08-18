@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
  * it is the contrast the app had none of.
  *
  * Both are variable fonts, so one file covers every weight instead of four,
- * and both are subset to Latin plus Greek: 583 KiB for the pair rather than
+ * and both are subset to Latin plus Greek: 574 KiB for the pair rather than
  * the 1.2 MiB the full files cost. Variable weight axes need API 26, which is
  * this app's minimum.
  *
