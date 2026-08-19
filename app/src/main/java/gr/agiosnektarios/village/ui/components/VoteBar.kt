@@ -67,7 +67,7 @@ fun VoteBar(
         VoteButton(
             count = upvotes,
             active = myVote == 1,
-            activeTint = VillageAccents.upvote,
+            activeTint = with(VillageAccents) { MaterialTheme.colorScheme.upvoteInk },
             activeIcon = Icons.Filled.ThumbUp,
             inactiveIcon = Icons.Outlined.ThumbUp,
             contentDescription = stringResource(R.string.issue_upvote),
@@ -77,7 +77,7 @@ fun VoteBar(
         VoteButton(
             count = downvotes,
             active = myVote == -1,
-            activeTint = VillageAccents.downvote,
+            activeTint = with(VillageAccents) { MaterialTheme.colorScheme.downvoteInk },
             activeIcon = Icons.Filled.ThumbDown,
             inactiveIcon = Icons.Outlined.ThumbDown,
             contentDescription = stringResource(R.string.issue_downvote),
@@ -113,15 +113,19 @@ private fun VoteButton(
 
     Row(
         modifier = Modifier
+            // First in the chain, not last. Layout modifiers wrap what comes
+            // after them, so at the end of the chain this expanded the content
+            // and then clip/background/border drew over the expanded box: the
+            // pill measured 63dp instead of reserving 48dp of touch around a
+            // 32dp pill. Here it reports the larger size to the parent and
+            // centres the pill inside it, which is the point.
+            .minimumInteractiveComponentSize()
             .clip(CircleShape)
             .background(
                 if (active) activeTint.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh,
             )
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp)
-            // The app's most-used control measured 32dp. This reserves the
-            // touch area without changing the pill that is drawn.
-            .minimumInteractiveComponentSize(),
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {

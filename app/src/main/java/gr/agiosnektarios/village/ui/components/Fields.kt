@@ -32,6 +32,42 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import gr.agiosnektarios.village.ui.theme.errorInk
+import androidx.compose.runtime.ReadOnlyComposable
+
+/**
+ * Whether labels sit above their fields rather than notched into the border.
+ *
+ * An OutlinedTextField cuts its notch for exactly one line. At twice the text
+ * size "Ό,τι βοηθάει — τι, και πού ακριβώς" wraps, and the second line was
+ * drawn straight through the field's own top border and into the text above it
+ * — on the note field of the fire-alarm screen, at the size the people who
+ * most need it are running. The floating label is a way of saving a line; when
+ * a line is affordable and the label no longer fits, the label wins.
+ */
+@Composable
+@ReadOnlyComposable
+private fun stackLabels(): Boolean = LocalDensity.current.fontScale > 1.3f
+
+/**
+ * The label above the field, when [stacked].
+ *
+ * Deliberately *not* given a contentDescription on the field below it. An
+ * earlier version did, which made TalkBack read the label and then read it
+ * again as the field's own description — and a contentDescription on an
+ * editable node can shadow the text that has been typed into it. Compose
+ * already associates an adjacent label with its field.
+ */
+@Composable
+private fun StackedLabel(label: String, stacked: Boolean) {
+    if (!stacked) return
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+    )
+}
 
 /**
  * A labelled text field with an inline error that animates in rather than
@@ -52,39 +88,13 @@ fun VillageTextField(
     minLines: Int = 1,
     enabled: Boolean = true,
 ) {
-    // Above the field, not notched into its border, once the text gets large.
-    //
-    // An OutlinedTextField cuts the notch for exactly one line. At twice the
-    // text size "Ό,τι βοηθάει — τι, και πού ακριβώς" wraps, and the second
-    // line was drawn straight through the field's own top border and into the
-    // text above it — on the note field of the fire-alarm screen, at the size
-    // the people who most need it are running. The floating label is a way of
-    // saving a line; when a line is affordable and the label no longer fits,
-    // the label wins.
-    val stacked = LocalDensity.current.fontScale > 1.3f
+    val stacked = stackLabels()
     Column(modifier = modifier.fillMaxWidth()) {
-        if (stacked) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-            )
-        }
+        StackedLabel(label, stacked)
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                // The visible label is no longer the field's own, so give the
-                // screen reader the one it lost.
-                .then(
-                    if (stacked) {
-                        Modifier.semantics { contentDescription = label }
-                    } else {
-                        Modifier
-                    },
-                ),
+            modifier = Modifier.fillMaxWidth(),
             label = if (stacked) null else ({ Text(label) }),
             placeholder = placeholder?.let { { Text(it) } },
             leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
@@ -105,7 +115,7 @@ fun VillageTextField(
         ) {
             Text(
                 text = error.orEmpty(),
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.errorInk,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp),
             )
@@ -124,12 +134,14 @@ fun VillagePasswordField(
 ) {
     var visible by remember { mutableStateOf(false) }
 
+    val stacked = stackLabels()
     Column(modifier = modifier.fillMaxWidth()) {
+        StackedLabel(label, stacked)
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(label) },
+            label = if (stacked) null else ({ Text(label) }),
             isError = error != null,
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
@@ -162,7 +174,7 @@ fun VillagePasswordField(
         ) {
             Text(
                 text = error.orEmpty(),
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.errorInk,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp),
             )

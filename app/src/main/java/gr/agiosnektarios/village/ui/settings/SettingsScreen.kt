@@ -44,6 +44,7 @@ import gr.agiosnektarios.village.data.settings.AppLanguage
 import gr.agiosnektarios.village.data.settings.SettingsRepository
 import gr.agiosnektarios.village.data.settings.ThemeMode
 import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -210,7 +211,7 @@ fun SettingsScreen(
             ActionRow(
                 label = stringResource(R.string.settings_delete_account),
                 onClick = { showDeleteDialog = true },
-                tint = MaterialTheme.colorScheme.error,
+                tint = MaterialTheme.colorScheme.errorInk,
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -246,7 +247,7 @@ fun SettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                     )
                 }
             },

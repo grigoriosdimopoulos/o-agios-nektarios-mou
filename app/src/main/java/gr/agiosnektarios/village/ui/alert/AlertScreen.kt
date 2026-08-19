@@ -71,6 +71,7 @@ import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import androidx.compose.material3.minimumInteractiveComponentSize
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 /**
  * Telling the village something is wrong.
@@ -302,7 +303,7 @@ private fun Chosen(
             imageVector = kind.icon(),
             contentDescription = null,
             tint = if (emergency) {
-                MaterialTheme.colorScheme.error
+                MaterialTheme.colorScheme.errorInk
             } else {
                 MaterialTheme.colorScheme.primaryInk
             },
@@ -325,7 +326,7 @@ private fun Chosen(
         Text(
             text = stringResource(R.string.alert_first),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
+            color = MaterialTheme.colorScheme.errorInk,
         )
         PrimaryButton(
             text = stringResource(
@@ -461,13 +462,13 @@ private fun WhereRow(state: RaiseAlertState, onPlace: (AlertPlace) -> Unit) {
 private fun PlacePill(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(12.dp))
             .background(
                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .minimumInteractiveComponentSize(),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (selected) {

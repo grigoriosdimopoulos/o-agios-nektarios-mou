@@ -27,6 +27,7 @@ import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillagePasswordField
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @Composable
 fun SignInScreen(
@@ -116,7 +117,7 @@ internal fun AuthErrorText(message: String?, modifier: Modifier = Modifier) {
     if (message == null) return
     Text(
         text = message.ifBlank { stringResource(R.string.error_generic) },
-        color = MaterialTheme.colorScheme.error,
+        color = MaterialTheme.colorScheme.errorInk,
         style = MaterialTheme.typography.bodySmall,
         modifier = modifier.fillMaxWidth(),
     )

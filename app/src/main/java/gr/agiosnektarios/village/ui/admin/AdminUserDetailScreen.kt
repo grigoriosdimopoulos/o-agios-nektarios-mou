@@ -43,6 +43,7 @@ import gr.agiosnektarios.village.ui.components.Avatar
 import gr.agiosnektarios.village.ui.components.IssueCard
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -271,7 +272,7 @@ fun AdminUserDetailScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                     )
                 }
             },

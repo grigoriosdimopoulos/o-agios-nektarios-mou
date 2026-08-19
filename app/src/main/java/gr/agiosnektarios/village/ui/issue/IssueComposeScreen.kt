@@ -62,6 +62,7 @@ import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.isGreekLocale
 import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 /**
  * Compose or edit a report.
@@ -174,7 +175,7 @@ fun IssueComposeScreen(
                 state.categoryError?.let {
                     Text(
                         text = stringResource(it),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -239,7 +240,7 @@ fun IssueComposeScreen(
                 state.locationError?.let {
                     Text(
                         text = stringResource(it),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }

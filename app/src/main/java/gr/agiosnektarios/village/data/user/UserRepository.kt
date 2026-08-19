@@ -43,8 +43,12 @@ class UserRepository @Inject constructor(
     /**
      * Creates the profile document for a brand new account.
      *
-     * `role` is deliberately absent from the payload: the security rules reject
-     * a client-written role, and Cloud Functions own promotion to admin.
+     * The payload names `role` explicitly, and the rules permit it — but only
+     * as `USER`. There is no server on this plan to assign it instead, so a
+     * resident writes their own role on the way in and the rules refuse any
+     * value but that one. Promotion to ADMIN is also a client write, gated on
+     * an `adminClaims` document that can only exist if the passphrase matched;
+     * see `isSelfElevation()` in the rules.
      */
     suspend fun createProfile(
         userId: String,

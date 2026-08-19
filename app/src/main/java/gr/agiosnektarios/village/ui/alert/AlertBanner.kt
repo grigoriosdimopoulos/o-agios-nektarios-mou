@@ -245,10 +245,10 @@ fun OutageCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primaryInk,
                     modifier = Modifier
+                        .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { confirmingOver = true }
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                        .minimumInteractiveComponentSize(),
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                 )
             }
         }
@@ -280,6 +280,7 @@ fun OutageCard(
 private fun ConfirmPill(confirmed: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(12.dp))
             .background(
                 if (confirmed) {
@@ -300,8 +301,7 @@ private fun ConfirmPill(confirmed: Boolean, onClick: () -> Unit) {
                 },
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp)
-            .minimumInteractiveComponentSize(),
+            .padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -339,11 +339,11 @@ private fun ConfirmPill(confirmed: Boolean, onClick: () -> Unit) {
 fun UrgentButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.error)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .minimumInteractiveComponentSize(),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

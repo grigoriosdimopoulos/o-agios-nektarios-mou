@@ -962,6 +962,29 @@ await check("alerts: resolving properly still works",
   assertSucceeds(updateDoc(doc(giorgos, "alerts/live"),
     { resolvedAt: serverTimestamp(), resolvedById: "giorgos" })));
 
+// Two residents called "Γιώργος Π." is not far-fetched in a village of 46,
+// and arrayUnion de-duplicates the names while the ids stay distinct.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("alerts/samename").set({
+    kind: "WATER", note: "", placeLabel: "", raisedById: "maria",
+    raisedByName: "Giorgos P.", raisedAt: new Date(),
+    confirmedBy: ["maria"], confirmedNames: ["Giorgos P."], resolvedAt: null,
+  });
+});
+await check("alerts: a second resident of the same name may still confirm",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/samename"), {
+    confirmedBy: ["maria", "giorgos"], confirmedNames: ["Giorgos P."],
+  })));
+await check("alerts: and may take it back again",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/samename"), {
+    confirmedBy: ["maria"], confirmedNames: ["Giorgos P."],
+  })));
+await check("alerts: but the names still cannot outnumber the ids",
+  assertFails(updateDoc(doc(giorgos, "alerts/samename"), {
+    confirmedBy: ["maria", "giorgos"],
+    confirmedNames: ["Giorgos P.", "Invented", "Also invented"],
+  })));
+
 await check("streets: no arbitrary fields on a street name",
   assertFails(setDoc(doc(maria, "streetNames/w1"), {
     name: "Elatias", proposedById: "maria", proposedByName: "Maria",

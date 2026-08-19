@@ -52,6 +52,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
 import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 /**
  * The ten-second report.
@@ -253,7 +254,7 @@ private fun LocationLine(
                     tint = if (state.position != null) {
                         MaterialTheme.colorScheme.primaryInk
                     } else {
-                        MaterialTheme.colorScheme.error
+                        MaterialTheme.colorScheme.errorInk
                     },
                 )
             }

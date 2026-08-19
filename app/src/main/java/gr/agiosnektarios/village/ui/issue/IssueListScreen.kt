@@ -258,6 +258,7 @@ private fun SortMenu(current: IssueSort, onSelect: (IssueSort) -> Unit) {
 private fun FilterBar(active: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(12.dp))
             .background(
                 if (active > 0) {
@@ -267,8 +268,7 @@ private fun FilterBar(active: Int, onClick: () -> Unit, modifier: Modifier = Mod
                 },
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .minimumInteractiveComponentSize(),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

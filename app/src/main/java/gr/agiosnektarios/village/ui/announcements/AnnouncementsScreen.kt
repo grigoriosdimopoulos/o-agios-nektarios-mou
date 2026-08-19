@@ -51,6 +51,7 @@ import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.Space
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 /**
  * The notices, as a list.
@@ -170,7 +171,7 @@ private fun AnnouncementCard(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = stringResource(R.string.action_delete),
                                 modifier = Modifier.height(16.dp),
-                                tint = MaterialTheme.colorScheme.error,
+                                tint = MaterialTheme.colorScheme.errorInk,
                             )
                         }
                     }

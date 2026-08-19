@@ -252,6 +252,7 @@ fun VillageNavHost(
                 },
                 onOpenContacts = { navController.navigate(Routes.CONTACTS) },
                 onRaiseAlert = { kind -> navController.navigate(Routes.alertOf(kind)) },
+                showSnackbar = showSnackbar,
             )
         }
         screen(Routes.ISSUES, motion = ScreenMotion.TAB) {

@@ -46,6 +46,7 @@ import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import java.util.Date
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 /**
  * Everything the phone knows about the weather here, on one pane.
@@ -209,7 +210,7 @@ private fun FireCard(
             Text(
                 text = stringResource(R.string.weather_not_today, forDay),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.errorInk,
             )
         }
         Text(

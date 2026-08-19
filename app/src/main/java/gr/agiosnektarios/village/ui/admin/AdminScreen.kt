@@ -41,6 +41,7 @@ import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.IssueCard
 import gr.agiosnektarios.village.ui.components.TagPill
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,7 +161,7 @@ private fun ResidentRow(profile: UserProfile, onClick: () -> Unit) {
         if (profile.disabled) {
             TagPill(
                 text = stringResource(R.string.admin_disable_user),
-                tint = MaterialTheme.colorScheme.error,
+                tint = MaterialTheme.colorScheme.errorInk,
             )
         } else if (profile.roleType != Role.USER) {
             TagPill(

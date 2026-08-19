@@ -24,6 +24,7 @@ import gr.agiosnektarios.village.ui.components.BlockDropdown
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillagePasswordField
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @Composable
 fun SignUpScreen(
@@ -111,7 +112,7 @@ fun SignUpScreen(
             state.termsError?.let {
                 Text(
                     text = stringResource(it),
-                    color = MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.errorInk,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

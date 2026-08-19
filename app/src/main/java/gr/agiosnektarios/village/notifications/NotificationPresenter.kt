@@ -15,7 +15,6 @@ import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.data.notification.AppNotification
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.absoluteValue
 
 /**
  * Turns a notice into a notification on this device.
@@ -30,6 +29,12 @@ class NotificationPresenter @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     fun show(notice: AppNotification) {
+        // No SDK_INT guard, and that is correct: ContextCompat.checkSelfPermission
+        // special-cases POST_NOTIFICATIONS below API 33 and answers from
+        // NotificationManagerCompat.areNotificationsEnabled() instead, because
+        // the permission does not exist there and Context.checkPermission would
+        // deny it for ever. Two reviewers have now disagreed about this line;
+        // it is decided by the bytecode of androidx.core 1.15.0.
         val granted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS,
@@ -66,7 +71,7 @@ class NotificationPresenter @Inject constructor(
             .build()
 
         NotificationManagerCompat.from(context)
-            .notify(tag, tag.hashCode().absoluteValue, notification)
+            .notify(tag, tag.hashCode() and Int.MAX_VALUE, notification)
     }
 
     /**

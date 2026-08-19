@@ -72,6 +72,19 @@ private val Alarm = Color(0xFFBE3C3C)
  */
 private val AlarmDark = Color(0xFFC94040)
 
+/**
+ * The alarm red as *text* on a dark surface — the same split as [primaryInk],
+ * and for the same reason in the same direction.
+ *
+ * A red that stands as a block on near-black cannot also be read on it:
+ * [AlarmDark] measures 3.75:1 on the background and 2.67:1 on the highest
+ * container, and `colorScheme.error` is the colour of every validation message
+ * under a text field, the sign-in errors, and the "call first" sentence on the
+ * emergency screen. This is the pale red the dark theme used to use as a fill
+ * — wrong there, right here, at 5.73:1 on the worst surface.
+ */
+private val AlarmDarkInk = Color(0xFFFF8A80)
+
 val LightColors = lightColorScheme(
     primary = Pine,
     onPrimary = Color.White,
@@ -157,6 +170,10 @@ val DarkColors = darkColorScheme(
 val ColorScheme.primaryInk: Color
     get() = if (surface.luminance() < 0.5f) PineDarkInk else Pine
 
+/** The error colour as text rather than as a block. See [AlarmDarkInk]. */
+val ColorScheme.errorInk: Color
+    get() = if (surface.luminance() < 0.5f) AlarmDarkInk else Alarm
+
 /**
  * The line that says "this is a control", as opposed to the hairline that
  * separates one surface from another.
@@ -175,6 +192,23 @@ val ColorScheme.controlOutline: Color
 object VillageAccents {
     val upvote = Color(0xFF2F7D32)
     val downvote = Color(0xFFB4453D)
+
+    private val upvoteDark = Color(0xFF5CBF60)
+    private val downvoteDark = Color(0xFFE8756B)
+
+    /**
+     * The vote colours, which are ink on a dark surface and a fill on a light
+     * one, so they need the same split as [ColorScheme.primaryInk].
+     *
+     * The light values measure 3.58:1 and 3.37:1 against the night background,
+     * under the 4.5:1 the count beside them needs; the dark values clear at
+     * 7.93:1 and 6.28:1.
+     */
+    val ColorScheme.upvoteInk: Color
+        get() = if (surface.luminance() < 0.5f) upvoteDark else upvote
+
+    val ColorScheme.downvoteInk: Color
+        get() = if (surface.luminance() < 0.5f) downvoteDark else downvote
     val mapWater = Color(0xFF9FC7DE)
     val badgeGlow = Color(0x33F2B441)
 }

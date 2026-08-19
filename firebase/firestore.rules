@@ -665,7 +665,14 @@ service cloud.firestore {
           // still be allowed. What it forbids is the case that has no
           // innocent reading — the ids standing still while the names change.
           && request.resource.data.get('confirmedBy', []).size() <= 60
-          && request.resource.data.get('confirmedNames', []).size() ==
+          // `<=`, not `==`, and this is the second time the same duplicate-name
+          // case has caught this rule out. The client adds with arrayUnion,
+          // which de-duplicates, so the *second* "Γιώργος Π." to confirm adds
+          // an id and no name — sizes 2 and 1. With `==` the rules refused it,
+          // and the client discards the failure, so the count ticked up from
+          // the local cache and silently fell back a second later. On the
+          // number that is the whole content of an outage report.
+          && request.resource.data.get('confirmedNames', []).size() <=
              request.resource.data.get('confirmedBy', []).size()
           && request.resource.data.get('confirmedNames', []).toSet()
                .difference(resource.data.get('confirmedNames', []).toSet()).size() <=

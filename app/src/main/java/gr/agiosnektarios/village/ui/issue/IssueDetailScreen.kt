@@ -83,6 +83,7 @@ import gr.agiosnektarios.village.ui.components.SharedKeys
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import gr.agiosnektarios.village.ui.theme.errorInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,7 +197,7 @@ fun IssueDetailScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                     )
                 }
             },
@@ -569,14 +570,14 @@ private fun IssueOverflowMenu(
                 text = {
                     Text(
                         text = stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.error,
+                        color = MaterialTheme.colorScheme.errorInk,
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = MaterialTheme.colorScheme.errorInk,
                     )
                 },
                 onClick = {

@@ -29,6 +29,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /** Where the alert says it is. */
 enum class AlertPlace { HERE, HOME, NONE }
@@ -155,8 +158,9 @@ class AlertViewModel @Inject constructor(
      * arrived a moment later. They typed a note and sent an ambulance alert
      * with no coordinates on it.
      *
-     * The collection stops as soon as the place stops being HOME, so choosing
-     * "where I am" afterwards is not overwritten by a late pin.
+     * The collection is cancelled the moment the place stops being HOME — by
+     * [onPlace] and by [reset] — so choosing "where I am" afterwards is not
+     * overwritten by a pin that arrives late.
      */
     private fun useHome() {
         homeJob?.cancel()
@@ -215,7 +219,9 @@ class AlertViewModel @Inject constructor(
                     errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
-            if (result.isSuccess) announce(kind, current.placeLabel, author)
+            result.getOrNull()?.let { id ->
+                announce(id, kind, current.placeLabel, author)
+            }
         }
     }
 
@@ -233,7 +239,12 @@ class AlertViewModel @Inject constructor(
      * surfaced: the alert itself has succeeded by this point, and an error
      * about the notice would read as the alarm having failed.
      */
-    private suspend fun announce(kind: AlertKind, placeLabel: String, author: UserProfile) {
+    private suspend fun announce(
+        alertId: String,
+        kind: AlertKind,
+        placeLabel: String,
+        author: UserProfile,
+    ) {
         val recipients = notifications.allResidentIds().getOrNull().orEmpty()
         if (recipients.isEmpty()) return
         notifications.notify(
@@ -246,18 +257,35 @@ class AlertViewModel @Inject constructor(
             // No deep link on purpose. The map is where an alert is shown —
             // banner across the top for an emergency, card above the reports
             // for an outage — and the map is where the app opens.
-            collapseKey = "ALERT:$kind",
+            //
+            // Keyed on the alert, not on the kind. Two fires in one afternoon
+            // are two fires, and collapsing the second onto the first would
+            // replace the notice saying where the first one is.
+            collapseKey = "ALERT:$alertId",
         )
     }
 
     fun reset() {
+        homeJob?.cancel()
         _raise.value = RaiseAlertState()
     }
+
+    /**
+     * Failures on the cards, which have nowhere of their own to put a message.
+     *
+     * Firestore's local cache answers a write immediately, so a rejected
+     * confirmation ticks the household count up and then drops it again a
+     * second later with nothing said. On the number that is the entire content
+     * of an outage report, that is worse than an error.
+     */
+    private val _cardErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val cardErrors: SharedFlow<String> = _cardErrors.asSharedFlow()
 
     fun toggleConfirmed(alert: VillageAlert) {
         val me = profile ?: return
         viewModelScope.launch {
             alerts.setConfirmed(alert.id, me, confirmed = me.id !in alert.confirmedBy)
+                .onFailure { messages.of(it)?.let(_cardErrors::tryEmit) }
         }
     }
 
@@ -269,6 +297,9 @@ class AlertViewModel @Inject constructor(
      */
     fun resolve(alert: VillageAlert) {
         val me = profile ?: return
-        viewModelScope.launch { alerts.resolve(alert.id, me.id) }
+        viewModelScope.launch {
+            alerts.resolve(alert.id, me.id)
+                .onFailure { messages.of(it)?.let(_cardErrors::tryEmit) }
+        }
     }
 }

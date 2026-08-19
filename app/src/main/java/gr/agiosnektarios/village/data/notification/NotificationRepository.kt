@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import gr.agiosnektarios.village.core.firestore.SERVER_ACK_MS
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** What a notification is about; picks the channel and the resident's opt-out. */
 enum class NotificationType(val id: String) {
@@ -156,7 +158,11 @@ class NotificationRepository @Inject constructor(
                         ),
                     )
                 }
-                batch.commit().await()
+                // Bounded like every other write here. Offline this otherwise
+                // parks the fan-out coroutine until the caller's scope clears;
+                // the batch still flushes when the signal returns, because
+                // Firestore has already queued it on disk.
+                withTimeoutOrNull(SERVER_ACK_MS) { batch.commit().await() }
             }
         }
     }
@@ -197,7 +203,11 @@ class NotificationRepository @Inject constructor(
         }
     }
 
-    /** Everyone's uid, for an announcement. Admin-only in practice. */
+    /**
+     * Everyone's uid, for something the whole village needs to know: an
+     * announcement, or an alert. Not admin-only — anybody who raises an alarm
+     * calls this.
+     */
     suspend fun allResidentIds(): Result<List<String>> = withContext(io) {
         runCatching {
             firestore.collection(Collections.USERS)

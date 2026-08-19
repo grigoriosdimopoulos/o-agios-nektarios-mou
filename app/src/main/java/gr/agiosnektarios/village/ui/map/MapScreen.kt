@@ -117,6 +117,7 @@ fun MapScreen(
     onOpenContacts: () -> Unit,
     /** Null opens on the question; a kind name opens on that kind's screen. */
     onRaiseAlert: (String?) -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
     quickReport: QuickReportViewModel = hiltViewModel(),
     weatherViewModel: WeatherViewModel = hiltViewModel(),
@@ -161,6 +162,10 @@ fun MapScreen(
     // hint clear it at every text size.
     var peekHeight by remember { mutableStateOf(MapSheetDefaults.peekHeight) }
     val alerts by alertViewModel.active.collectAsStateWithLifecycle()
+    // A refused "I have it too" or "it is over" has nowhere on the card to say
+    // so, and Firestore's local cache makes the failure look like a success
+    // for about a second first.
+    LaunchedEffect(Unit) { alertViewModel.cardErrors.collect(showSnackbar) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.

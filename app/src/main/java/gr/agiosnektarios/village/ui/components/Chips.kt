@@ -40,13 +40,11 @@ import gr.agiosnektarios.village.ui.theme.controlOutline
  * only filter controls in the app, and which ones are on was conveyed by a
  * half-density border and an alpha change of the same hue.
  *
- * [minimumInteractiveComponentSize] reserves 48dp of *touch* without changing
- * what is drawn: the status chip measured 28dp tall and the category chip
- * 32dp, which is a comfortable target for nobody and a miss for the older
- * hands this village mostly has.
+ * The 48dp minimum lives on each chip's own modifier chain rather than here,
+ * because it has to come *before* clip/background/border to reserve touch
+ * rather than inflate the pill — see the note on [CategoryChip].
  */
 private fun Modifier.filterToggle(selected: Boolean, onClick: () -> Unit): Modifier = this
-    .minimumInteractiveComponentSize()
     .toggleable(value = selected, role = Role.Checkbox) { onClick() }
 
 /**
@@ -77,6 +75,15 @@ fun CategoryChip(
 
     Row(
         modifier = modifier
+            // First in the chain. A layout modifier wraps everything after it,
+            // so at the end of a chain this expands the content and then
+            // clip/background/border draw over the expanded box — a 48dp pill
+            // instead of a 32dp pill with 48dp of touch around it. Here it
+            // reports the larger size to the parent and centres the chip.
+            // The status chip measured 28dp tall and this one 32dp, which is a
+            // comfortable target for nobody and a miss for the older hands
+            // this village mostly has.
+            .minimumInteractiveComponentSize()
             .scale(scale)
             .clip(CircleShape)
             .background(background)
@@ -132,6 +139,7 @@ fun StatusChip(
 
     Row(
         modifier = modifier
+            .minimumInteractiveComponentSize()
             .clip(CircleShape)
             .background(background)
             .border(
