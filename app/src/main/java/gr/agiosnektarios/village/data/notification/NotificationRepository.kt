@@ -28,6 +28,17 @@ enum class NotificationType(val id: String) {
     VOTE("VOTE"),
     ANNOUNCEMENT("ANNOUNCEMENT"),
     CHAT("CHAT"),
+
+    /**
+     * Something is wrong in the village right now.
+     *
+     * The only type with no in-app opt-out. A resident who does not want to
+     * hear about a fire at four in the morning can silence the channel in
+     * Android's own settings, where the decision is explicit and reversible in
+     * one place; a switch buried in this app's preferences is a decision made
+     * once, on a quiet afternoon, and forgotten.
+     */
+    ALERT("ALERT"),
     ;
 
     companion object {
@@ -67,6 +78,7 @@ data class AppNotification(
         NotificationType.VOTE -> prefs.votes
         NotificationType.ANNOUNCEMENT -> prefs.announcements
         NotificationType.CHAT -> prefs.chat
+        NotificationType.ALERT -> true
         null -> false
     }
 }

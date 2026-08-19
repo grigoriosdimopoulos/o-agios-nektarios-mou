@@ -51,5 +51,8 @@ data class StreetName(
     companion object {
         /** Long enough for "Λεωφόρος Κιθαιρώνος", short enough to render on a line. */
         const val MAX_LENGTH = 60
+
+        /** Matches the cap the rules put on `proposedByName`. */
+        const val MAX_AUTHOR = 80
     }
 }

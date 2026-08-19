@@ -908,14 +908,70 @@ await check("home: nothing else may be put in the private collection",
   assertFails(setDoc(doc(maria, "users/maria/private/whatever"), { lat: 1, lng: 1 })));
 await check("home: clearing it removes the document",
   assertSucceeds(deleteDoc(doc(maria, "users/maria/private/home"))));
-await check("home: the profile is not a place to keep coordinates",
-  assertFails(updateDoc(doc(maria, "users/maria"), { homeLat: 38.1, homeLng: 23.2 })));
-await check("home: nor is it on the way in",
-  assertFails(setDoc(doc(giorgos, "users/giorgos"), { ...profileSeed("giorgos"), homeLat: 38.1 })));
+// The profile allowlist still tolerates the three legacy home* keys, on
+// purpose: a phone that ran a development build of c7dafea against the live
+// project has them on its document, and an update sends the whole document, so
+// refusing them would lock that account out of editing its own telephone
+// number for ever. What matters is that nothing reads them any more.
+await check("home: a document carrying the legacy fields can still be edited",
+  assertSucceeds(updateDoc(doc(maria, "users/maria"), { homeLat: 38.1, phone: "6971111111" })));
 await check("profile: an invented field is refused outright",
   assertFails(updateDoc(doc(maria, "users/maria"), { favouriteColour: "green" })));
 await check("profile: the fields that exist still work",
   assertSucceeds(updateDoc(doc(maria, "users/maria"), { phone: "6970000000" })));
+
+// ---- the bounds the last review round found missing
+
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("alerts/live").set({
+    kind: "WATER", note: "", placeLabel: "", raisedById: "giorgos",
+    raisedByName: "Giorgos", raisedAt: new Date(), confirmedBy: ["giorgos"],
+    confirmedNames: ["Giorgos"], resolvedAt: null,
+  });
+});
+
+const alertNow = (extra = {}) => ({
+  kind: "FIRE", note: "Smoke", placeLabel: "Ano", raisedById: "maria",
+  raisedByName: "Maria", raisedAt: serverTimestamp(),
+  confirmedBy: ["maria"], confirmedNames: ["Maria"], resolvedAt: null,
+  ...extra,
+});
+
+await check("alerts: an alert cannot be dated in the future",
+  assertFails(setDoc(doc(maria, "alerts/y2099"), alertNow({ raisedAt: new Date("2099-01-01") }))));
+await check("alerts: nor dug in from last week to outlive the window",
+  assertFails(setDoc(doc(maria, "alerts/old"), alertNow({ raisedAt: new Date("2020-01-01") }))));
+await check("alerts: the server's own timestamp is fine",
+  assertSucceeds(setDoc(doc(maria, "alerts/nowish"), alertNow())));
+await check("alerts: names and ids must be the same length",
+  assertFails(setDoc(doc(maria, "alerts/mismatch"),
+    alertNow({ confirmedNames: ["Maria", "Invented", "Also invented"] }))));
+await check("alerts: a confirmation cannot smuggle in a list of names",
+  assertFails(updateDoc(doc(giorgos, "alerts/live"), {
+    confirmedBy: ["giorgos", "maria"],
+    confirmedNames: ["Giorgos", "x".repeat(100000)],
+  })));
+await check("alerts: nor rewrite the names of the people already on it",
+  assertFails(updateDoc(doc(giorgos, "alerts/live"), {
+    confirmedBy: ["giorgos"], confirmedNames: ["Somebody Else"],
+  })));
+await check("alerts: resolving with something that is not a time",
+  assertFails(updateDoc(doc(giorgos, "alerts/live"),
+    { resolvedAt: "whenever", resolvedById: "giorgos" })));
+await check("alerts: resolving properly still works",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/live"),
+    { resolvedAt: serverTimestamp(), resolvedById: "giorgos" })));
+
+await check("streets: no arbitrary fields on a street name",
+  assertFails(setDoc(doc(maria, "streetNames/w1"), {
+    name: "Elatias", proposedById: "maria", proposedByName: "Maria",
+    confirmedBy: ["maria"], padding: "x".repeat(100000),
+  })));
+await check("streets: a plain proposal still works",
+  assertSucceeds(setDoc(doc(maria, "streetNames/w2"), {
+    name: "Elatias", proposedById: "maria", proposedByName: "Maria",
+    confirmedBy: ["maria"], createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  })));
 
 await env.cleanup();
 

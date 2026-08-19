@@ -46,8 +46,10 @@ import gr.agiosnektarios.village.ui.theme.rememberHaptics
  * people say. A pinned house turns that into a coordinate that can be read out
  * or sent, and it is what the urgent screen offers as a place.
  *
- * Voluntary, clearable, and visible to signed-in residents of a village where
- * everyone already knows where everyone lives.
+ * Voluntary, clearable, and read by nobody but the person who set it — not
+ * other residents, not an administrator. It lives at
+ * `users/{uid}/private/home` rather than on the profile document for
+ * exactly that reason; see [gr.agiosnektarios.village.core.model.HomePin].
  */
 @Composable
 fun HomePinScreen(

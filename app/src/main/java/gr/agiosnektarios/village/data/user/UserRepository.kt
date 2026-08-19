@@ -21,6 +21,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import gr.agiosnektarios.village.core.firestore.SERVER_ACK_MS
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 
 /** Reads and writes the resident directory at `users/`. */
@@ -111,11 +113,11 @@ class UserRepository @Inject constructor(
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             val doc = homeDoc(userId)
-            if (lat == null || lng == null) {
+            val task = if (lat == null || lng == null) {
                 // Cleared, not blanked. A document that exists with null
                 // coordinates is a house someone has to reason about; a
                 // document that is gone is a house nobody pinned.
-                doc.delete().await()
+                doc.delete()
             } else {
                 doc.set(
                     mapOf(
@@ -124,8 +126,14 @@ class UserRepository @Inject constructor(
                         "place" to place.trim().take(80),
                         "updatedAt" to FieldValue.serverTimestamp(),
                     ),
-                ).await()
+                )
             }
+            // Bounded, like every other write in this app. Somebody pins their
+            // house while standing outside it, which is the one place in the
+            // village with no signal and the whole reason the feature exists.
+            // Unbounded, the spinner never stopped and the screen never closed
+            // — while the write was already on disk and queued.
+            withTimeoutOrNull(SERVER_ACK_MS) { task.await() }
         }
     }
 

@@ -16,6 +16,7 @@ object NotificationChannels {
     const val ISSUES = "issues"
     const val CHAT = "chat"
     const val ANNOUNCEMENTS = "announcements"
+    const val EMERGENCY = "emergency"
 
     fun register(context: Context) {
         val manager = context.getSystemService<NotificationManager>() ?: return
@@ -40,6 +41,13 @@ object NotificationChannels {
                 context.getString(R.string.notification_channel_announcements),
                 NotificationManager.IMPORTANCE_HIGH,
             ),
+            // Its own channel, separate from announcements, so silencing the
+            // notice board does not silence a fire.
+            NotificationChannel(
+                EMERGENCY,
+                context.getString(R.string.notification_channel_emergency),
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
         )
         manager.createNotificationChannels(channels)
     }
@@ -48,6 +56,7 @@ object NotificationChannels {
         "COMMENT", "STATUS", "VOTE" -> ISSUES
         "CHAT" -> CHAT
         "ANNOUNCEMENT" -> ANNOUNCEMENTS
+        "ALERT" -> EMERGENCY
         else -> GENERAL
     }
 }

@@ -424,7 +424,14 @@ private fun WhereRow(state: RaiseAlertState, onPlace: (AlertPlace) -> Unit) {
             text = when {
                 state.locating -> stringResource(R.string.alert_where_locating)
                 state.placeLabel.isNotBlank() -> state.placeLabel
-                state.position != null -> "%.5f, %.5f".format(
+                // Locale.US, not the device's. Under el-GR this printed
+                // "38,16472, 23,29216" — four comma-separated numbers — and
+                // when OpenStreetMap has no name for the way you are standing
+                // on, which is the normal case here, this line IS the location
+                // somebody reads down the telephone to 166.
+                state.position != null -> String.format(
+                    java.util.Locale.US,
+                    "%.5f, %.5f",
                     state.position.lat,
                     state.position.lng,
                 )
@@ -491,17 +498,7 @@ private fun sendSms(context: android.content.Context, numbers: List<String>, bod
 }
 
 @Composable
-internal fun AlertKind.label(): String = stringResource(
-    when (this) {
-        AlertKind.FIRE -> R.string.alert_kind_fire
-        AlertKind.MEDICAL -> R.string.alert_kind_medical
-        AlertKind.MISSING -> R.string.alert_kind_missing
-        AlertKind.POWER -> R.string.alert_kind_power
-        AlertKind.WATER -> R.string.alert_kind_water
-        AlertKind.ROAD -> R.string.alert_kind_road
-        AlertKind.OTHER -> R.string.alert_kind_other
-    },
-)
+internal fun AlertKind.label(): String = stringResource(labelRes)
 
 internal fun AlertKind.icon(): ImageVector = when (this) {
     AlertKind.FIRE -> Icons.Filled.LocalFireDepartment

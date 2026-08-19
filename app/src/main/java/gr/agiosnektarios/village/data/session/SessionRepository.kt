@@ -92,10 +92,11 @@ class SessionRepository @Inject constructor(
                 else -> flowOf(null)
             }
         }
-        // Eagerly, like [state]. One extra listener on a document with three
-        // fields, in exchange for `home.value` being right the moment the
-        // alarm screen asks — and the alarm screen asks the instant somebody
-        // taps "my house", with no time to wait for a subscription to warm up.
+        // Eagerly, like [state], so the listener is already running by the time
+        // any screen asks. That is not the same as it having *answered*: on a
+        // cold start `home.value` is null until Firestore delivers, so callers
+        // collect this rather than reading it once. AlertViewModel.useHome()
+        // learned that the hard way.
         .stateIn(scope, SharingStarted.Eagerly, null)
 
     val currentUserId: String? get() = authRepository.currentUserId

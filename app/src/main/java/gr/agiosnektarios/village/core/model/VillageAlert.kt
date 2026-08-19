@@ -1,6 +1,8 @@
 package gr.agiosnektarios.village.core.model
 
+import androidx.annotation.StringRes
 import com.google.firebase.firestore.DocumentId
+import gr.agiosnektarios.village.R
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
@@ -19,7 +21,12 @@ import java.util.Date
  *  * a resident with the app open sees an alert **immediately**, as a takeover
  *    they cannot miss;
  *  * a resident whose app is closed sees it **when the background sync next
- *    runs**, which Android floors at fifteen minutes;
+ *    runs**, which Android floors at fifteen minutes — and only because
+ *    raising an alert also writes a notice into every resident's inbox at
+ *    `users/{uid}/notifications`, which is what that sync reads. That fan-out
+ *    is not decoration. Without it this bullet is a lie, and it is the bullet
+ *    the screen shows someone who is deciding whether to send the text message
+ *    as well;
  *  * a resident whose phone is in a drawer sees nothing at all.
  *
  * Fifteen minutes is not an emergency response. So raising an alert also opens
@@ -91,26 +98,26 @@ enum class AlertSeverity(val lifetimeMs: Long) {
     OUTAGE(7 * 24 * 60 * 60 * 1000L),
 }
 
-enum class AlertKind(val severity: AlertSeverity) {
+enum class AlertKind(val severity: AlertSeverity, @StringRes val labelRes: Int) {
     /** Smoke or flame, anywhere someone can see it. */
-    FIRE(AlertSeverity.EMERGENCY),
+    FIRE(AlertSeverity.EMERGENCY, R.string.alert_kind_fire),
 
     /** Somebody needs an ambulance and it needs to find the house. */
-    MEDICAL(AlertSeverity.EMERGENCY),
+    MEDICAL(AlertSeverity.EMERGENCY, R.string.alert_kind_medical),
 
     /** A person or an animal nobody can find. */
-    MISSING(AlertSeverity.EMERGENCY),
+    MISSING(AlertSeverity.EMERGENCY, R.string.alert_kind_missing),
 
     /** The lights are off. */
-    POWER(AlertSeverity.OUTAGE),
+    POWER(AlertSeverity.OUTAGE, R.string.alert_kind_power),
 
     /** No water, or water nobody should drink. */
-    WATER(AlertSeverity.OUTAGE),
+    WATER(AlertSeverity.OUTAGE, R.string.alert_kind_water),
 
     /** The road out is blocked — snow, a tree, a slide. */
-    ROAD(AlertSeverity.OUTAGE),
+    ROAD(AlertSeverity.OUTAGE, R.string.alert_kind_road),
 
-    OTHER(AlertSeverity.OUTAGE),
+    OTHER(AlertSeverity.OUTAGE, R.string.alert_kind_other),
     ;
 
     /** Whether "I have it too" is a useful thing to offer. */

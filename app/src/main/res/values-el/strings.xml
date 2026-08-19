@@ -235,6 +235,9 @@
     <string name="chat_no_residents_match_hint">Δοκιμάστε μέρος του ονόματος ή του επωνύμου.</string>
     <string name="notif_new_comment">Κάποιος σχολίασε την αναφορά σας</string>
     <string name="notif_new_message">Ο/Η %1$s σας έστειλε μήνυμα</string>
+    <string name="notification_channel_emergency">Έκτακτα</string>
+    <string name="notif_alert">%1$s — το ανέφερε γείτονας</string>
+    <string name="notif_alert_nowhere">Το ανέφερε ο/η %1$s</string>
     <string name="admin_unlock_title">Διαχείριση χωριού</string>
     <string name="admin_unlock_label">Συνθηματικό</string>
     <string name="admin_unlock_confirm">Ξεκλείδωμα</string>

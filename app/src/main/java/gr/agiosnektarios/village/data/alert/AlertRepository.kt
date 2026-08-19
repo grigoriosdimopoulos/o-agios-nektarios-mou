@@ -57,7 +57,12 @@ class AlertRepository @Inject constructor(
                     .sortedWith(
                         compareBy(
                             { it.alertKind.severity.ordinal },
-                            { -(it.raisedAt?.time ?: 0L) },
+                            // A pending server timestamp reads as null on the
+                            // phone that just wrote it, and zero sorts below
+                            // every acknowledged alert — so the alarm you
+                            // raised a second ago appeared under older ones of
+                            // the same severity until the server answered.
+                            { -(it.raisedAt?.time ?: System.currentTimeMillis()) },
                         ),
                     )
             }
@@ -130,7 +135,7 @@ class AlertRepository @Inject constructor(
                     },
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
-            ).await()
+            ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
             Unit
         }
     }
@@ -144,7 +149,7 @@ class AlertRepository @Inject constructor(
                     "resolvedById" to userId,
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
-            ).await()
+            ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
             Unit
         }
     }

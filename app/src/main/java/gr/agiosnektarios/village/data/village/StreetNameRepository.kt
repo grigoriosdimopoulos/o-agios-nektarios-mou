@@ -32,9 +32,18 @@ class StreetNameRepository @Inject constructor(
     private val streets get() = firestore.collection(Collections.STREET_NAMES)
 
     fun observeStreetNames(): Flow<List<StreetName>> =
-        streets.asFlow()
+        // Bounded, though the village has eighty-two ways: this collection is
+        // fetched whole every time the map opens, and "whole" should be a
+        // number the rules and the client agree on rather than however many
+        // documents happen to exist.
+        streets.limit(MAX_STREETS).asFlow()
             .map { it.toObjectsSafe<StreetName>() }
             .orEmptyOnError("streetNames")
+
+    private companion object {
+        /** Comfortably above the 82 ways in the bundled geometry. */
+        const val MAX_STREETS = 300L
+    }
 
     /** Way id to name, for merging into the map's road source. */
     fun observeNamesByWay(): Flow<Map<String, String>> =
@@ -61,7 +70,7 @@ class StreetNameRepository @Inject constructor(
                     mapOf(
                         "name" to trimmed,
                         "proposedById" to author.id,
-                        "proposedByName" to author.displayName,
+                        "proposedByName" to author.displayName.take(StreetName.MAX_AUTHOR),
                         "confirmedBy" to listOf(author.id),
                         "createdAt" to FieldValue.serverTimestamp(),
                         "updatedAt" to FieldValue.serverTimestamp(),

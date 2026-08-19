@@ -258,6 +258,9 @@
     <string name="chat_no_residents_match_hint">Try part of a first or last name.</string>
     <string name="notif_new_comment">Someone commented on your report</string>
     <string name="notif_new_message">%1$s sent you a message</string>
+    <string name="notification_channel_emergency">Emergencies</string>
+    <string name="notif_alert">%1$s — raised by a neighbour</string>
+    <string name="notif_alert_nowhere">Raised by %1$s</string>
     <string name="admin_unlock_title">Village administration</string>
     <string name="admin_unlock_label">Passphrase</string>
     <string name="admin_unlock_confirm">Unlock</string>

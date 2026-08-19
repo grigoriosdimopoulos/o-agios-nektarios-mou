@@ -86,6 +86,8 @@ class NotificationPresenter @Inject constructor(
         "notif_new_announcement" -> context.getString(R.string.notif_new_announcement)
         "notif_new_comment" -> context.getString(R.string.notif_new_comment)
         "notif_new_message" -> context.getString(R.string.notif_new_message, notice.bodyArg)
+        "notif_alert" -> context.getString(R.string.notif_alert, notice.bodyArg)
+        "notif_alert_nowhere" -> context.getString(R.string.notif_alert_nowhere, notice.bodyArg)
         else -> notice.body
     }
 }

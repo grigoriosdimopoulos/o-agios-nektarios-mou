@@ -12,11 +12,14 @@ import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.core.model.VillageAlert
 import gr.agiosnektarios.village.data.alert.AlertRepository
 import gr.agiosnektarios.village.data.location.LocationProvider
+import gr.agiosnektarios.village.data.notification.NotificationRepository
+import gr.agiosnektarios.village.data.notification.NotificationType
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.session.SessionState
 import gr.agiosnektarios.village.data.user.UserRepository
 import gr.agiosnektarios.village.data.village.PlaceNamer
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +66,7 @@ class AlertViewModel @Inject constructor(
     private val users: UserRepository,
     private val location: LocationProvider,
     private val placeNamer: PlaceNamer,
+    private val notifications: NotificationRepository,
     private val messages: UserMessages,
     savedState: SavedStateHandle,
 ) : ViewModel() {
@@ -108,10 +112,11 @@ class AlertViewModel @Inject constructor(
     fun onPlace(place: AlertPlace) {
         _raise.update { it.copy(place = place) }
         when (place) {
-            AlertPlace.HERE -> locate()
+            AlertPlace.HERE -> { homeJob?.cancel(); locate() }
             AlertPlace.HOME -> useHome()
-            AlertPlace.NONE -> _raise.update {
-                it.copy(position = null, placeLabel = "", locating = false)
+            AlertPlace.NONE -> {
+                homeJob?.cancel()
+                _raise.update { it.copy(position = null, placeLabel = "", locating = false) }
             }
         }
     }
@@ -140,16 +145,36 @@ class AlertViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Fills the place in from the resident's own house pin.
+     *
+     * Collected, not read once. `session.home` is Eagerly shared, which starts
+     * the Firestore listener but does not make it deliver synchronously — so a
+     * one-shot `.value` read on a cold start saw null, told the person their
+     * house was not pinned, and then never corrected itself when the document
+     * arrived a moment later. They typed a note and sent an ambulance alert
+     * with no coordinates on it.
+     *
+     * The collection stops as soon as the place stops being HOME, so choosing
+     * "where I am" afterwards is not overwritten by a late pin.
+     */
     private fun useHome() {
-        val home = session.home.value
-        _raise.update {
-            it.copy(
-                locating = false,
-                position = home?.position,
-                placeLabel = home?.place.orEmpty(),
-            )
+        homeJob?.cancel()
+        homeJob = viewModelScope.launch {
+            session.home.collect { home ->
+                if (_raise.value.place != AlertPlace.HOME) return@collect
+                _raise.update {
+                    it.copy(
+                        locating = false,
+                        position = home?.position,
+                        placeLabel = home?.place.orEmpty(),
+                    )
+                }
+            }
         }
     }
+
+    private var homeJob: Job? = null
 
     private suspend fun describe(point: GeoPoint): String {
         val place = runCatching { placeNamer.describe(point) }.getOrNull() ?: return ""
@@ -190,7 +215,39 @@ class AlertViewModel @Inject constructor(
                     errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
+            if (result.isSuccess) announce(kind, current.placeLabel, author)
         }
+    }
+
+    /**
+     * Puts a notice in every resident's inbox.
+     *
+     * Without this the alarm reached only the phones with the app open at that
+     * moment, while the screen raising it promised "a phone that is closed
+     * sees it within about a quarter of an hour" — the sentence a person reads
+     * when deciding whether the text message is also needed. The fan-out that
+     * makes that true already existed and was being used for a notice-board
+     * post; it was not being used for a fire.
+     *
+     * Fired after the alert is on disk, not before, and its failure is not
+     * surfaced: the alert itself has succeeded by this point, and an error
+     * about the notice would read as the alarm having failed.
+     */
+    private suspend fun announce(kind: AlertKind, placeLabel: String, author: UserProfile) {
+        val recipients = notifications.allResidentIds().getOrNull().orEmpty()
+        if (recipients.isEmpty()) return
+        notifications.notify(
+            recipientIds = recipients,
+            actorId = author.id,
+            type = NotificationType.ALERT,
+            title = messages.string(kind.labelRes),
+            bodyKey = if (placeLabel.isBlank()) "notif_alert_nowhere" else "notif_alert",
+            bodyArg = placeLabel.ifBlank { author.displayName },
+            // No deep link on purpose. The map is where an alert is shown —
+            // banner across the top for an emergency, card above the reports
+            // for an outage — and the map is where the app opens.
+            collapseKey = "ALERT:$kind",
+        )
     }
 
     fun reset() {

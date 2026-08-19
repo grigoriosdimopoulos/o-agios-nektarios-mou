@@ -14,9 +14,9 @@ anonymous callers, and re-running this a few times in an afternoon will hit it.
 
 The short version of what it shows, for this village, over 2023-2025:
 
-  * the Chandler Burning Index with its published bands calls about 70% of
+  * the Chandler Burning Index with its published bands calls about 53% of
     fire-season days "low";
-  * the Angstrom index with its published bands calls about 44% of them
+  * the Angstrom index with its published bands calls about 56% of them
     "extreme";
   * neither is wrong as an index — both are calibrated to climates that are
     not Attica — so the app keeps Angstrom as the measure and replaces its

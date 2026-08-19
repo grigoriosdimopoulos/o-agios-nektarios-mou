@@ -126,11 +126,16 @@ service cloud.firestore {
        * `private/home`, and this list is what stops the next such field from
        * being added without anyone noticing.
        *
-       * The last four are not written by any current version. They are kept
+       * The last seven are not written by any current version. They are kept
        * because documents created by earlier ones still carry them, and an
        * update sends the whole document — drop a legacy key from this list and
        * every resident who signed up before it was removed stops being able to
-       * change their telephone number.
+       * change their telephone number, add a device token, or be suspended by
+       * an administrator. The three `home*` keys never reached a published
+       * build, but a phone that ran a development build against the live
+       * project has them, and permanently locking that account out of its own
+       * profile is not a trade worth making for a field the app no longer
+       * writes.
        */
       function profileFieldsOnly() {
         return request.resource.data.keys().hasOnly([
@@ -138,6 +143,7 @@ service cloud.firestore {
           'blockId', 'avatar', 'role', 'disabled', 'fcmTokens',
           'notificationPrefs', 'createdAt', 'updatedAt',
           'photoUrl', 'issueCount', 'resolvedCount', 'upvotesReceived',
+          'homeLat', 'homeLng', 'homePlace',
         ]);
       }
 
@@ -609,6 +615,17 @@ service cloud.firestore {
           && request.resource.data.raisedByName is string
           && request.resource.data.raisedByName.size() > 0
           && request.resource.data.raisedByName.size() <= 80
+          // Now, give or take a clock. Unbounded, this was the whole feature's
+          // undoing: an alert dated 2099 is never stale, because isActive()
+          // measures age and a future date has a negative one. Forty of them
+          // fill the page the client asks for, sort to the top of it, and a
+          // real fire raised afterwards is returned to nobody's phone. Only an
+          // administrator can delete an alert, so it would have stayed there.
+          && request.resource.data.raisedAt is timestamp
+          && request.resource.data.raisedAt < request.time + duration.value(1, 'h')
+          && request.resource.data.raisedAt > request.time - duration.value(1, 'd')
+          && request.resource.data.get('confirmedNames', []).size() ==
+             request.resource.data.get('confirmedBy', []).size()
           && (request.resource.data.get('lat', null) == null
               || (request.resource.data.lat is number
                   && request.resource.data.lat >= -90 && request.resource.data.lat <= 90))
@@ -636,6 +653,28 @@ service cloud.firestore {
         return touchesOnly(['confirmedBy', 'confirmedNames', 'updatedAt'])
           && request.resource.data.kind == resource.data.kind
           && request.resource.data.raisedById == resource.data.raisedById
+          // The id list is set-checked below; the name list beside it was not
+          // checked at all, so it could be replaced wholesale or grown to a
+          // quarter of a megabyte on a document all forty-six phones fetch on
+          // every launch.
+          //
+          // The names may move no further than the ids did. `<=` rather than
+          // `==` on purpose: display names are "Γιώργος Π." and two of those
+          // in a village of forty-six is not far-fetched, so adding a second
+          // person of the same name adds an id and no new name, and that must
+          // still be allowed. What it forbids is the case that has no
+          // innocent reading — the ids standing still while the names change.
+          && request.resource.data.get('confirmedBy', []).size() <= 60
+          && request.resource.data.get('confirmedNames', []).size() ==
+             request.resource.data.get('confirmedBy', []).size()
+          && request.resource.data.get('confirmedNames', []).toSet()
+               .difference(resource.data.get('confirmedNames', []).toSet()).size() <=
+             request.resource.data.get('confirmedBy', []).toSet()
+               .difference(resource.data.get('confirmedBy', []).toSet()).size()
+          && resource.data.get('confirmedNames', []).toSet()
+               .difference(request.resource.data.get('confirmedNames', []).toSet()).size() <=
+             resource.data.get('confirmedBy', []).toSet()
+               .difference(request.resource.data.get('confirmedBy', []).toSet()).size()
           && request.resource.data.get('confirmedBy', []).toSet()
               .difference(resource.data.get('confirmedBy', []).toSet())
               in [[].toSet(), [uid()].toSet()]
@@ -647,6 +686,10 @@ service cloud.firestore {
       /** Marking it over touches only that, and only for those entitled to. */
       function isResolution() {
         return touchesOnly(['resolvedAt', 'resolvedById', 'updatedAt'])
+          // A string here parses to nothing on the client and drops the alert
+          // from every phone's list — a quieter way to bury a report than
+          // resolving it, and one nobody would see happen.
+          && request.resource.data.resolvedAt is timestamp
           && request.resource.data.resolvedById == uid()
           && (uid() == resource.data.raisedById || isModerator());
       }
@@ -724,7 +767,15 @@ service cloud.firestore {
           && request.resource.data.name.size() <= 60
           // A fresh proposal starts with exactly one confirmation: its author.
           // Seeding it with a crowd would fake a consensus that never happened.
-          && request.resource.data.confirmedBy == [uid()];
+          && request.resource.data.confirmedBy == [uid()]
+          && request.resource.data.get('proposedByName', '').size() <= 80
+          // Named keys only. Without this a resident could hang a quarter of a
+          // megabyte off a street name, and the whole collection is fetched
+          // unpaged every time anybody opens the map.
+          && request.resource.data.keys().hasOnly([
+            'wayId', 'name', 'proposedById', 'proposedByName',
+            'confirmedBy', 'createdAt', 'updatedAt'
+          ]);
       }
 
       /**
@@ -739,6 +790,7 @@ service cloud.firestore {
         return touchesOnly(['confirmedBy', 'updatedAt'])
           && request.resource.data.name == resource.data.name
           && request.resource.data.proposedById == resource.data.proposedById
+          && request.resource.data.confirmedBy.size() <= 60
           && (
             // Adding themselves, or removing themselves. Nothing else moves.
             request.resource.data.confirmedBy.toSet()
