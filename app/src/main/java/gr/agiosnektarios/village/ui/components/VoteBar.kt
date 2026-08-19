@@ -33,6 +33,7 @@ import gr.agiosnektarios.village.ui.theme.rememberHaptics
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.VillageAccents
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 /**
  * Upvote / downvote control.
@@ -117,7 +118,10 @@ private fun VoteButton(
                 if (active) activeTint.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceContainerHigh,
             )
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = 12.dp, vertical = 7.dp)
+            // The app's most-used control measured 32dp. This reserves the
+            // touch area without changing the pill that is drawn.
+            .minimumInteractiveComponentSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {

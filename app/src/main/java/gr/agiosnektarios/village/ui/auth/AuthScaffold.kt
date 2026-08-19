@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.ui.theme.reducedMotion
 
 /**
  * Shared chrome for the authentication screens: a slow-drifting pair of colour
@@ -53,6 +55,7 @@ fun AuthScaffold(
     onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
+    val still = reducedMotion()
     val transition = rememberInfiniteTransition(label = "authAmbience")
     val drift by transition.animateFloat(
         initialValue = 0f,
@@ -60,12 +63,16 @@ fun AuthScaffold(
         animationSpec = infiniteRepeatable(tween(12_000), RepeatMode.Reverse),
         label = "drift",
     )
-    val counterDrift by transition.animateFloat(
+    val counterDriftValue by transition.animateFloat(
         initialValue = 1f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(tween(9_000), RepeatMode.Reverse),
         label = "counterDrift",
     )
+    // Held at the midpoint rather than at an end, so the two blobs sit where
+    // they were designed to sit rather than stacked in a corner.
+    val driftAt = if (still) 0.5f else drift
+    val counterDrift = if (still) 0.5f else counterDriftValue
 
     Box(
         modifier = modifier
@@ -73,8 +80,8 @@ fun AuthScaffold(
             .background(MaterialTheme.colorScheme.background),
     ) {
         AmbientBlob(
-            color = MaterialTheme.colorScheme.primary,
-            alignmentBias = drift,
+            color = MaterialTheme.colorScheme.primaryInk,
+            alignmentBias = driftAt,
             modifier = Modifier.align(Alignment.TopEnd),
         )
         AmbientBlob(
@@ -109,7 +116,7 @@ fun AuthScaffold(
                 Text(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primaryInk,
                 )
                 Text(text = title, style = MaterialTheme.typography.headlineLarge)
                 Text(

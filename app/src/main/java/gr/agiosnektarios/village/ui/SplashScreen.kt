@@ -41,6 +41,7 @@ import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.VillageDisplayFamily
 import kotlinx.coroutines.delay
+import gr.agiosnektarios.village.ui.theme.reducedMotion
 
 /** How long the splash holds before the app takes over. */
 const val SPLASH_DURATION_MS = 2150L
@@ -142,12 +143,14 @@ internal fun SplashContent(
     // A very slow drift on the light behind the text. Barely perceptible, which
     // is the point: it stops the screen reading as a static image without ever
     // asking to be looked at.
+    val still = reducedMotion()
     val drift by rememberInfiniteTransition(label = "drift").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing)),
         label = "driftValue",
     )
+    val phase = if (still) 0f else drift
 
     val surface = MaterialTheme.colorScheme.surface
     val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -159,7 +162,7 @@ internal fun SplashContent(
             .background(
                 Brush.radialGradient(
                     colors = listOf(glow, Color.Transparent),
-                    center = Offset(540f, 700f + drift * 60f),
+                    center = Offset(540f, 700f + phase * 60f),
                     radius = 1100f,
                 ),
             ),

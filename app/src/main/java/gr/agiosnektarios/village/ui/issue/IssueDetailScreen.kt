@@ -80,6 +80,9 @@ import androidx.compose.material.icons.filled.PanTool
 import gr.agiosnektarios.village.ui.components.sharedElementOrNone
 import gr.agiosnektarios.village.ui.components.sharedBoundsOrNone
 import gr.agiosnektarios.village.ui.components.SharedKeys
+import gr.agiosnektarios.village.ui.theme.primaryInk
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,6 +222,7 @@ fun IssueDetailScreen(
 }
 
 /** Stateless already; internal so it can be rendered off-device. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun IssueDetailContent(
     issue: Issue,
@@ -303,7 +307,13 @@ internal fun IssueDetailContent(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // FlowRow, like every other chip group in the app. As a Row
+                // this crushed the status chip to two lines inside a circular
+                // pill — "Σε / εξέλιξη" — at Greek one and a half times.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     CategoryChip(category = issue.category)
                     StatusChip(status = issue.status)
                 }
@@ -421,6 +431,7 @@ private fun CommentRow(
     canDelete: Boolean,
     onDelete: () -> Unit,
 ) {
+    var confirming by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Space.page, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -452,7 +463,7 @@ private fun CommentRow(
             // 48dp, the minimum for anything a finger has to hit. The icon
             // inside stays small; it is the target that has to be big. This
             // was 32 — the same defect just fixed on the send button.
-            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+            IconButton(onClick = { confirming = true }, modifier = Modifier.size(48.dp)) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = stringResource(R.string.action_delete),
@@ -461,6 +472,25 @@ private fun CommentRow(
                 )
             }
         }
+    }
+
+    // Deleting the report itself opens a dialog; deleting a comment went
+    // straight through, on a 48dp target beside the text you were reading.
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.comment_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onDelete() }) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -496,7 +526,7 @@ private fun CommentComposer(
                 imageVector = Icons.Filled.Send,
                 contentDescription = stringResource(R.string.action_send),
                 tint = if (draft.isNotBlank()) {
-                    MaterialTheme.colorScheme.primary
+                    MaterialTheme.colorScheme.primaryInk
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
@@ -648,7 +678,7 @@ private fun CouncilRow(issue: Issue, onSend: () -> Unit) {
                     }
                 },
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primaryInk,
             )
         }
     }
@@ -676,7 +706,7 @@ private fun TakeItOn(issue: Issue, viewer: UserProfile?, onToggle: () -> Unit) {
         issue.isTaken -> Text(
             text = stringResource(R.string.issue_taken_by, issue.assigneeName),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primaryInk,
         )
         else -> Unit
     }

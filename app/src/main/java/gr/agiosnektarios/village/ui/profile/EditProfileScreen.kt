@@ -42,6 +42,7 @@ import gr.agiosnektarios.village.ui.components.InlineSpinner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +114,7 @@ fun EditProfileScreen(
                 Text(
                     text = stringResource(R.string.profile_change_photo),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primaryInk,
                     modifier = Modifier.clickable {
                         photoPicker.launch(
                             PickVisualMediaRequest(

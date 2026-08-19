@@ -65,6 +65,7 @@ import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * The numbers worth having when something is wrong.
@@ -354,7 +355,7 @@ private fun ContactRow(
                     MaterialTheme.typography.titleMedium
                 },
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primaryInk,
             )
             if (note != null) {
                 Text(
@@ -371,7 +372,7 @@ private fun ContactRow(
         Icon(
             imageVector = Icons.Filled.Call,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.primaryInk,
             modifier = Modifier.size(22.dp),
         )
         IconButton(onClick = onCopy) {

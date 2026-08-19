@@ -60,6 +60,7 @@ import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.weather.clock
 import gr.agiosnektarios.village.ui.weather.longDate
 import java.util.Calendar
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * What the village has coming.
@@ -177,7 +178,7 @@ private fun EventCard(
             Icon(
                 imageVector = event.eventKind.icon(),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.primaryInk,
                 modifier = Modifier.size(18.dp).padding(top = 2.dp),
             )
             Spacer(Modifier.width(8.dp))
@@ -187,7 +188,7 @@ private fun EventCard(
                 color = if (past) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
-                    MaterialTheme.colorScheme.primary
+                    MaterialTheme.colorScheme.primaryInk
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -298,7 +299,7 @@ private fun AttendButton(attending: Boolean, onClick: () -> Unit) {
     val content = if (attending) {
         MaterialTheme.colorScheme.onPrimary
     } else {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.primaryInk
     }
     Row(
         modifier = Modifier
@@ -310,7 +311,7 @@ private fun AttendButton(attending: Boolean, onClick: () -> Unit) {
                 } else {
                     Modifier.border(
                         1.dp,
-                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primaryInk,
                         RoundedCornerShape(12.dp),
                     )
                 },

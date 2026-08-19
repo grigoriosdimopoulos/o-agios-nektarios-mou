@@ -27,6 +27,27 @@ import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.ui.theme.Motion
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.Role
+import gr.agiosnektarios.village.ui.theme.controlOutline
+
+/**
+ * What a filter chip is, to a finger and to a screen reader.
+ *
+ * `toggleable` rather than `clickable`, so TalkBack announces "tick box,
+ * ticked" and not an unlabelled tap target — twenty-one of these make up the
+ * only filter controls in the app, and which ones are on was conveyed by a
+ * half-density border and an alpha change of the same hue.
+ *
+ * [minimumInteractiveComponentSize] reserves 48dp of *touch* without changing
+ * what is drawn: the status chip measured 28dp tall and the category chip
+ * 32dp, which is a comfortable target for nobody and a miss for the older
+ * hands this village mostly has.
+ */
+private fun Modifier.filterToggle(selected: Boolean, onClick: () -> Unit): Modifier = this
+    .minimumInteractiveComponentSize()
+    .toggleable(value = selected, role = Role.Checkbox) { onClick() }
 
 /**
  * Category pill. Selected chips fill with the category's own colour rather than
@@ -61,12 +82,22 @@ fun CategoryChip(
             .background(background)
             .border(
                 BorderStroke(
-                    width = if (selected) 1.5.dp else 1.dp,
-                    color = if (selected) category.tint else MaterialTheme.colorScheme.outlineVariant,
+                    // 1.5dp even when unselected. A 1dp hairline is under
+                    // three pixels at this density and antialiasing never lets
+                    // the middle of it reach full colour: the token measures
+                    // 3.5:1 against the page, and the darkest pixel actually
+                    // drawn measured 2.58:1. Selected goes to 2dp so the
+                    // difference is still weight as well as hue.
+                    width = if (selected) 2.dp else 1.5.dp,
+                    color = if (selected) {
+                        category.tint
+                    } else {
+                        MaterialTheme.colorScheme.controlOutline
+                    },
                 ),
                 CircleShape,
             )
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.filterToggle(selected, onClick) else Modifier)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -105,12 +136,15 @@ fun StatusChip(
             .background(background)
             .border(
                 BorderStroke(
-                    width = if (selected) 1.5.dp else 1.dp,
-                    color = if (selected) tint else tint.copy(alpha = 0.35f),
+                    width = if (selected) 2.dp else 1.5.dp,
+                    // The status tint at 35% alpha measured 1.3:1 against the
+                    // page, so the boundary of a control was invisible to
+                    // anyone who did not already know it was one.
+                    color = if (selected) tint else tint.copy(alpha = 0.8f),
                 ),
                 CircleShape,
             )
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.filterToggle(selected, onClick) else Modifier)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),

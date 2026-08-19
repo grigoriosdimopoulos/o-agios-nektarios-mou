@@ -102,6 +102,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
+import gr.agiosnektarios.village.ui.theme.primaryInk
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 /**
  * The village map: reports as pins, neighbourhoods as tinted polygons with
@@ -744,7 +746,9 @@ private fun MapOverlay(
                     imageVector = Icons.Filled.Close,
                     contentDescription = stringResource(R.string.action_cancel),
                     tint = MaterialTheme.colorScheme.inverseOnSurface,
-                    modifier = Modifier.clickableNoRipple(onCancelPlacing),
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickableNoRipple(onCancelPlacing),
                 )
             }
         }
@@ -819,8 +823,11 @@ private fun FilterSheet(
                 Text(
                     text = stringResource(R.string.map_filter_clear),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickableNoRipple(onClear),
+                    color = MaterialTheme.colorScheme.primaryInk,
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickableNoRipple(onClear)
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
                 )
             }
 
@@ -919,7 +926,7 @@ private fun BasemapButton(current: MapBasemap, onSelect: (MapBasemap) -> Unit) {
                             },
                             contentDescription = null,
                             tint = if (option == current) {
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.primaryInk
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
@@ -963,6 +970,7 @@ internal fun StreetNamingHint(onDismiss: () -> Unit, modifier: Modifier = Modifi
                 imageVector = Icons.Filled.Close,
                 contentDescription = stringResource(R.string.action_dismiss),
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(CircleShape)
                     .clickableNoRipple(onDismiss)
                     .padding(6.dp)
@@ -992,7 +1000,7 @@ internal fun MapControl(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = if (active) {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },

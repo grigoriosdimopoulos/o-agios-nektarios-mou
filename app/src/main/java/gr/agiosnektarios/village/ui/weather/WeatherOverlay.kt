@@ -24,6 +24,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.random.Random
+import gr.agiosnektarios.village.ui.theme.reducedMotion
 
 /**
  * The weather, drawn over the map.
@@ -71,13 +72,14 @@ fun WeatherOverlay(
     dark: Boolean = false,
     phase: Float? = null,
 ) {
+    val still = reducedMotion()
     val drift by rememberInfiniteTransition(label = "weather").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(CYCLE_MS, easing = LinearEasing)),
         label = "weatherPhase",
     )
-    val t = phase ?: drift
+    val t = phase ?: if (still) 0f else drift
 
     // Particles are placed once and then moved by the phase, so the rain does
     // not reshuffle itself on every recomposition.

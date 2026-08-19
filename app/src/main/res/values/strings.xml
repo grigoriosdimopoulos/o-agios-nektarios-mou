@@ -517,10 +517,22 @@
     <string name="council_reference">Protocol number, if you have one</string>
     <string name="council_sent">Sent to the municipality</string>
     <plurals name="council_waiting">
-        <item quantity="one">with the municipality for %1$d day</item>
-        <item quantity="other">with the municipality for %1$d days</item>
+        <item quantity="one">for %1$d day</item>
+        <item quantity="other">for %1$d days</item>
     </plurals>
     <string name="council_clear">It is no longer with them</string>
     <string name="reminder_title">Tomorrow in the village</string>
     <string name="reminder_line">%1$s — %2$s</string>
+    <plurals name="issue_upvotes_count">
+        <item quantity="one">%1$d person supports this</item>
+        <item quantity="other">%1$d people support this</item>
+    </plurals>
+    <plurals name="issue_comments_count">
+        <item quantity="one">%1$d comment</item>
+        <item quantity="other">%1$d comments</item>
+    </plurals>
+    <string name="minimap_label">Where this report is, on the map</string>
+    <string name="minimap_open">Open the full map</string>
+    <string name="comment_delete_confirm">Delete this comment?</string>
+    <string name="home_pin_clear_confirm">Remove your house from the map?</string>
 </resources>

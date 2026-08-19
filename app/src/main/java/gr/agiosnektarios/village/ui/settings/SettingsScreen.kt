@@ -43,6 +43,7 @@ import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.data.settings.AppLanguage
 import gr.agiosnektarios.village.data.settings.SettingsRepository
 import gr.agiosnektarios.village.data.settings.ThemeMode
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -263,7 +264,7 @@ private fun SectionHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.primaryInk,
         modifier = Modifier.padding(horizontal = Space.page, vertical = 10.dp),
     )
 }

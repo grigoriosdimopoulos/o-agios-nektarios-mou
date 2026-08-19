@@ -60,6 +60,8 @@ import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.Space
+import androidx.compose.material3.minimumInteractiveComponentSize
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @Composable
 fun IssueListScreen(
@@ -150,6 +152,19 @@ internal fun IssueListContent(
                         R.string.issues_empty
                     },
                 ),
+                // A filtered-empty screen with no button is a dead end: the
+                // reason there is nothing here is the filters, and the filters
+                // are behind a bar the reader has just scrolled away from.
+                action = if (state.hasFilters) {
+                    {
+                        SecondaryButton(
+                            text = stringResource(R.string.map_filter_clear),
+                            onClick = onClearFilters,
+                        )
+                    }
+                } else {
+                    null
+                },
             )
             else -> LazyColumn(
                 // Clears the overlaid navigation bar; see BottomBarDefaults.
@@ -252,7 +267,8 @@ private fun FilterBar(active: Int, onClick: () -> Unit, modifier: Modifier = Mod
                 },
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .minimumInteractiveComponentSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -261,7 +277,7 @@ private fun FilterBar(active: Int, onClick: () -> Unit, modifier: Modifier = Mod
             contentDescription = null,
             modifier = Modifier.size(18.dp),
             tint = if (active > 0) {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
@@ -274,7 +290,7 @@ private fun FilterBar(active: Int, onClick: () -> Unit, modifier: Modifier = Mod
             },
             style = MaterialTheme.typography.labelLarge,
             color = if (active > 0) {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },

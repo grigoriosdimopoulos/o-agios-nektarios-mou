@@ -485,10 +485,22 @@
     <string name="council_reference">Αριθμός πρωτοκόλλου, αν υπάρχει</string>
     <string name="council_sent">Στάλθηκε στον δήμο</string>
     <plurals name="council_waiting">
-        <item quantity="one">στον δήμο εδώ και %1$d μέρα</item>
-        <item quantity="other">στον δήμο εδώ και %1$d μέρες</item>
+        <item quantity="one">εδώ και %1$d μέρα</item>
+        <item quantity="other">εδώ και %1$d μέρες</item>
     </plurals>
     <string name="council_clear">Δεν εκκρεμεί πια</string>
     <string name="reminder_title">Αύριο στο χωριό</string>
     <string name="reminder_line">%1$s — %2$s</string>
+    <plurals name="issue_upvotes_count">
+        <item quantity="one">%1$d άτομο το υποστηρίζει</item>
+        <item quantity="other">%1$d άτομα το υποστηρίζουν</item>
+    </plurals>
+    <plurals name="issue_comments_count">
+        <item quantity="one">%1$d σχόλιο</item>
+        <item quantity="other">%1$d σχόλια</item>
+    </plurals>
+    <string name="minimap_label">Πού είναι η αναφορά, στον χάρτη</string>
+    <string name="minimap_open">Άνοιγμα του χάρτη</string>
+    <string name="comment_delete_confirm">Να διαγραφεί το σχόλιο;</string>
+    <string name="home_pin_clear_confirm">Να αφαιρεθεί το σπίτι σου από τον χάρτη;</string>
 </resources>

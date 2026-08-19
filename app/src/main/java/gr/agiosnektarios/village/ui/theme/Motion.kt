@@ -5,6 +5,10 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
+import android.provider.Settings
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * One motion vocabulary for the whole app, tuned to feel like a platform rather
@@ -22,6 +26,28 @@ import androidx.compose.ui.unit.IntOffset
  * is reserved for a deliberate, celebratory act — casting a vote. Everything
  * structural settles without bouncing at all.
  */
+/**
+ * Whether the resident has asked Android to stop things moving.
+ *
+ * Accessibility → Remove animations sets `ANIMATOR_DURATION_SCALE` to 0. Every
+ * animation in this app ignored it, including five that never stop: the
+ * emergency pulse, the rain and wind drifting across the map for as long as
+ * the layer is on, two blobs behind the sign-in form, the loading shimmer, and
+ * the splash. A person who turns animations off has usually done so because
+ * movement makes them ill or makes the screen unreadable, and an app that
+ * overrides that is not being expressive, it is being rude.
+ *
+ * Read once per composition and not observed: the setting is changed in
+ * Android's own settings screen, which means leaving this app, which means
+ * recomposition on the way back.
+ */
+@Composable
+@ReadOnlyComposable
+fun reducedMotion(): Boolean {
+    val resolver = LocalContext.current.contentResolver
+    return Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+}
+
 object Motion {
 
     // ---------------------------------------------------------------- springs

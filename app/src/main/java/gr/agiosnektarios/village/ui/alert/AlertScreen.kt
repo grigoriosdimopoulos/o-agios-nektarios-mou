@@ -69,6 +69,8 @@ import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import gr.agiosnektarios.village.ui.theme.primaryInk
+import androidx.compose.material3.minimumInteractiveComponentSize
 
 /**
  * Telling the village something is wrong.
@@ -202,7 +204,12 @@ fun AlertRaiseContent(
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 AlertKind.entries.forEach { kind ->
-                    KindButton(kind = kind, onClick = { haptics.warning(); onPick(kind) })
+                    // A tick, not a warning. Haptics.kt reserves the doubled
+                    // buzz for "something is wrong, or about to be
+                    // irreversible", and choosing between seven options —
+                    // "power cut" and "something else" among them — is
+                    // neither. The warning belongs on sending, and is there.
+                    KindButton(kind = kind, onClick = { haptics.tick(); onPick(kind) })
                 }
             } else {
                 Chosen(
@@ -257,7 +264,7 @@ private fun KindButton(kind: AlertKind, onClick: () -> Unit) {
             tint = if (emergency) {
                 MaterialTheme.colorScheme.onErrorContainer
             } else {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             },
         )
         Text(
@@ -297,7 +304,7 @@ private fun Chosen(
             tint = if (emergency) {
                 MaterialTheme.colorScheme.error
             } else {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             },
         )
         Spacer(Modifier.width(10.dp))
@@ -305,8 +312,11 @@ private fun Chosen(
         Text(
             text = stringResource(R.string.action_back),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
+            color = MaterialTheme.colorScheme.primaryInk,
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .clickable(onClick = onBack)
+                .padding(8.dp),
         )
     }
 
@@ -456,7 +466,8 @@ private fun PlacePill(label: String, selected: Boolean, onClick: () -> Unit) {
                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .minimumInteractiveComponentSize(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (selected) {

@@ -44,6 +44,10 @@ import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedShadow
 import gr.agiosnektarios.village.ui.theme.shadowTint
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import gr.agiosnektarios.village.R
 
 /**
  * The report as it appears in every list in the app.
@@ -223,10 +227,20 @@ fun IssueCard(
                         MetaCount(
                             icon = Icons.Filled.ThumbUp,
                             value = issue.upvotes,
+                            description = pluralStringResource(
+                                R.plurals.issue_upvotes_count,
+                                issue.upvotes,
+                                issue.upvotes,
+                            ),
                         )
                         MetaCount(
                             icon = Icons.AutoMirrored.Filled.Comment,
                             value = issue.commentCount,
+                            description = pluralStringResource(
+                                R.plurals.issue_comments_count,
+                                issue.commentCount,
+                                issue.commentCount,
+                            ),
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
@@ -255,10 +269,15 @@ fun IssueCard(
 private fun MetaCount(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     value: Int,
+    /** The icon is the only label the number has; without it TalkBack read "14". */
+    description: String,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = description
+        },
     ) {
         Icon(
             imageVector = icon,

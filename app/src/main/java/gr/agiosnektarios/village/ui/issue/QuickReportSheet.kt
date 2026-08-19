@@ -51,6 +51,7 @@ import gr.agiosnektarios.village.core.model.IssueCategory
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * The ten-second report.
@@ -250,7 +251,7 @@ private fun LocationLine(
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     tint = if (state.position != null) {
-                        MaterialTheme.colorScheme.primary
+                        MaterialTheme.colorScheme.primaryInk
                     } else {
                         MaterialTheme.colorScheme.error
                     },
@@ -287,7 +288,7 @@ private fun LocationAction(text: String, onClick: () -> Unit) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.primaryInk,
         modifier = Modifier
             .clip(MaterialTheme.shapes.small)
             .clickable(onClick = onClick)

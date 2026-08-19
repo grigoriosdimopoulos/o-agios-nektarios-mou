@@ -35,6 +35,11 @@ import gr.agiosnektarios.village.ui.map.VillageMap
 import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.rememberHaptics
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 /**
  * Putting your own house on the map.
@@ -59,6 +64,7 @@ fun HomePinScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val dark = LocalIsDarkTheme.current
     val haptics = rememberHaptics()
+    var confirmingClear by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
 
@@ -134,11 +140,31 @@ fun HomePinScreen(
                     )
                     SecondaryButton(
                         text = stringResource(R.string.home_pin_clear),
-                        onClick = { haptics.tick(); viewModel.clear() },
+                        onClick = { haptics.warning(); confirmingClear = true },
                         enabled = !state.saving,
                     )
                 }
             }
         }
+    }
+
+    // Asked, because it sits at equal weight beside Save and undoing it means
+    // finding the house on the map again — which is the thing this screen
+    // exists to spare somebody who is telephoning for an ambulance.
+    if (confirmingClear) {
+        AlertDialog(
+            onDismissRequest = { confirmingClear = false },
+            title = { Text(stringResource(R.string.home_pin_clear_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirmingClear = false; viewModel.clear() }) {
+                    Text(stringResource(R.string.home_pin_clear))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmingClear = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }

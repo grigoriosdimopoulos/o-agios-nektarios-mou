@@ -57,6 +57,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -242,7 +243,7 @@ private fun MessageBubble(
                 Text(
                     text = message.senderName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primaryInk,
                 )
             }
             Text(

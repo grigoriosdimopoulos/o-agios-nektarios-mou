@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.ui.theme.reducedMotion
 
 
 /**
@@ -126,6 +127,7 @@ fun ShimmerBlock(
     modifier: Modifier = Modifier,
     height: androidx.compose.ui.unit.Dp = 96.dp,
 ) {
+    val still = reducedMotion()
     val transition = rememberInfiniteTransition(label = "shimmer")
     val progress by transition.animateFloat(
         initialValue = 0f,
@@ -133,6 +135,7 @@ fun ShimmerBlock(
         animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Restart),
         label = "shimmerProgress",
     )
+    val sweep = if (still) 0.5f else progress
     val base = MaterialTheme.colorScheme.surfaceContainerHigh
     val highlight = MaterialTheme.colorScheme.surfaceContainerHighest
 
@@ -144,9 +147,9 @@ fun ShimmerBlock(
             .background(
                 Brush.horizontalGradient(
                     colorStops = arrayOf(
-                        (progress - 0.3f).coerceIn(0f, 1f) to base,
-                        progress.coerceIn(0f, 1f) to highlight,
-                        (progress + 0.3f).coerceIn(0f, 1f) to base,
+                        (sweep - 0.3f).coerceIn(0f, 1f) to base,
+                        sweep.coerceIn(0f, 1f) to highlight,
+                        (sweep + 0.3f).coerceIn(0f, 1f) to base,
                     ),
                 ),
             ),

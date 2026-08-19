@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @Composable
 fun ForgotPasswordScreen(
@@ -50,7 +51,7 @@ fun ForgotPasswordScreen(
                 Text(
                     text = stringResource(R.string.reset_password_sent),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primaryInk,
                 )
             }
 

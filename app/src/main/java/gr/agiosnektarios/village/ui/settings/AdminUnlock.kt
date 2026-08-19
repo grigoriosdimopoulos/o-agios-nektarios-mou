@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * Counts taps on a otherwise-inert row and opens after enough of them in a row.
@@ -98,7 +99,7 @@ fun AdminUnlockDialog(
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.primaryInk,
                     )
                 } else {
                     Text(stringResource(R.string.admin_unlock_confirm))

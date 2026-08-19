@@ -28,6 +28,10 @@ import gr.agiosnektarios.village.core.geo.IssueCluster
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import gr.agiosnektarios.village.R
 
 /**
  * Where the report is, on the screen that is about the report.
@@ -60,13 +64,23 @@ fun MiniMap(
         )
     }
 
+    val openLabel = stringResource(R.string.minimap_label)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(170.dp)
             .clip(MaterialTheme.shapes.medium)
             .then(raisedOutline?.let { Modifier.border(it, MaterialTheme.shapes.medium) } ?: Modifier)
-            .clickable(onClick = onOpenMap),
+            .clickable(
+                onClickLabel = stringResource(R.string.minimap_open),
+                onClick = onOpenMap,
+            )
+            // MapLibre draws into an AndroidView, so there is nothing here for
+            // a screen reader to describe. Without this it announced "double
+            // tap to activate" against silence.
+            .semantics(mergeDescendants = true) {
+                contentDescription = openLabel
+            },
     ) {
         VillageMap(
             modifier = Modifier.fillMaxWidth().height(170.dp),

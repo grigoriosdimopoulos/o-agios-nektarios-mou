@@ -46,6 +46,7 @@ import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.Space
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 @Composable
 fun ProfileScreen(
@@ -255,7 +256,7 @@ private fun StatTile(
         Text(
             text = animated.toInt().toString(),
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primaryInk,
         )
         Text(
             text = label,

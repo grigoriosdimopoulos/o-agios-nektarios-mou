@@ -49,6 +49,9 @@ import gr.agiosnektarios.village.core.model.VillageAlert
 import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import gr.agiosnektarios.village.ui.theme.primaryInk
+import androidx.compose.material3.minimumInteractiveComponentSize
+import gr.agiosnektarios.village.ui.theme.reducedMotion
 
 /**
  * An emergency, across the top of the map, impossible to mistake for anything
@@ -66,12 +69,19 @@ fun EmergencyBanner(
     modifier: Modifier = Modifier,
 ) {
     val emergency = alerts.firstOrNull { it.alertKind.severity == AlertSeverity.EMERGENCY } ?: return
-    val pulse by rememberInfiniteTransition(label = "emergency").animateFloat(
+    val still = reducedMotion()
+    val animated by rememberInfiniteTransition(label = "emergency").animateFloat(
         initialValue = 0.72f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "emergencyPulse",
     )
+    // Full opacity when animations are off, not the dimmest point of a pulse
+    // that is no longer happening. The low end is 0.72, which against the
+    // darkened alarm red measures 3.51:1 — above the 3:1 a meaningful graphic
+    // needs, where against the old #D64545 it was roughly 3.2:1 for half of
+    // every cycle, on the first thing anybody identifies this banner by.
+    val pulse = if (still) 1f else animated
 
     Row(
         modifier = modifier
@@ -116,7 +126,10 @@ fun EmergencyBanner(
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onError,
-                    maxLines = 1,
+                    // Two lines, not one. On a fire banner the street is the
+                    // load-bearing word, and "Οδός Ελατιάς, Άνω γ…" is the
+                    // half of it that does not help anybody.
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -169,7 +182,7 @@ fun OutageCard(
             Icon(
                 imageVector = alert.alertKind.icon(),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.primaryInk,
                 modifier = Modifier.padding(top = 2.dp).size(20.dp),
             )
             Spacer(Modifier.width(10.dp))
@@ -186,6 +199,13 @@ fun OutageCard(
                     ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // At twice the text "Αναγνωστόπουλος" broke inside the
+                    // word across four lines. Two lines and an ellipsis: the
+                    // headline of this card is the household count, and a
+                    // surname cut cleanly identifies its author better than
+                    // one cut in half.
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Text(
@@ -196,7 +216,13 @@ fun OutageCard(
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primaryInk,
+                // The count took whatever width it wanted and squeezed the
+                // column beside it until "Αναγνωστόπουλος" hyphen-broke inside
+                // the word, across four lines. It is at most "12 σπίτια".
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
 
@@ -217,11 +243,12 @@ fun OutageCard(
                 Text(
                     text = stringResource(R.string.alert_resolve),
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primaryInk,
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { confirmingOver = true }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .minimumInteractiveComponentSize(),
                 )
             }
         }
@@ -267,13 +294,14 @@ private fun ConfirmPill(confirmed: Boolean, onClick: () -> Unit) {
                 } else {
                     Modifier.border(
                         1.dp,
-                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primaryInk,
                         RoundedCornerShape(12.dp),
                     )
                 },
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
+            .padding(horizontal = 14.dp, vertical = 9.dp)
+            .minimumInteractiveComponentSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -294,7 +322,7 @@ private fun ConfirmPill(confirmed: Boolean, onClick: () -> Unit) {
             color = if (confirmed) {
                 MaterialTheme.colorScheme.onPrimary
             } else {
-                MaterialTheme.colorScheme.primary
+                MaterialTheme.colorScheme.primaryInk
             },
         )
     }
@@ -314,7 +342,8 @@ fun UrgentButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.error)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .minimumInteractiveComponentSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

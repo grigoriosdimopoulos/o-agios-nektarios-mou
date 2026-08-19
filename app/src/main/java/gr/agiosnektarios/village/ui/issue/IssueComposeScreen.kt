@@ -61,6 +61,7 @@ import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.isGreekLocale
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * Compose or edit a report.
@@ -193,7 +194,7 @@ fun IssueComposeScreen(
                         Text(
                             text = blockName,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.primaryInk,
                         )
                     }
                 }
