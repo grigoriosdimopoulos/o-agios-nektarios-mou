@@ -1,8 +1,8 @@
-1.0.74 (54edb8b)
+1.0.76 (c2b10c2)
 
-sha256  b4a16bd064d384eb32d0144eb35188e4866d923eb8795fe0895417edf68678fb
-bytes   18089681
-built   2026-08-19 19:51 UTC
+sha256  971b34d04f171d02612fae79d18626c54865ebee288b9b3aa3ee16c4906bf347
+bytes   18111613
+built   2026-08-19 20:57 UTC
 
 The same version string is shown inside the app under Settings > About, so
 what is installed on a phone can be compared against what is published here
