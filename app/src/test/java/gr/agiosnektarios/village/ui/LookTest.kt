@@ -92,9 +92,16 @@ class LookTest {
 
     // The settled stage, not the timed wrapper: a snapshot of SplashScreen
     // catches frame zero, where every alpha is still 0 and the render is blank.
-    @Test fun splash_light() = render { SplashContent(stage = 3) }
+    // A fixed version string, not the real one. The build's version is derived
+    // from the git commit count and SHA, so rendering it here produced a golden
+    // that could never match the next commit — CI's snapshot check would fail
+    // on every push, and the committed image had already drifted two builds
+    // behind before anyone compared them.
+    @Test fun splash_light() = render { SplashContent(stage = 3, version = FIXTURE_VERSION) }
 
-    @Test fun splash_dark() = render(dark = true) { SplashContent(stage = 3) }
+    @Test fun splash_dark() = render(dark = true) {
+        SplashContent(stage = 3, version = FIXTURE_VERSION)
+    }
 
     /** The screen residents spend the most time on. */
     @Test fun feed_light() = render { Feed() }
@@ -310,3 +317,6 @@ internal fun MapChrome() {
         StreetNamingHint(onDismiss = {}, modifier = Modifier.width(280.dp))
     }
 }
+
+/** Shape-accurate and never changing, which is the whole point. */
+private const val FIXTURE_VERSION = "1.0.0 (0000000)"

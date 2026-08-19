@@ -6,7 +6,7 @@ import {
 import { readFileSync } from "fs";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc, collection, addDoc, serverTimestamp,
-  writeBatch, increment, query, where, getDocs, limit, Bytes,
+  writeBatch, increment, query, where, getDocs, limit, Bytes, deleteField,
 } from "firebase/firestore";
 
 /** Stand-in for JPEG bytes; only the length matters to the rules. */
@@ -583,6 +583,186 @@ await check("a resolved report cannot be taken on",
 await check("a moderator may unstick any claim",
   assertSucceeds(updateDoc(doc(boss, "issues/takeable"),
     { assigneeId: "", assigneeName: "", updatedAt: serverTimestamp() })));
+
+// ---- the village calendar
+//
+// The point of the calendar is that anybody may put something on it. The point
+// of these tests is that "anybody may say they are coming" does not quietly
+// become "anybody may edit anything".
+const eventSeed = (uid, name, extra = {}) => ({
+  title: "Καθαρισμός δασικού δρόμου",
+  description: "Φέρτε γάντια.",
+  place: "Πλατεία",
+  kind: "WORK_DAY",
+  startAt: new Date("2026-09-05T07:00:00Z"),
+  endAt: null,
+  allDay: false,
+  authorId: uid,
+  authorName: name,
+  attendees: { [uid]: name },
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  ...extra,
+});
+
+await check("calendar: an ordinary resident may add an event",
+  assertSucceeds(setDoc(doc(maria, "events/workday"), eventSeed("maria", "Maria Test"))));
+await check("calendar: an event must credit its real author",
+  assertFails(setDoc(doc(giorgos, "events/forged"), eventSeed("maria", "Maria Test"))));
+await check("calendar: an event cannot open with a crowd already attending",
+  assertFails(setDoc(doc(giorgos, "events/stuffed"),
+    eventSeed("giorgos", "Giorgos Test", { attendees: { giorgos: "Giorgos Test", maria: "Maria Test" } }))));
+await check("calendar: a title is required",
+  assertFails(setDoc(doc(giorgos, "events/untitled"),
+    eventSeed("giorgos", "Giorgos Test", { title: "" }))));
+await check("calendar: a start time is required",
+  assertFails(setDoc(doc(giorgos, "events/undated"),
+    eventSeed("giorgos", "Giorgos Test", { startAt: "next Tuesday" }))));
+await check("calendar: everyone reads it",
+  assertSucceeds(getDoc(doc(giorgos, "events/workday"))));
+await check("calendar: a suspended resident does not",
+  assertFails(getDoc(doc(banned, "events/workday"))));
+
+await check("calendar: a neighbour says they are coming",
+  assertSucceeds(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": "Giorgos Test", updatedAt: serverTimestamp() })));
+await check("calendar: and takes it back",
+  assertSucceeds(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": deleteField(), updatedAt: serverTimestamp() })));
+
+// The whole reason attendance is a map and not two parallel arrays: with
+// arrays no rule can tell whose name was added, so anyone could sign up a
+// neighbour. With a map the diff names the key, and the key must be your own.
+// Writing a neighbour's *existing* entry back unchanged is a no-op and is
+// allowed, because it alters nothing — the diff is empty. These are the writes
+// that actually change somebody else's row, and they are the ones that matter.
+await check("calendar: nobody signs a neighbour up",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.boss": "Boss Test", updatedAt: serverTimestamp() })));
+await check("calendar: nobody rewrites a neighbour's name",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.maria": "Κάποιος άλλος", updatedAt: serverTimestamp() })));
+await check("calendar: nobody strikes a neighbour off",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.maria": deleteField(), updatedAt: serverTimestamp() })));
+await check("calendar: attending is not a way to edit the event",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": "Giorgos Test", title: "Ακυρώθηκε", updatedAt: serverTimestamp() })));
+await check("calendar: an attendee name cannot be blank",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": "", updatedAt: serverTimestamp() })));
+
+await check("calendar: a neighbour cannot rewrite the event",
+  assertFails(updateDoc(doc(giorgos, "events/workday"),
+    { title: "Ακυρώθηκε", updatedAt: serverTimestamp() })));
+await check("calendar: the organiser can",
+  assertSucceeds(updateDoc(doc(maria, "events/workday"),
+    { title: "Καθαρισμός — νέα ώρα", updatedAt: serverTimestamp() })));
+await check("calendar: the organiser cannot hand over authorship",
+  assertFails(updateDoc(doc(maria, "events/workday"),
+    { authorId: "giorgos", updatedAt: serverTimestamp() })));
+await check("calendar: a neighbour cannot delete it",
+  assertFails(deleteDoc(doc(giorgos, "events/workday"))));
+// The hole that the whole map-instead-of-arrays design was supposed to close,
+// and did not: the organiser could not add a neighbour one key at a time, but
+// could rewrite the entire attendee map in an ordinary edit.
+await check("calendar: the organiser cannot rewrite the attendee list",
+  assertFails(updateDoc(doc(maria, "events/workday"),
+    { attendees: { maria: "Maria Test", giorgos: "Giorgos Test", boss: "Boss Test" },
+      updatedAt: serverTimestamp() })));
+// A moderator writing their *own* key is just a moderator saying they will be
+// there, and the toggle rightly allows it. What must fail is signing up a
+// third party, which is the same forgery with a badge on.
+await check("calendar: a moderator cannot sign up a third party either",
+  assertFails(updateDoc(doc(boss, "events/workday"),
+    { attendees: { maria: "Maria Test", giorgos: "Giorgos Test" },
+      updatedAt: serverTimestamp() })));
+// Emptying a list that holds nobody but you is just leaving, and the toggle
+// allows it. Emptying one with a neighbour in it is not.
+await check("calendar: a neighbour joins so there is somebody to strike off",
+  assertSucceeds(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": "Giorgos Test", updatedAt: serverTimestamp() })));
+await check("calendar: the organiser cannot clear the list",
+  assertFails(updateDoc(doc(maria, "events/workday"),
+    { attendees: {}, updatedAt: serverTimestamp() })));
+await check("calendar: leaving a list you are alone on is allowed",
+  assertSucceeds(updateDoc(doc(giorgos, "events/workday"),
+    { "attendees.giorgos": deleteField(), updatedAt: serverTimestamp() })));
+
+// Bounds. Sixty events are shown by start time, so a handful dated far ahead
+// is enough to fill everyone's calendar — and the card prints no year.
+await check("calendar: no events in 2099",
+  assertFails(setDoc(doc(giorgos, "events/far"),
+    eventSeed("giorgos", "Giorgos Test", { startAt: new Date("2099-12-31T10:00:00Z") }))));
+await check("calendar: no events in 1900",
+  assertFails(setDoc(doc(giorgos, "events/ancient"),
+    eventSeed("giorgos", "Giorgos Test", { startAt: new Date("1900-01-01T10:00:00Z") }))));
+await check("calendar: next summer is fine",
+  assertSucceeds(setDoc(doc(giorgos, "events/panigyri"),
+    eventSeed("giorgos", "Giorgos Test",
+      { startAt: new Date(Date.now() + 300 * 24 * 3600 * 1000) }))));
+await check("calendar: allDay must be a boolean",
+  assertFails(setDoc(doc(giorgos, "events/yes"),
+    eventSeed("giorgos", "Giorgos Test", { allDay: "yes" }))));
+await check("calendar: endAt must be a timestamp",
+  assertFails(setDoc(doc(giorgos, "events/whenever"),
+    eventSeed("giorgos", "Giorgos Test", { endAt: "whenever" }))));
+await check("calendar: an attendee name must be a string",
+  assertFails(setDoc(doc(giorgos, "events/numbered"),
+    eventSeed("giorgos", "Giorgos Test", { attendees: { giorgos: 12345 } }))));
+await check("calendar: no arbitrary extra fields",
+  assertFails(setDoc(doc(giorgos, "events/payload"),
+    eventSeed("giorgos", "Giorgos Test", { payload: "x".repeat(40000) }))));
+await check("calendar: an author name has a ceiling",
+  assertFails(setDoc(doc(giorgos, "events/longname"),
+    eventSeed("giorgos", "x".repeat(40000)))));
+await check("calendar: a kind has a ceiling",
+  assertFails(setDoc(doc(giorgos, "events/longkind"),
+    eventSeed("giorgos", "Giorgos Test", { kind: "x".repeat(400) }))));
+
+await check("calendar: a moderator can",
+  assertSucceeds(updateDoc(doc(boss, "events/workday"),
+    { title: "Αναβλήθηκε", updatedAt: serverTimestamp() })));
+
+// An event written before attendance existed must still be joinable. Reading a
+// field that is not there is an evaluation error, and it would deny the write.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("events/legacy").set({
+    title: "Παλιά εκδήλωση", startAt: new Date("2026-09-20T07:00:00Z"),
+    authorId: "boss", authorName: "Boss Test",
+  });
+});
+await check("calendar: an event with no attendee field can still be joined",
+  assertSucceeds(updateDoc(doc(maria, "events/legacy"),
+    { "attendees.maria": "Maria Test", updatedAt: serverTimestamp() })));
+
+// ---- the village's own telephone numbers
+const contactSeed = {
+  name: "Αγροτικό Ιατρείο Βιλίων",
+  number: "22630 00000",
+  note: "Δευτέρα-Παρασκευή",
+  kind: "HEALTH",
+  order: 0,
+  createdById: "boss",
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+};
+await check("contacts: an administrator adds one",
+  assertSucceeds(setDoc(doc(boss, "contacts/surgery"), contactSeed)));
+await check("contacts: an ordinary resident does not",
+  assertFails(setDoc(doc(maria, "contacts/invented"), contactSeed)));
+await check("contacts: residents read them",
+  assertSucceeds(getDoc(doc(maria, "contacts/surgery"))));
+await check("contacts: a suspended resident does not",
+  assertFails(getDoc(doc(banned, "contacts/surgery"))));
+await check("contacts: a number is required",
+  assertFails(setDoc(doc(boss, "contacts/nameless"), { ...contactSeed, number: "" })));
+await check("contacts: a resident cannot edit one",
+  assertFails(updateDoc(doc(maria, "contacts/surgery"), { number: "6900000000" })));
+await check("contacts: a resident cannot delete one",
+  assertFails(deleteDoc(doc(maria, "contacts/surgery"))));
+await check("contacts: an administrator can",
+  assertSucceeds(deleteDoc(doc(boss, "contacts/surgery"))));
 
 await env.cleanup();
 

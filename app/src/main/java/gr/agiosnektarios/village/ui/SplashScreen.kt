@@ -99,7 +99,25 @@ fun SplashScreen(modifier: Modifier = Modifier) {
  * a screenshot of [SplashScreen] catches frame zero, which shows nothing.
  */
 @Composable
-internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
+internal fun SplashContent(
+    stage: Int,
+    modifier: Modifier = Modifier,
+    /**
+     * Which build to print, or null for none.
+     *
+     * A parameter rather than a direct read of [BuildConfig], because the
+     * default reads the git-derived version — commit count and short SHA — and
+     * a snapshot test that renders it produces a golden that is out of date the
+     * instant it is committed. It cannot be fixed by re-recording either: the
+     * SHA of a commit is not known before the commit exists, so the golden and
+     * the build can never agree and CI's snapshot verification would fail on
+     * every push. The committed golden had in fact been stale for two commits
+     * when this was noticed.
+     */
+    version: String? = BuildConfig.VERSION_NAME.takeIf {
+        BuildConfig.APPLICATION_ID.endsWith(".debug")
+    },
+) {
     val greekAlpha by animateFloatAsState(
         targetValue = if (stage >= 1) 1f else 0f,
         animationSpec = Motion.slow(),
@@ -196,9 +214,9 @@ internal fun SplashContent(stage: Int, modifier: Modifier = Modifier) {
             // even took. On a build handed to a tester it belongs where the
             // app opens. Suppressed for a real release, where a build number
             // over a Euripides quotation would be graffiti.
-            if (BuildConfig.APPLICATION_ID.endsWith(".debug")) {
+            if (version != null) {
                 Text(
-                    text = BuildConfig.VERSION_NAME,
+                    text = version,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center,

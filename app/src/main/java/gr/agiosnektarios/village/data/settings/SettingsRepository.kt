@@ -66,6 +66,15 @@ data class AppSettings(
      * does not exist. The hint appears once, over the map, until dismissed.
      */
     val hasSeenStreetHint: Boolean = false,
+    /**
+     * Whether the map animates the weather over itself.
+     *
+     * Off by default, and that is a decision rather than caution. The map's job
+     * is reports; rain drawn across it at all times competes with the pins for
+     * the same pixels and keeps a frame loop running while the screen is on.
+     * It is worth having, and it is worth being asked for.
+     */
+    val showWeatherLayer: Boolean = false,
 )
 
 @Singleton
@@ -84,6 +93,7 @@ class SettingsRepository @Inject constructor(
         val BASEMAP = stringPreferencesKey("basemap")
         val ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
         val STREET_HINT = booleanPreferencesKey("has_seen_street_hint")
+        val WEATHER_LAYER = booleanPreferencesKey("weather_layer")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -102,6 +112,7 @@ class SettingsRepository @Inject constructor(
                 basemap = MapBasemap.fromId(prefs[Keys.BASEMAP]),
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
                 hasSeenStreetHint = prefs[Keys.STREET_HINT] ?: false,
+                showWeatherLayer = prefs[Keys.WEATHER_LAYER] ?: false,
             )
         }
 
@@ -116,6 +127,8 @@ class SettingsRepository @Inject constructor(
     suspend fun setOnboardingSeen() = edit { it[Keys.ONBOARDING] = true }
 
     suspend fun setStreetHintSeen() = edit { it[Keys.STREET_HINT] = true }
+
+    suspend fun setShowWeatherLayer(show: Boolean) = edit { it[Keys.WEATHER_LAYER] = show }
 
     suspend fun setNotificationPref(pref: NotificationPref, enabled: Boolean) = edit {
         it[pref.key] = enabled

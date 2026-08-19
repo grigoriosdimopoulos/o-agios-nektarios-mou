@@ -49,6 +49,17 @@ object VillageConfig {
     val CENTER: GeoPoint = BOUNDS.center
 
     /**
+     * How high the village sits, in metres.
+     *
+     * Used when asking a weather provider for a forecast: without it the
+     * provider answers for the mean height of its own grid cell, and around
+     * Kithairon one cell holds both the Vilia plain and the ridge above the
+     * settlement. A few hundred metres of error there is a couple of degrees on
+     * the temperature and a wrong answer about whether it is snowing.
+     */
+    const val ELEVATION_METRES = 640
+
+    /**
      * Zoom levels chosen against the real size of the place.
      *
      * The fenced area is about 1.7 km across, so on a typical phone [MIN_ZOOM]

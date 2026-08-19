@@ -367,6 +367,158 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --------------------------------------------------------------- events
+
+    /**
+     * The village calendar at `events/{id}`.
+     *
+     * Any resident may add one, which is deliberate: the point of the calendar
+     * is that the liturgy, the πανηγύρι and the Saturday somebody decided to
+     * clear the forest track all reach the whole village, and routing that
+     * through an administrator would mean it reaches whoever remembers to ask.
+     * Announcements stay admin-only; those speak *for* the village, and these
+     * only speak *to* it.
+     *
+     * The interesting rule is attendance. Saying "I am coming" has to be
+     * possible on somebody else's event, so residents can write to documents
+     * they do not own — and the only thing standing between that and one
+     * resident signing up their neighbours is [isAttendanceToggle].
+     */
+    match /events/{eventId} {
+
+      /**
+       * Everything about an event except who is coming.
+       *
+       * The bounds are not decoration. Without them an ordinary resident could
+       * write an event dated 2099, a `kind` of anything, an `allDay` of "yes",
+       * a forty-thousand-character author name and arbitrary extra fields —
+       * all of which were possible and all of which were verified against the
+       * emulator before this was written. The date window matters most: the
+       * calendar shows the next sixty by start time, so a handful of documents
+       * dated far in the future is enough to fill everyone's screen, and the
+       * card prints no year, so "Friday 31 December" reads as this year's.
+       */
+      function validContent() {
+        return request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 90
+          && request.resource.data.get('description', '').size() <= 1200
+          && request.resource.data.get('place', '').size() <= 80
+          && request.resource.data.get('authorName', '') is string
+          && request.resource.data.get('authorName', '').size() <= 80
+          && request.resource.data.get('kind', 'OTHER') is string
+          && request.resource.data.get('kind', 'OTHER').size() <= 20
+          && request.resource.data.get('allDay', false) is bool
+          && (request.resource.data.get('endAt', null) == null
+              || request.resource.data.endAt is timestamp)
+          && request.resource.data.startAt is timestamp
+          // A year back, two years forward. Long enough for next summer's
+          // πανηγύρι, short enough that the list cannot be filled with 2099.
+          && request.resource.data.startAt > request.time - duration.value(365, 'd')
+          && request.resource.data.startAt < request.time + duration.value(730, 'd')
+          && request.resource.data.keys().hasOnly([
+            'title', 'description', 'place', 'kind', 'startAt', 'endAt',
+            'allDay', 'attendees', 'authorId', 'authorName',
+            'createdAt', 'updatedAt'
+          ]);
+      }
+
+
+      /**
+       * The one write a resident may make to an event that is not theirs.
+       *
+       * Two conditions do the work. The outer `hasOnly` confines the write to
+       * the attendee map and the timestamp, so this cannot be a way to edit
+       * somebody else's title. The inner one confines the *map* diff to a
+       * single key which must be the caller's own uid — which is exactly the
+       * check that two parallel arrays of ids and names could not support, and
+       * the reason the attendees are stored as a map.
+       *
+       * `get('attendees', {})` rather than `resource.data.attendees`, because
+       * reading a field that is not there is an evaluation error and would deny
+       * the write outright. Any event created before this field existed would
+       * otherwise be one nobody could ever join.
+       */
+      function isAttendanceToggle() {
+        return touchesOnly(['attendees', 'updatedAt'])
+          && request.resource.data.get('attendees', {})
+              .diff(resource.data.get('attendees', {}))
+              .affectedKeys().hasOnly([uid()])
+          && (
+            !(uid() in request.resource.data.get('attendees', {}))
+            || (request.resource.data.attendees[uid()] is string
+                && request.resource.data.attendees[uid()].size() > 0
+                && request.resource.data.attendees[uid()].size() <= 80)
+          );
+      }
+
+      allow read: if isActiveResident();
+
+      // A new event credits its actual author and starts with exactly its
+      // organiser attending — seeding it with a crowd would fake a turnout.
+      allow create: if isActiveResident()
+        && validContent()
+        && request.resource.data.authorId == uid()
+        && request.resource.data.authorName is string
+        && request.resource.data.get('attendees', {}).keys().hasOnly([uid()])
+        && (!(uid() in request.resource.data.get('attendees', {}))
+            || (request.resource.data.attendees[uid()] is string
+                && request.resource.data.attendees[uid()].size() > 0
+                && request.resource.data.attendees[uid()].size() <= 80));
+
+      /**
+       * Editing an event never touches who is coming.
+       *
+       * `!changed(['attendees'])` is the whole point of this branch and it was
+       * missing. Without it the map was pointless: the author could not add a
+       * neighbour one key at a time, but they could rewrite the entire map in a
+       * single ordinary edit — verified against the emulator — and put six
+       * names against a Saturday nobody had agreed to. Attendance moves only
+       * through [isAttendanceToggle], for everyone, including moderators.
+       */
+      allow update: if isActiveResident() && (
+        isAttendanceToggle()
+        || (
+          (uid() == resource.data.authorId || isModerator())
+          && validContent()
+          && !changed(['authorId', 'createdAt', 'attendees'])
+        )
+      );
+
+      allow delete: if isActiveResident()
+        && (uid() == resource.data.authorId || isModerator());
+    }
+
+    // ------------------------------------------------------------- contacts
+
+    /**
+     * Telephone numbers the village keeps for itself, at `contacts/{id}`.
+     *
+     * Administrators only. The emergency numbers a resident actually needs in
+     * a hurry — 112, 199, 166, 100 and the electricity fault line — are
+     * compiled into the app and are not here at all, precisely so that they
+     * render with no account, no network and no rule evaluation between the
+     * resident and the number. What lives here is the local half: the surgery
+     * at Vilia, the municipality's works desk, whoever holds the key to the
+     * water tank. Those are worth being careful with, because a wrong number
+     * for a doctor is worse than no number at all.
+     */
+    match /contacts/{contactId} {
+      function validContact() {
+        return request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 60
+          && request.resource.data.number is string
+          && request.resource.data.number.size() > 2
+          && request.resource.data.number.size() <= 24
+          && request.resource.data.get('note', '').size() <= 120;
+      }
+
+      allow read: if isActiveResident();
+      allow create, update: if isAdmin() && validContact();
+      allow delete: if isAdmin();
+    }
+
     // ---------------------------------------------------------- street names
 
     /**

@@ -61,12 +61,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
+import gr.agiosnektarios.village.core.model.ContactKind
+import gr.agiosnektarios.village.core.model.NationalContacts
 import gr.agiosnektarios.village.core.model.StreetName
 import gr.agiosnektarios.village.ui.components.CategoryChip
 import gr.agiosnektarios.village.ui.components.EmptyState
@@ -74,17 +77,24 @@ import gr.agiosnektarios.village.ui.components.GlassSurface
 import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.issue.QuickReportSheet
 import gr.agiosnektarios.village.ui.issue.QuickReportViewModel
+import gr.agiosnektarios.village.ui.weather.DateLine
+import gr.agiosnektarios.village.ui.weather.WeatherChip
+import gr.agiosnektarios.village.ui.weather.WeatherOverlay
+import gr.agiosnektarios.village.ui.weather.WeatherSheet
+import gr.agiosnektarios.village.ui.weather.WeatherViewModel
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.components.StatusChip
 import gr.agiosnektarios.village.core.MapBasemap
+import gr.agiosnektarios.village.core.weather.FireRisk
 import gr.agiosnektarios.village.ui.components.isGreekLocale
 import gr.agiosnektarios.village.ui.components.pressable
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.LocalIsDarkTheme
 import gr.agiosnektarios.village.data.media.CaptureFile
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 
@@ -97,8 +107,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 fun MapScreen(
     onOpenIssue: (String) -> Unit,
     onCreateIssueAt: (Double, Double) -> Unit,
+    onOpenContacts: () -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
     quickReport: QuickReportViewModel = hiltViewModel(),
+    weatherViewModel: WeatherViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val darkTheme = LocalIsDarkTheme.current
@@ -119,6 +131,24 @@ fun MapScreen(
     var reportSession by remember { mutableIntStateOf(0) }
     // The report the drawer is centred on, lit on the map beneath it.
     var focusedIssueId by remember { mutableStateOf<String?>(null) }
+
+    val weather by weatherViewModel.uiState.collectAsStateWithLifecycle()
+    // Asked for again every time the map comes back to the front.
+    //
+    // The view model fetched once in `init` and nothing ever asked again, so a
+    // phone that stayed open showed the reading it had picked up at launch for
+    // as long as the process lived — which made the repository's half-hour
+    // staleness rule inert and its comment about being "safe to call on every
+    // resume" true of nothing, because nothing called it. The repository still
+    // decides whether the radio is worth waking.
+    LifecycleResumeEffect(Unit) {
+        weatherViewModel.refresh()
+        onPauseOrDispose { }
+    }
+    var showWeather by remember { mutableStateOf(false) }
+    // Measured by the drawer rather than assumed, so the button and the street
+    // hint clear it at every text size.
+    var peekHeight by remember { mutableStateOf(MapSheetDefaults.peekHeight) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -154,6 +184,17 @@ fun MapScreen(
             onRoadTap = viewModel::selectStreet,
         )
 
+        // The weather, drawn over the map and under everything else.
+        //
+        // Off while a pin is being placed: at that moment the map is an
+        // instrument being aimed, and rain across it is in the way. Off, too,
+        // when the reading is not recent — animated rain is a statement about
+        // this minute, and drawing a cached one is a lie told convincingly.
+        val sky = weather.snapshot
+        if (weather.animateOnMap && weather.fresh && sky != null && !state.placingPin) {
+            WeatherOverlay(snapshot = sky, dark = darkTheme, modifier = Modifier.fillMaxSize())
+        }
+
         // The reports, on a pane pulled up over the map. Hidden while a pin is
         // being placed, when the map itself is the thing being used.
         if (!state.placingPin) {
@@ -163,6 +204,13 @@ fun MapScreen(
                     .sortedByDescending { it.createdAt?.time ?: 0L },
                 onOpenIssue = onOpenIssue,
                 onFocusedIssue = { focusedIssueId = it },
+                onPeekHeight = { peekHeight = it },
+                subtitle = {
+                    weather.snapshot?.let { DateLine(it.observedAt) }
+                },
+                trailing = {
+                    WeatherChip(state = weather, onClick = { showWeather = true })
+                },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -199,6 +247,7 @@ fun MapScreen(
                 reportSession++
                 showQuickReport = true
             },
+            peekHeight = peekHeight,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -252,6 +301,37 @@ fun MapScreen(
                 ),
             )
         }
+    }
+
+    if (showWeather) {
+        val uriHandler = LocalUriHandler.current
+        WeatherSheet(
+            state = weather,
+            onDismiss = { showWeather = false },
+            // 199, from the constant the contacts screen renders, so there is
+            // one place the number lives rather than two that can disagree.
+            onCallFireService = {
+                val fire = NationalContacts.all.first { it.kind == ContactKind.EMERGENCY &&
+                    it.nameRes == R.string.contact_fire }
+                runCatching {
+                    context.startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_DIAL,
+                            android.net.Uri.parse("tel:${fire.number}"),
+                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            },
+            onOpenContacts = {
+                showWeather = false
+                onOpenContacts()
+            },
+            onOpenOfficialMap = {
+                runCatching { uriHandler.openUri(FireRisk.OFFICIAL_MAP_URL) }
+            },
+            onToggleMapWeather = weatherViewModel::setAnimateOnMap,
+            onRefresh = { weatherViewModel.refresh(force = true) },
+        )
     }
 
     if (showQuickReport) {
@@ -494,6 +574,7 @@ private fun StreetNameSheet(
 @Composable
 private fun MapOverlay(
     state: MapUiState,
+    peekHeight: Dp,
     onToggleFilters: () -> Unit,
     onToggleBlocks: () -> Unit,
     onSelectBasemap: (MapBasemap) -> Unit,
@@ -559,8 +640,7 @@ private fun MapOverlay(
                 .align(Alignment.BottomStart)
                 .padding(start = Space.page, end = Space.page)
                 .padding(
-                    bottom = BottomBarDefaults.contentPadding() +
-                        MapSheetDefaults.peekHeight + 88.dp,
+                    bottom = BottomBarDefaults.contentPadding() + peekHeight + 88.dp,
                 ),
         ) {
             StreetNamingHint(onDismiss = onDismissStreetHint)
@@ -621,7 +701,7 @@ private fun MapOverlay(
                 .padding(16.dp)
                 .padding(
                     bottom = BottomBarDefaults.contentPadding() +
-                        if (state.placingPin) 0.dp else MapSheetDefaults.peekHeight,
+                        if (state.placingPin) 0.dp else peekHeight,
                 ),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,

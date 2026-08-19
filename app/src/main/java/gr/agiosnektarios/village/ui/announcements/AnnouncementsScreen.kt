@@ -52,63 +52,47 @@ import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.Space
 
+/**
+ * The notices, as a list.
+ *
+ * Extracted from the screen it used to be so the Village tab can put it beside
+ * the calendar under one segmented control. Nothing about the rendering
+ * changed; what left is the scaffold, the title and the button, all of which
+ * now belong to whichever half of that tab is showing.
+ */
 @Composable
-fun AnnouncementsScreen(
+fun AnnouncementsContent(
+    state: AnnouncementsUiState,
     isAdmin: Boolean,
-    onCompose: () -> Unit,
     onEdit: (String) -> Unit,
-    viewModel: AnnouncementsViewModel = hiltViewModel(),
+    onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    Scaffold(
-        floatingActionButton = {
-            if (isAdmin) {
-                FloatingActionButton(
-                    onClick = onCompose,
-                    // Clears the navigation bar, which is drawn over this
-                    // screen rather than occupying a slot beside it.
-                    modifier = Modifier.padding(bottom = BottomBarDefaults.contentPadding()),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = stringResource(R.string.announcement_new),
-                    )
-                }
-            }
-        },
-        // Only the top inset belongs to this Scaffold: the app's navigation
-        // bar is drawn over the screen, so its height is added by whatever
-        // must clear it rather than reserved here.
-        contentWindowInsets = WindowInsets.statusBars,
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            ScreenHeader(title = stringResource(R.string.announcements_title))
-
-            when {
-                state.loading -> ListSkeleton()
-                state.announcements.isEmpty() -> EmptyState(
-                    emoji = "📣",
-                    title = stringResource(R.string.announcements_empty),
+    when {
+        state.loading -> ListSkeleton()
+        state.announcements.isEmpty() -> EmptyState(
+            emoji = "\uD83D\uDCE3",
+            title = stringResource(R.string.announcements_empty),
+            modifier = modifier,
+        )
+        else -> LazyColumn(
+            modifier = modifier,
+            // Clears the overlaid navigation bar; see BottomBarDefaults.
+            contentPadding = PaddingValues(
+                start = Space.page,
+                end = Space.page,
+                top = Space.gutter,
+                bottom = BottomBarDefaults.contentPadding() + Space.page,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Space.gutter),
+        ) {
+            items(state.announcements, key = { it.id }) { announcement ->
+                AnnouncementCard(
+                    announcement = announcement,
+                    isAdmin = isAdmin,
+                    onEdit = { onEdit(announcement.id) },
+                    onDelete = { onDelete(announcement.id) },
                 )
-                else -> LazyColumn(
-                    // Clears the overlaid navigation bar; see BottomBarDefaults.
-                    contentPadding = PaddingValues(
-                        start = Space.page,
-                        end = Space.page,
-                        bottom = BottomBarDefaults.contentPadding(),
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(Space.gutter),
-                ) {
-                    items(state.announcements, key = { it.id }) { announcement ->
-                        AnnouncementCard(
-                            announcement = announcement,
-                            isAdmin = isAdmin,
-                            onEdit = { onEdit(announcement.id) },
-                            onDelete = { viewModel.delete(announcement.id) },
-                        )
-                    }
-                }
             }
         }
     }

@@ -282,4 +282,137 @@
     <string name="timeline_taken">Το ανέλαβε</string>
     <string name="timeline_resolved">Το έλυσε</string>
     <string name="timeline_closed">Το έκλεισε</string>
+
+    <string name="weather_feels_like">Αίσθηση %1$s</string>
+    <string name="weather_humidity">Υγρασία</string>
+    <string name="weather_wind">Άνεμος</string>
+    <string name="weather_gusts">ριπές %1$s</string>
+    <string name="weather_rain_today">Βροχή σήμερα</string>
+    <string name="weather_sunrise">Ανατολή</string>
+    <string name="weather_sunset">Δύση</string>
+    <string name="weather_snow">Χιόνι</string>
+    <string name="weather_dry_spell">Από την τελευταία βροχή</string>
+    <string name="weather_updated">Μέτρηση %1$s</string>
+    <string name="weather_unavailable">Δεν έχει έρθει ο καιρός</string>
+    <string name="weather_unavailable_body">Θα έρθει μόλις πιάσει σήμα.</string>
+    <string name="weather_not_today">Η μέτρηση είναι από %1$s, όχι από σήμερα.</string>
+    <string name="weather_stale">Αυτή είναι η τελευταία μέτρηση που έφτασε στο κινητό.</string>
+    <string name="weather_refresh">Ανανέωση</string>
+    <string name="weather_forecast">Τις επόμενες μέρες</string>
+    <string name="weather_beaufort">%1$d μποφόρ</string>
+    <string name="weather_millimetres">%1$s χιλ.</string>
+    <string name="weather_centimetres">%1$s εκ.</string>
+    <string name="weather_animate">Ο καιρός στον χάρτη</string>
+    <string name="weather_source">Πρόγνωση: Open-Meteo</string>
+    <plurals name="weather_dry_days">
+        <item quantity="one">%1$d μέρα</item>
+        <item quantity="other">%1$d μέρες</item>
+    </plurals>
+
+    <string name="condition_clear">Αίθριος</string>
+    <string name="condition_partly_cloudy">Λίγα σύννεφα</string>
+    <string name="condition_overcast">Συννεφιά</string>
+    <string name="condition_fog">Ομίχλη</string>
+    <string name="condition_drizzle">Ψιλόβροχο</string>
+    <string name="condition_rain">Βροχή</string>
+    <string name="condition_heavy_rain">Δυνατή βροχή</string>
+    <string name="condition_snow">Χιόνι</string>
+    <string name="condition_thunderstorm">Καταιγίδα</string>
+    <string name="condition_unknown">—</string>
+
+    <string name="wind_n">Β</string>
+    <string name="wind_ne">ΒΑ</string>
+    <string name="wind_e">Α</string>
+    <string name="wind_se">ΝΑ</string>
+    <string name="wind_s">Ν</string>
+    <string name="wind_sw">ΝΔ</string>
+    <string name="wind_w">Δ</string>
+    <string name="wind_nw">ΒΔ</string>
+    <string name="wind_from">Φυσάει από %1$s</string>
+    <string name="wind_calm">Άπνοια</string>
+
+    <string name="fire_risk_spoken">ενδεικτικός κίνδυνος πυρκαγιάς: %1$s</string>
+    <string name="fire_risk_title">Κίνδυνος πυρκαγιάς</string>
+    <string name="fire_level_low">Χαμηλός</string>
+    <string name="fire_level_moderate">Μέτριος</string>
+    <string name="fire_level_high">Υψηλός</string>
+    <string name="fire_level_very_high">Πολύ υψηλός</string>
+    <string name="fire_level_extreme">Συναγερμός</string>
+    <string name="fire_risk_at">Χειρότερα γύρω στις %1$s: %2$s, υγρασία %3$d%%</string>
+    <string name="fire_risk_now">Από την τωρινή μέτρηση: %1$s, υγρασία %2$d%%</string>
+    <string name="fire_because_wind">Έχει αέρα — %1$s</string>
+    <string name="fire_because_gusts">Δυνατές ριπές — %1$s</string>
+    <string name="fire_because_dry">%1$d μέρες χωρίς κανονική βροχή</string>
+    <string name="fire_because_wet">Το χώμα είναι βρεγμένο</string>
+    <string name="fire_burning_forbidden">Μην κάψετε τίποτα σήμερα.</string>
+    <string name="fire_season">Αντιπυρική περίοδος, 1 Μαΐου έως 31 Οκτωβρίου: η καύση υπολειμμάτων θέλει άδεια από την Πυροσβεστική.</string>
+    <string name="fire_out_of_season">Εκτός αντιπυρικής περιόδου.</string>
+    <string name="fire_official">Είναι ένδειξη που βγαίνει στο κινητό από την πρόγνωση, βαθμονομημένη πάνω στα τρία τελευταία καλοκαίρια του χωριού. Οι απαγορεύσεις καύσης ακολουθούν τον ημερήσιο χάρτη της Πολιτικής Προστασίας.</string>
+    <string name="fire_official_link">Ο επίσημος χάρτης</string>
+    <string name="fire_call">Πυροσβεστική — 199</string>
+
+    <string name="contacts_title">Χρήσιμα τηλέφωνα</string>
+    <string name="contacts_subtitle">Είναι μέσα στην εφαρμογή — φαίνονται και χωρίς σήμα</string>
+    <string name="contacts_emergency">Έκτακτη ανάγκη</string>
+    <string name="contacts_utility">Βλάβες</string>
+    <string name="contacts_health">Υγεία</string>
+    <string name="contacts_local">Του χωριού</string>
+    <string name="contacts_local_empty">Άδειο προς το παρόν. Το αγροτικό ιατρείο στα Βίλια, ο δήμος, όποιος κρατάει το κλειδί της δεξαμενής — ένας διαχειριστής τα προσθέτει, και δεν τα μαντεύει κανείς.</string>
+    <string name="contacts_add">Προσθήκη τηλεφώνου</string>
+    <string name="contacts_edit">Επεξεργασία</string>
+    <string name="contacts_call">Κλήση</string>
+    <string name="contacts_call_of">Κλήση %1$s</string>
+    <string name="contacts_copy">Αντιγραφή</string>
+    <string name="contacts_copied">Αντιγράφηκε</string>
+    <string name="contacts_name">Ποιανού είναι</string>
+    <string name="contacts_number">Τηλέφωνο</string>
+    <string name="contacts_note">Σημείωση — ώρες, ή ποιον βρίσκει</string>
+    <string name="contacts_kind">Ενότητα</string>
+    <string name="contacts_invalid">Θέλει όνομα και ένα πραγματικό τηλέφωνο.</string>
+    <string name="contacts_delete_confirm">Να αφαιρεθεί αυτό το τηλέφωνο;</string>
+
+    <string name="contact_112">Έκτακτη ανάγκη, οτιδήποτε</string>
+    <string name="contact_112_note">Ένας αριθμός για πυροσβεστική, ασθενοφόρο και αστυνομία. Δωρεάν από κάθε τηλέφωνο, ακόμη και χωρίς μονάδες.</string>
+    <string name="contact_fire">Πυροσβεστική</string>
+    <string name="contact_fire_note">Δασικές πυρκαγιές και σπίτια</string>
+    <string name="contact_ambulance">ΕΚΑΒ</string>
+    <string name="contact_police">Αστυνομία</string>
+    <string name="contact_power">Διακοπή ή βλάβη ρεύματος</string>
+    <string name="contact_power_note">ΔΕΔΔΗΕ, όλο το εικοσιτετράωρο</string>
+    <string name="contact_power_free">Βλάβες ρεύματος, χωρίς χρέωση</string>
+    <string name="contact_power_free_note">Το ίδιο κέντρο, ατελώς</string>
+
+    <string name="village_tab_announcements">Ανακοινώσεις</string>
+    <string name="village_tab_calendar">Ημερολόγιο</string>
+    <string name="nav_village">Χωριό</string>
+    <string name="calendar_empty_title">Άδειο ημερολόγιο</string>
+    <string name="calendar_empty_body">Λειτουργίες, το πανηγύρι, ένα Σάββατο καθαρισμού στον δρόμο, η μέρα που περνάει το απορριμματοφόρο. Το προσθέτει όποιος θέλει.</string>
+    <string name="calendar_add">Προσθήκη στο ημερολόγιο</string>
+    <string name="calendar_edit">Επεξεργασία</string>
+    <string name="calendar_today">Σήμερα</string>
+    <string name="calendar_tomorrow">Αύριο</string>
+    <string name="calendar_all_day">Όλη μέρα</string>
+    <string name="calendar_attend">Θα έρθω</string>
+    <string name="calendar_attending">Έρχεσαι</string>
+    <string name="calendar_nobody">Δεν έχει πει κανείς ακόμη</string>
+    <plurals name="calendar_attendees">
+        <item quantity="one">%1$d έρχεται</item>
+        <item quantity="other">%1$d έρχονται</item>
+    </plurals>
+    <string name="calendar_delete_confirm">Να φύγει από το ημερολόγιο;</string>
+
+    <string name="event_kind_church">Εκκλησία</string>
+    <string name="event_kind_festival">Πανηγύρι</string>
+    <string name="event_kind_work_day">Εθελοντική εργασία</string>
+    <string name="event_kind_meeting">Σύσκεψη</string>
+    <string name="event_kind_service">Υπηρεσία</string>
+    <string name="event_kind_other">Άλλο</string>
+
+    <string name="event_title_label">Τι είναι</string>
+    <string name="event_description_label">Ό,τι άλλο αξίζει να ξέρουμε</string>
+    <string name="event_place_label">Πού</string>
+    <string name="event_date">Ημερομηνία</string>
+    <string name="event_time">Ώρα</string>
+    <string name="event_new">Νέα εκδήλωση</string>
+    <string name="event_invalid">Θέλει όνομα και ημερομηνία.</string>
 </resources>

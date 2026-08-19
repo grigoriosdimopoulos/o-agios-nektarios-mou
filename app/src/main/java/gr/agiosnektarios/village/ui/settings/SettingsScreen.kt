@@ -49,6 +49,7 @@ import gr.agiosnektarios.village.data.settings.ThemeMode
 fun SettingsScreen(
     onBack: () -> Unit,
     onChangePassword: () -> Unit,
+    onOpenContacts: () -> Unit,
     showSnackbar: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -183,6 +184,17 @@ fun SettingsScreen(
                 onCheckedChange = {
                     viewModel.setNotificationPref(SettingsRepository.NotificationPref.CHAT, it)
                 },
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(stringResource(R.string.contacts_title))
+
+            // A second way in. The first is the fire-risk card on the map,
+            // which is where somebody reaches for a number in a hurry; this is
+            // where they look for one calmly, and both go to the same list.
+            ActionRow(
+                label = stringResource(R.string.contacts_title),
+                onClick = onOpenContacts,
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

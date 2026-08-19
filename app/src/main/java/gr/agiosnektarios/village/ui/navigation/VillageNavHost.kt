@@ -34,7 +34,9 @@ import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.ui.admin.AdminScreen
 import gr.agiosnektarios.village.ui.admin.AdminUserDetailScreen
 import gr.agiosnektarios.village.ui.announcements.AnnouncementComposeScreen
-import gr.agiosnektarios.village.ui.announcements.AnnouncementsScreen
+import gr.agiosnektarios.village.ui.contacts.ContactsScreen
+import gr.agiosnektarios.village.ui.events.EventComposeScreen
+import gr.agiosnektarios.village.ui.village.VillageScreen
 import gr.agiosnektarios.village.ui.auth.CompleteProfileScreen
 import gr.agiosnektarios.village.ui.auth.ForgotPasswordScreen
 import gr.agiosnektarios.village.ui.auth.SignInScreen
@@ -246,6 +248,7 @@ fun VillageNavHost(
                 onCreateIssueAt = { lat, lng ->
                     navController.navigate(Routes.newIssueAt(lat, lng))
                 },
+                onOpenContacts = { navController.navigate(Routes.CONTACTS) },
             )
         }
         screen(Routes.ISSUES, motion = ScreenMotion.TAB) {
@@ -258,12 +261,27 @@ fun VillageNavHost(
             motion = ScreenMotion.TAB,
             deepLinks = listOf(navDeepLink { uriPattern = "$DEEP_LINK_SCHEME/announcements" }),
         ) {
-            AnnouncementsScreen(
+            VillageScreen(
                 isAdmin = profile?.isAdmin == true,
-                onCompose = { navController.navigate(Routes.announcementCompose()) },
-                onEdit = { navController.navigate(Routes.announcementCompose(it)) },
+                onComposeAnnouncement = { navController.navigate(Routes.announcementCompose()) },
+                onEditAnnouncement = { navController.navigate(Routes.announcementCompose(it)) },
+                onComposeEvent = { navController.navigate(Routes.eventCompose()) },
+                onEditEvent = { navController.navigate(Routes.eventCompose(it)) },
             )
         }
+        // --------------------------------------------- calendar and numbers
+        screen(
+            route = Routes.EVENT_COMPOSE,
+            arguments = listOf(
+                navArgument("eventId") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            EventComposeScreen(onDone = navController::popBackStack)
+        }
+        screen(Routes.CONTACTS) {
+            ContactsScreen(onBack = navController::popBackStack)
+        }
+
         screen(Routes.CHATS, motion = ScreenMotion.TAB) {
             ChatsScreen(
                 onOpenChat = { navController.navigate(Routes.chatRoom(it)) },
@@ -339,6 +357,7 @@ fun VillageNavHost(
             SettingsScreen(
                 onBack = navController::popBackStack,
                 onChangePassword = { navController.navigate(Routes.CHANGE_PASSWORD) },
+                onOpenContacts = { navController.navigate(Routes.CONTACTS) },
                 showSnackbar = showSnackbar,
             )
         }

@@ -2,12 +2,12 @@ package gr.agiosnektarios.village.ui.navigation
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Cottage
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.Cottage
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
@@ -45,6 +45,8 @@ object Routes {
     const val ADMIN = "admin"
     const val ADMIN_USER_DETAIL = "admin/user/{userId}"
     const val ANNOUNCEMENT_COMPOSE = "announcement-compose?announcementId={announcementId}"
+    const val EVENT_COMPOSE = "event-compose?eventId={eventId}"
+    const val CONTACTS = "contacts"
 
     fun issueDetail(issueId: String) = "issue/$issueId"
 
@@ -59,6 +61,8 @@ object Routes {
 
     fun announcementCompose(announcementId: String? = null) =
         "announcement-compose?announcementId=${announcementId.orEmpty()}"
+
+    fun eventCompose(eventId: String? = null) = "event-compose?eventId=${eventId.orEmpty()}"
 }
 
 /**
@@ -83,11 +87,19 @@ enum class TopLevelDestination(
 ) {
     MAP(Routes.MAP, R.string.nav_map, Icons.Filled.Map, Icons.Outlined.Map),
     ISSUES(Routes.ISSUES, R.string.nav_issues, Icons.Filled.ViewList, Icons.Outlined.ViewList),
+    /**
+     * Notices and the calendar, behind one tab.
+     *
+     * The route keeps its old name so existing deep links from notifications
+     * still land, but the label and the icon are the village rather than the
+     * megaphone: what lives here now is both what has been announced and what
+     * is coming up.
+     */
     ANNOUNCEMENTS(
         Routes.ANNOUNCEMENTS,
-        R.string.nav_announcements,
-        Icons.Filled.Campaign,
-        Icons.Outlined.Campaign,
+        R.string.nav_village,
+        Icons.Filled.Cottage,
+        Icons.Outlined.Cottage,
     ),
     CHATS(Routes.CHATS, R.string.nav_chat, Icons.Filled.Forum, Icons.Outlined.Forum),
     PROFILE(Routes.PROFILE, R.string.nav_profile, Icons.Filled.Person, Icons.Outlined.Person),

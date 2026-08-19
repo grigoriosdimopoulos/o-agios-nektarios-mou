@@ -308,4 +308,141 @@
     <string name="timeline_taken">Taken on by</string>
     <string name="timeline_resolved">Resolved by</string>
     <string name="timeline_closed">Closed by</string>
+
+    <!-- Weather -->
+    <string name="weather_feels_like">Feels like %1$s</string>
+    <string name="weather_humidity">Humidity</string>
+    <string name="weather_wind">Wind</string>
+    <string name="weather_gusts">gusting %1$s</string>
+    <string name="weather_rain_today">Rain today</string>
+    <string name="weather_sunrise">Sunrise</string>
+    <string name="weather_sunset">Sunset</string>
+    <string name="weather_snow">Snow lying</string>
+    <string name="weather_dry_spell">Since it rained</string>
+    <string name="weather_updated">Taken %1$s</string>
+    <string name="weather_unavailable">No weather yet</string>
+    <string name="weather_unavailable_body">It arrives as soon as there is a signal.</string>
+    <string name="weather_not_today">This reading is from %1$s, not from today.</string>
+    <string name="weather_stale">This is the last reading that reached the phone.</string>
+    <string name="weather_refresh">Refresh</string>
+    <string name="weather_forecast">The next days</string>
+    <string name="weather_beaufort">%1$d Bft</string>
+    <string name="weather_millimetres">%1$s mm</string>
+    <string name="weather_centimetres">%1$s cm</string>
+    <string name="weather_animate">Weather on the map</string>
+    <string name="weather_source">Forecast: Open-Meteo</string>
+    <plurals name="weather_dry_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <string name="condition_clear">Clear</string>
+    <string name="condition_partly_cloudy">Some cloud</string>
+    <string name="condition_overcast">Overcast</string>
+    <string name="condition_fog">Fog</string>
+    <string name="condition_drizzle">Drizzle</string>
+    <string name="condition_rain">Rain</string>
+    <string name="condition_heavy_rain">Heavy rain</string>
+    <string name="condition_snow">Snow</string>
+    <string name="condition_thunderstorm">Thunderstorm</string>
+    <string name="condition_unknown">—</string>
+
+    <string name="wind_n">N</string>
+    <string name="wind_ne">NE</string>
+    <string name="wind_e">E</string>
+    <string name="wind_se">SE</string>
+    <string name="wind_s">S</string>
+    <string name="wind_sw">SW</string>
+    <string name="wind_w">W</string>
+    <string name="wind_nw">NW</string>
+    <string name="wind_from">Blowing from the %1$s</string>
+    <string name="wind_calm">Still</string>
+
+    <!-- Fire risk -->
+    <string name="fire_risk_spoken">indicative fire risk: %1$s</string>
+    <string name="fire_risk_title">Fire risk</string>
+    <string name="fire_level_low">Low</string>
+    <string name="fire_level_moderate">Moderate</string>
+    <string name="fire_level_high">High</string>
+    <string name="fire_level_very_high">Very high</string>
+    <string name="fire_level_extreme">Alert</string>
+    <string name="fire_risk_at">Worst around %1$s: %2$s, %3$d%% humidity</string>
+    <string name="fire_risk_now">From the current reading: %1$s, %2$d%% humidity</string>
+    <string name="fire_because_wind">The wind is up — %1$s</string>
+    <string name="fire_because_gusts">Gusting hard — %1$s</string>
+    <string name="fire_because_dry">%1$d days since it last rained properly</string>
+    <string name="fire_because_wet">The ground is wet, which settles it</string>
+    <string name="fire_burning_forbidden">Burn nothing today.</string>
+    <string name="fire_season">Fire season, 1 May to 31 October: burning off vegetation needs a permit from the fire service.</string>
+    <string name="fire_out_of_season">Outside the fire season.</string>
+    <string name="fire_official">This is an indication worked out on the phone from the forecast, calibrated against this village\'s own last three summers. What the burning bans actually follow is the daily map from Civil Protection.</string>
+    <string name="fire_official_link">Open the official map</string>
+    <string name="fire_call">Fire service — 199</string>
+
+    <!-- Useful numbers -->
+    <string name="contacts_title">Useful numbers</string>
+    <string name="contacts_subtitle">Compiled into the app — these show even with no signal</string>
+    <string name="contacts_emergency">Emergency</string>
+    <string name="contacts_utility">Faults</string>
+    <string name="contacts_health">Health</string>
+    <string name="contacts_local">The village\'s own</string>
+    <string name="contacts_local_empty">Nothing here yet. The surgery at Vilia, the municipality, whoever holds the key to the water tank — an administrator can add them, and they are not guessed at.</string>
+    <string name="contacts_add">Add a number</string>
+    <string name="contacts_edit">Edit the number</string>
+    <string name="contacts_call">Call</string>
+    <string name="contacts_call_of">Call %1$s</string>
+    <string name="contacts_copy">Copy</string>
+    <string name="contacts_copied">Copied</string>
+    <string name="contacts_name">Whose number</string>
+    <string name="contacts_number">Number</string>
+    <string name="contacts_note">Note — hours, or who it reaches</string>
+    <string name="contacts_kind">Section</string>
+    <string name="contacts_invalid">A name and a real telephone number, please.</string>
+    <string name="contacts_delete_confirm">Remove this number?</string>
+
+    <string name="contact_112">Emergency, any kind</string>
+    <string name="contact_112_note">One number for fire, ambulance and police. Free from any phone, even with no credit.</string>
+    <string name="contact_fire">Fire service</string>
+    <string name="contact_fire_note">Forest and house fires</string>
+    <string name="contact_ambulance">Ambulance</string>
+    <string name="contact_police">Police</string>
+    <string name="contact_power">Power cut or fault</string>
+    <string name="contact_power_note">Distribution network, around the clock</string>
+    <string name="contact_power_free">Power faults, free of charge</string>
+    <string name="contact_power_free_note">The same desk, at no cost</string>
+
+    <!-- Village calendar -->
+    <string name="village_tab_announcements">Announcements</string>
+    <string name="village_tab_calendar">Calendar</string>
+    <string name="nav_village">Village</string>
+    <string name="calendar_empty_title">Nothing on the calendar</string>
+    <string name="calendar_empty_body">Liturgies, the panigyri, a Saturday clearing the track, the day the bins are emptied. Anyone in the village can add one.</string>
+    <string name="calendar_add">Add to the calendar</string>
+    <string name="calendar_edit">Edit</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_tomorrow">Tomorrow</string>
+    <string name="calendar_all_day">All day</string>
+    <string name="calendar_attend">I\'ll be there</string>
+    <string name="calendar_attending">You\'re coming</string>
+    <string name="calendar_nobody">Nobody has said yet</string>
+    <plurals name="calendar_attendees">
+        <item quantity="one">%1$d coming</item>
+        <item quantity="other">%1$d coming</item>
+    </plurals>
+    <string name="calendar_delete_confirm">Take this off the calendar?</string>
+
+    <string name="event_kind_church">Church</string>
+    <string name="event_kind_festival">Festival</string>
+    <string name="event_kind_work_day">Work day</string>
+    <string name="event_kind_meeting">Meeting</string>
+    <string name="event_kind_service">Service</string>
+    <string name="event_kind_other">Other</string>
+
+    <string name="event_title_label">What is it</string>
+    <string name="event_description_label">Anything else worth knowing</string>
+    <string name="event_place_label">Where</string>
+    <string name="event_date">Date</string>
+    <string name="event_time">Time</string>
+    <string name="event_new">New event</string>
+    <string name="event_invalid">It needs a name and a date.</string>
 </resources>

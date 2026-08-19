@@ -58,6 +58,45 @@ only administrators can post to.
 accounts, correct names, trigger a password reset, and delete an account along
 with everything it wrote — and can moderate any report or comment.
 
+**The weather, and what it means up here.** The map carries a strip with the
+temperature, the wind in Beaufort with an arrow pointing where it is going, and
+the date; tapping it opens the humidity, the rain, sunrise and sunset, how many
+days it has been since it properly rained, and four days ahead. The map itself
+can animate what is happening — the light warming and cooling with the cloud,
+rain leaning the way the wind pushes it, streaks running with the wind above 3
+Beaufort, snow lying when there is any — behind a switch that is off until
+somebody turns it on. The forecast comes from Open-Meteo, which needs no key and
+no account, and the last reading is kept on disk so the strip is populated
+before the radio has woken up.
+
+**Fire risk, which is the part that is not decoration.** The village is in pine
+and fir on the skirts of Kithairon, so between May and October the question
+"may I burn these cuttings" has consequences. The app answers it with a level
+computed on the phone from the day's *worst* hour rather than the current one,
+the reasons listed beside it — the wind is up, it has not rained in three weeks
+— and, when the answer is no, it says so. The measure is the Ångström index,
+but with its published thresholds replaced by percentiles of this village's own
+fire-season days: checked against three years of reanalysis for this exact
+point, the Chandler index called 53% of fire-season days "low" and Ångström's
+own bands called 56% of them "extreme". `tools/fire_risk_calibration.py`
+reproduces those numbers and the distribution the finished rule produces. It is labelled an indication everywhere it appears,
+and every screen that shows it links to the daily map from Civil Protection,
+which is what the burning bans actually follow.
+
+**Useful numbers.** 112, 199, 166, 100 and the electricity fault lines are
+compiled into the app and render with no account, no network and no rule
+evaluation between a resident and the number. The local half — the surgery at
+Vilia, the municipality, whoever holds the key to the water tank — is filled in
+by an administrator, because a plausible-looking telephone number that nobody
+checked is worse than an empty section.
+
+**The calendar.** Liturgies, the πανηγύρι, the Saturday somebody has decided to
+clear the forest track, the day the bins are emptied. Anyone in the village may
+add one — unlike announcements, which speak *for* the village and stay
+administrator-only. Work days, meetings and festivals carry "I'll be there" with
+the names against it, because a work day with six names on it is an arrangement
+and the same line with none is a wish.
+
 **Settings.** Greek / English / follow the system. Light / dark / follow the
 system. Per-category notification switches that the server actually honours
 before sending.
@@ -163,16 +202,27 @@ git-ignored.
 ## Tests
 
 ```bash
-./gradlew testDebugUnitTest            # 37 tests: geohashing, clustering, validation, permissions
+./gradlew testDebugUnitTest            # 121 tests: geohashing, clustering, validation, permissions, weather
 ./gradlew assembleRelease              # also runs R8 and lint's fatal checks
 ./gradlew assemblePreview              # shrunk but debug-signed, for sending to a tester
 cd firebase/functions && npx tsc --noEmit   # Cloud Functions typecheck
-npm --prefix firebase run test:rules    # 52 security-rule assertions, in the emulator
+./gradlew recordPaparazziDebug         # re-record the UI goldens after a deliberate change
+./gradlew verifyPaparazziDebug         # compare the rendered UI against them
+npm --prefix firebase run test:rules   # 147 security-rule assertions, in the emulator
 ```
 
 The unit tests cover the parts where a subtle mistake would be invisible in the
-UI: geohash encoding, the clustering rules, phone and password validation, and
-who is allowed to edit what.
+UI: geohash encoding, the clustering rules, phone and password validation, who
+is allowed to edit what, and the weather — the forecast parser is checked
+against a real captured response from this village's own coordinates, and the
+fire index against values worked out by hand from the published formula.
+
+Paparazzi renders whole screens to PNG on the JVM and compares them against the
+images in `app/src/test/snapshots/images/`. It is the only way anything here is
+looked at before it ships, and it has caught more than it has any right to: a
+report count squeezed to one letter per line by a weather strip beside it, wind
+drawn at an alpha that made it invisible, and a splash-screen golden that could
+never match because it rendered the build's own commit SHA.
 
 `firebase/rules.test.mjs` runs the security rules against the Firestore
 emulator using the exact payloads the repositories write. Since the rules are
