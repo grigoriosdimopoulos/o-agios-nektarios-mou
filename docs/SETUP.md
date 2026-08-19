@@ -249,8 +249,8 @@ So the names come from the people who live on them. Every feature in the asset
 carries its OpenStreetMap `wayId`; tapping a road on the map opens a sheet where
 a resident writes what the street is called, and neighbours confirm it. Those
 names live at `streetNames/{wayId}` in Firestore — see `StreetNameRepository`
-and the `streetNames` block in `firestore.rules`, which is the only collection
-in this app an ordinary resident may write to that is not their own, and is
+and the `streetNames` block in `firestore.rules`, one of the few places in this
+app an ordinary resident writes to a document that is not their own, and
 policed accordingly. Names the village confirms are also the ones worth
 contributing back to OpenStreetMap, which fixes this everywhere at once; anyone
 can, from a phone, with StreetComplete or Vespucci.

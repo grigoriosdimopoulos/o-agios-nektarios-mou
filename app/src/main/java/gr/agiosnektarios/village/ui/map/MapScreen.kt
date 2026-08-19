@@ -113,7 +113,8 @@ fun MapScreen(
     onOpenIssue: (String) -> Unit,
     onCreateIssueAt: (Double, Double) -> Unit,
     onOpenContacts: () -> Unit,
-    onRaiseAlert: () -> Unit,
+    /** Null opens on the question; a kind name opens on that kind's screen. */
+    onRaiseAlert: (String?) -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
     quickReport: QuickReportViewModel = hiltViewModel(),
     weatherViewModel: WeatherViewModel = hiltViewModel(),
@@ -221,6 +222,15 @@ fun MapScreen(
                         it.alertKind.severity == gr.agiosnektarios.village.core.model
                             .AlertSeverity.OUTAGE
                     }
+                    if (outages.isNotEmpty()) {
+                        item(key = "alert-heading") {
+                            Text(
+                                text = stringResource(R.string.alert_active),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     items(outages, key = { "alert-${it.id}" }) { alert ->
                         OutageCard(
                             alert = alert,
@@ -253,8 +263,8 @@ fun MapScreen(
                 .fillMaxWidth(0.72f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            UrgentButton(onClick = onRaiseAlert)
-            EmergencyBanner(alerts = alerts.alerts, onOpen = { onRaiseAlert() })
+            UrgentButton(onClick = { onRaiseAlert(null) })
+            EmergencyBanner(alerts = alerts.alerts, onOpen = { onRaiseAlert(it.kind) })
         }
 
         MapOverlay(

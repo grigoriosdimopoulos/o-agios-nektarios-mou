@@ -251,7 +251,7 @@ fun VillageNavHost(
                     navController.navigate(Routes.newIssueAt(lat, lng))
                 },
                 onOpenContacts = { navController.navigate(Routes.CONTACTS) },
-                onRaiseAlert = { navController.navigate(Routes.ALERT) },
+                onRaiseAlert = { kind -> navController.navigate(Routes.alertOf(kind)) },
             )
         }
         screen(Routes.ISSUES, motion = ScreenMotion.TAB) {
@@ -284,8 +284,13 @@ fun VillageNavHost(
         screen(Routes.CONTACTS) {
             ContactsScreen(onBack = navController::popBackStack)
         }
-        screen(Routes.ALERT) {
-            AlertScreen(onDone = navController::popBackStack)
+        screen(
+            route = Routes.ALERT,
+            arguments = listOf(
+                navArgument("kind") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            AlertScreen(onDone = navController::popBackStack, showSnackbar = showSnackbar)
         }
         screen(Routes.HOME_PIN) {
             HomePinScreen(onDone = navController::popBackStack)

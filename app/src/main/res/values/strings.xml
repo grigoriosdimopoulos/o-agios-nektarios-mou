@@ -487,8 +487,6 @@
     <string name="alert_resolve_confirm">Mark this as over?</string>
     <string name="alert_raised_by">%1$s · %2$s</string>
     <string name="alert_sms_body">%1$s at Agios Nektarios. %2$s</string>
-    <string name="alert_none">Nothing wrong right now.</string>
-    <string name="alert_open">Open</string>
     <string name="alert_invalid">Pick what is happening first.</string>
     <string name="alert_no_numbers">No resident has a telephone number on their profile yet, so there is nobody to text.</string>
     <string name="alert_reach_no_sms">Anyone with the app open sees this at once. A phone that is closed sees it within about a quarter of an hour, and a phone in a drawer sees nothing.</string>

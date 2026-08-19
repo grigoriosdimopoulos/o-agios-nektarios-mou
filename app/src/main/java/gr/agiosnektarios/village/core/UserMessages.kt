@@ -35,6 +35,9 @@ class UserMessages @Inject constructor(
         return context.getString(resourceFor(error))
     }
 
+    /** A fixed message, so a screen never has to reach for a Context itself. */
+    fun string(resource: Int): String = context.getString(resource)
+
     private fun resourceFor(error: Throwable): Int = when {
         error is FirebaseFirestoreException -> when (error.code) {
             // Almost always a rules deployment that has not happened yet, which

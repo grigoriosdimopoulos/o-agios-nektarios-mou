@@ -47,8 +47,18 @@ object Routes {
     const val ANNOUNCEMENT_COMPOSE = "announcement-compose?announcementId={announcementId}"
     const val EVENT_COMPOSE = "event-compose?eventId={eventId}"
     const val CONTACTS = "contacts"
-    const val ALERT = "alert"
+    const val ALERT = "alert?kind={kind}"
     const val HOME_PIN = "profile/home"
+
+    /**
+     * The alarm screen, optionally opened on a kind already chosen.
+     *
+     * Tapping the fire banner should put the button that calls 199 in
+     * front of you, not the question "what is happening?" — the person
+     * who tapped it already knows what is happening; a neighbour just
+     * told them.
+     */
+    fun alertOf(kind: String?) = if (kind == null) "alert" else "alert?kind=$kind"
 
     fun issueDetail(issueId: String) = "issue/$issueId"
 

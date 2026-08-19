@@ -27,6 +27,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -147,6 +152,7 @@ fun OutageCard(
 ) {
     val mine = userId.isNotBlank() && userId in alert.confirmedBy
     val haptics = rememberHaptics()
+    var confirmingOver by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -214,11 +220,32 @@ fun OutageCard(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable(onClick = onResolve)
+                        .clickable { confirmingOver = true }
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 )
             }
         }
+    }
+
+    // Asked, not assumed. "It is over" sits one tap from "I have it too", and
+    // getting it wrong takes down the notice the rest of the village is
+    // relying on to know the water is still off.
+    if (confirmingOver) {
+        AlertDialog(
+            onDismissRequest = { confirmingOver = false },
+            title = { Text(alert.alertKind.label()) },
+            text = { Text(stringResource(R.string.alert_resolve_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { confirmingOver = false; onResolve() }) {
+                    Text(stringResource(R.string.alert_resolve))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmingOver = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
     }
 }
 

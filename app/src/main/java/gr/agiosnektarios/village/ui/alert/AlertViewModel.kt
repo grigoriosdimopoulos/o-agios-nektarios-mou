@@ -1,8 +1,10 @@
 package gr.agiosnektarios.village.ui.alert
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.model.AlertKind
@@ -62,7 +64,17 @@ class AlertViewModel @Inject constructor(
     private val location: LocationProvider,
     private val placeNamer: PlaceNamer,
     private val messages: UserMessages,
+    savedState: SavedStateHandle,
 ) : ViewModel() {
+
+    init {
+        // Arrived from a banner rather than from the button: the kind is
+        // already known, so skip the question and land on the screen with the
+        // telephone number on it.
+        AlertKind.entries
+            .firstOrNull { it.name == savedState.get<String>("kind") }
+            ?.let(::pick)
+    }
 
     val active: StateFlow<ActiveAlertsState> = combine(
         alerts.observeActive(),
@@ -149,7 +161,17 @@ class AlertViewModel @Inject constructor(
         val kind = current.kind
         val author = profile
         if (kind == null || author == null) {
-            _raise.update { it.copy(errorMessage = null) }
+            // Never silent. This used to clear the error and return, so on the
+            // one screen in the app that people reach while something is on
+            // fire, tapping "tell the village" before the profile document had
+            // loaded did nothing at all — no spinner, no message, no alert.
+            _raise.update {
+                it.copy(
+                    errorMessage = messages.string(
+                        if (kind == null) R.string.alert_invalid else R.string.error_signed_out,
+                    ),
+                )
+            }
             return
         }
         _raise.update { it.copy(raising = true, errorMessage = null) }
@@ -182,6 +204,12 @@ class AlertViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The card asks before it does this.
+     *
+     * Marking a village-wide outage over is one tap next to "I have it too",
+     * and getting it wrong takes down the notice everybody else is relying on.
+     */
     fun resolve(alert: VillageAlert) {
         val me = profile ?: return
         viewModelScope.launch { alerts.resolve(alert.id, me.id) }

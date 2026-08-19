@@ -87,6 +87,7 @@ import gr.agiosnektarios.village.ui.theme.raisedOutline
 @Composable
 fun AlertScreen(
     onDone: () -> Unit,
+    showSnackbar: (String) -> Unit,
     viewModel: AlertViewModel = hiltViewModel(),
 ) {
     val state by viewModel.raise.collectAsStateWithLifecycle()
@@ -94,7 +95,18 @@ fun AlertScreen(
     val context = LocalContext.current
     val haptics = rememberHaptics()
 
-    LaunchedEffect(state.raisedId) { if (state.raisedId != null) onDone() }
+    // Closes at once rather than holding a confirmation screen: somebody who
+    // has just raised a fire alarm has somewhere else to be, and the map they
+    // land on shows the banner they created. The snackbar is there because
+    // "the screen went away" is not the same message as "it went out", and on
+    // this screen of all screens the difference matters.
+    val raised = stringResource(R.string.alert_raised)
+    LaunchedEffect(state.raisedId) {
+        if (state.raisedId != null) {
+            onDone()
+            showSnackbar(raised)
+        }
+    }
 
     val dial: (String) -> Unit = { number ->
         runCatching {
