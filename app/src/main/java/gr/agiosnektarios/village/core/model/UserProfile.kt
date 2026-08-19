@@ -20,23 +20,6 @@ data class UserProfile(
     val address: String = "",
     val blockId: String = "",
     /**
-     * Where this resident's house is, if they have pinned it.
-     *
-     * Forty-six houses and not one street address between them. When somebody
-     * calls an ambulance the hard part is not the phone number, it is telling
-     * the driver where to come — "the third turning after the church, the one
-     * with the blue gate" is what people actually say, and it is why crews get
-     * lost on this hill. A pinned house turns that into a coordinate the caller
-     * can read out or send.
-     *
-     * Voluntary, and visible only to signed-in residents of a village where
-     * everyone already knows where everyone lives.
-     */
-    val homeLat: Double? = null,
-    val homeLng: Double? = null,
-    /** The pin described in the village's own words, at the time it was set. */
-    val homePlace: String = "",
-    /**
      * The resident's own picture, as JPEG bytes.
      *
      * Held here and nowhere else. Earlier versions copied an avatar URL onto

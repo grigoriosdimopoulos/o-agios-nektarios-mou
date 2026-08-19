@@ -467,6 +467,7 @@
     <string name="alert_where_home">My house</string>
     <string name="alert_where_locating">Finding you…</string>
     <string name="alert_where_unknown">No location yet</string>
+    <string name="alert_where_no_home">You have not pinned your house on the map yet — do it from your profile.</string>
     <string name="alert_raise">Tell the village</string>
     <string name="alert_raised">The village has been told</string>
     <string name="alert_sms">Text every resident</string>
@@ -490,6 +491,7 @@
     <string name="alert_open">Open</string>
     <string name="alert_invalid">Pick what is happening first.</string>
     <string name="alert_no_numbers">No resident has a telephone number on their profile yet, so there is nobody to text.</string>
+    <string name="alert_reach_no_sms">Anyone with the app open sees this at once. A phone that is closed sees it within about a quarter of an hour, and a phone in a drawer sees nothing.</string>
     <string name="issues_filters">Filters</string>
     <string name="issues_filters_active">Filters · %1$d</string>
     <string name="home_pin_title">My house on the map</string>
@@ -497,4 +499,27 @@
     <string name="home_pin_set">Pinned</string>
     <string name="home_pin_clear">Remove</string>
     <string name="home_pin_open">Pin my house</string>
+    <!-- Handing a report to the municipality -->
+    <string name="council_send">Send to the municipality</string>
+    <string name="council_send_email">By email</string>
+    <string name="council_send_other">Some other way</string>
+    <string name="council_subject">Agios Nektarios: %1$s</string>
+    <string name="council_intro">A report from the residents of Agios Nektarios Attikis (Vilia, Mandra-Eidyllia).</string>
+    <string name="council_what">Problem: %1$s</string>
+    <string name="council_where">Location: %1$s</string>
+    <string name="council_coordinates">Coordinates: %1$s, %2$s</string>
+    <string name="council_reported">First reported: %1$s</string>
+    <string name="council_supporters">Residents who confirmed it: %1$d</string>
+    <string name="council_sign">Sent from the village\'s own reporting app.</string>
+    <string name="council_address">Municipality email address</string>
+    <string name="council_mark">Record that it was sent</string>
+    <string name="council_reference">Protocol number, if you have one</string>
+    <string name="council_sent">Sent to the municipality</string>
+    <plurals name="council_waiting">
+        <item quantity="one">with the municipality for %1$d day</item>
+        <item quantity="other">with the municipality for %1$d days</item>
+    </plurals>
+    <string name="council_clear">It is no longer with them</string>
+    <string name="reminder_title">Tomorrow in the village</string>
+    <string name="reminder_line">%1$s — %2$s</string>
 </resources>

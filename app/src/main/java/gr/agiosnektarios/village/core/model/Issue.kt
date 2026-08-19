@@ -41,6 +41,18 @@ data class Issue(
      */
     val placeLabel: String = "",
     /**
+     * When this was sent to the municipality, and under what number.
+     *
+     * The app could record a pothole, gather twelve neighbours behind it and
+     * then do nothing with it, because most of what gets reported here is the
+     * δήμος's job and there was no way for a report to leave. Twelve people
+     * agreeing is worth nothing until somebody forwards it; these two fields
+     * are how the village records that somebody did, so the next person does
+     * not send it again and everyone can see how long it has been sitting.
+     */
+    val reportedToCouncilAt: Date? = null,
+    val councilReference: String = "",
+    /**
      * How many photos live in `issues/{id}/photos`.
      *
      * Denormalised so a card can say "3 photos" without reading them: the

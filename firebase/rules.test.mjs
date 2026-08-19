@@ -736,6 +736,37 @@ await check("calendar: an event with no attendee field can still be joined",
   assertSucceeds(updateDoc(doc(maria, "events/legacy"),
     { "attendees.maria": "Maria Test", updatedAt: serverTimestamp() })));
 
+// ---- handing a report to the municipality
+//
+// Forwarding one is somebody's own e-mail and no business of these rules.
+// Recording that it is *with* the municipality is read by the whole village and
+// is why nobody sends it twice, so it is a moderator's act.
+await env.withSecurityRulesDisabled(async (ctx) => {
+  await ctx.firestore().doc("issues/council").set({ ...issue, authorId: "maria" });
+});
+await check("council: a resident cannot claim it was sent",
+  assertFails(updateDoc(doc(giorgos, "issues/council"),
+    { reportedToCouncilAt: serverTimestamp(), councilReference: "1234", updatedAt: serverTimestamp() })));
+await check("council: not even the author",
+  assertFails(updateDoc(doc(maria, "issues/council"),
+    { reportedToCouncilAt: serverTimestamp(), councilReference: "1234", updatedAt: serverTimestamp() })));
+await check("council: a moderator can",
+  assertSucceeds(updateDoc(doc(boss, "issues/council"),
+    { reportedToCouncilAt: serverTimestamp(), councilReference: "1234", updatedAt: serverTimestamp() })));
+// A moderator may edit a report anyway, so pairing the two in one write is not
+// an escalation for them. What must not happen is the record moving through the
+// ordinary content-edit branch, which is a denylist and therefore silently
+// admitted every field nobody thought to name.
+await check("council: an ordinary edit cannot carry the record with it",
+  assertFails(updateDoc(doc(maria, "issues/council"),
+    { description: "Νέα περιγραφή", councilReference: "9999", updatedAt: serverTimestamp() })));
+await check("council: the reference has a ceiling",
+  assertFails(updateDoc(doc(boss, "issues/council"),
+    { reportedToCouncilAt: serverTimestamp(), councilReference: "x".repeat(400), updatedAt: serverTimestamp() })));
+await check("council: a moderator can take it back",
+  assertSucceeds(updateDoc(doc(boss, "issues/council"),
+    { reportedToCouncilAt: null, councilReference: "", updatedAt: serverTimestamp() })));
+
 // ---- alerts: what is wrong right now
 //
 // Any resident may raise one; that is the feature, not a gap. What must hold is
@@ -846,6 +877,45 @@ await check("contacts: a resident cannot delete one",
   assertFails(deleteDoc(doc(maria, "contacts/surgery"))));
 await check("contacts: an administrator can",
   assertSucceeds(deleteDoc(doc(boss, "contacts/surgery"))));
+
+// ---- the house pin, which is the one thing a neighbour may not read
+
+const homeSeed = { lat: 38.1646, lng: 23.2902, place: "Οδός Ελατιάς", updatedAt: serverTimestamp() };
+
+await check("home: a resident pins their own house",
+  assertSucceeds(setDoc(doc(maria, "users/maria/private/home"), homeSeed)));
+await check("home: and reads it back",
+  assertSucceeds(getDoc(doc(maria, "users/maria/private/home"))));
+await check("home: a neighbour cannot read it",
+  assertFails(getDoc(doc(giorgos, "users/maria/private/home"))));
+await check("home: an administrator cannot read it either",
+  assertFails(getDoc(doc(boss, "users/maria/private/home"))));
+await check("home: a stranger cannot read it",
+  assertFails(getDoc(doc(anon, "users/maria/private/home"))));
+await check("home: a neighbour cannot pin a house for you",
+  assertFails(setDoc(doc(giorgos, "users/maria/private/home"), homeSeed)));
+await check("home: nor delete yours",
+  assertFails(deleteDoc(doc(giorgos, "users/maria/private/home"))));
+await check("home: coordinates must be coordinates",
+  assertFails(setDoc(doc(maria, "users/maria/private/home"), { ...homeSeed, lat: "38.1" })));
+await check("home: and must be on the planet",
+  assertFails(setDoc(doc(maria, "users/maria/private/home"), { ...homeSeed, lat: 91 })));
+await check("home: the place name is capped",
+  assertFails(setDoc(doc(maria, "users/maria/private/home"), { ...homeSeed, place: "x".repeat(81) })));
+await check("home: no arbitrary extra fields",
+  assertFails(setDoc(doc(maria, "users/maria/private/home"), { ...homeSeed, note: "anything" })));
+await check("home: nothing else may be put in the private collection",
+  assertFails(setDoc(doc(maria, "users/maria/private/whatever"), { lat: 1, lng: 1 })));
+await check("home: clearing it removes the document",
+  assertSucceeds(deleteDoc(doc(maria, "users/maria/private/home"))));
+await check("home: the profile is not a place to keep coordinates",
+  assertFails(updateDoc(doc(maria, "users/maria"), { homeLat: 38.1, homeLng: 23.2 })));
+await check("home: nor is it on the way in",
+  assertFails(setDoc(doc(giorgos, "users/giorgos"), { ...profileSeed("giorgos"), homeLat: 38.1 })));
+await check("profile: an invented field is refused outright",
+  assertFails(updateDoc(doc(maria, "users/maria"), { favouriteColour: "green" })));
+await check("profile: the fields that exist still work",
+  assertSucceeds(updateDoc(doc(maria, "users/maria"), { phone: "6970000000" })));
 
 await env.cleanup();
 

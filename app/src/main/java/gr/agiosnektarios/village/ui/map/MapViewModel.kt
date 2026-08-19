@@ -12,6 +12,7 @@ import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
 import gr.agiosnektarios.village.core.model.StreetName
+import gr.agiosnektarios.village.core.model.HomePin
 import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.data.issue.IssueRepository
 import gr.agiosnektarios.village.data.session.SessionRepository
@@ -126,8 +127,14 @@ class MapViewModel @Inject constructor(
      * refuse anything else — and that happens in a click handler, which needs
      * the value now rather than a flow to subscribe to.
      */
-    private val viewer: StateFlow<UserProfile?> = sessionRepository.profile
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    private data class Viewer(val profile: UserProfile? = null, val home: HomePin? = null)
+
+    // Profile and house pin travel together because they arrive from two
+    // documents but describe one person; see [HomePin] for why they are not
+    // one document.
+    private val viewer: StateFlow<Viewer> =
+        combine(sessionRepository.profile, sessionRepository.home, ::Viewer)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Viewer())
 
     /**
      * Everything that is not a report, folded into one flow.
@@ -140,7 +147,7 @@ class MapViewModel @Inject constructor(
         val interaction: MapInteraction,
         val settings: AppSettings,
         val streets: List<StreetName>,
-        val viewer: UserProfile?,
+        val viewer: Viewer,
         val error: String?,
     )
 
@@ -172,11 +179,7 @@ class MapViewModel @Inject constructor(
             placingPin = interactionState.placingPin,
             pendingPin = interactionState.pendingPin,
             myPosition = interactionState.myPosition,
-            homePosition = context.viewer?.let { profile ->
-                val lat = profile.homeLat
-                val lng = profile.homeLng
-                if (lat != null && lng != null) GeoPoint(lat, lng) else null
-            },
+            homePosition = context.viewer.home?.position,
             // Re-resolved from the live list so an open sheet updates when a
             // report inside it changes, instead of showing a frozen snapshot.
             selectedCluster = interactionState.selectedClusterId?.let { id ->
@@ -195,8 +198,8 @@ class MapViewModel @Inject constructor(
                 SelectedStreet(
                     wayId = wayId,
                     existing = existing,
-                    canEdit = existing == null || existing.canEdit(context.viewer),
-                    confirmedByMe = existing?.isConfirmedBy(context.viewer?.id) == true,
+                    canEdit = existing == null || existing.canEdit(context.viewer.profile),
+                    confirmedByMe = existing?.isConfirmedBy(context.viewer.profile?.id) == true,
                 )
             },
             errorMessage = context.error,
@@ -299,7 +302,7 @@ class MapViewModel @Inject constructor(
     fun dismissStreetSheet() = interaction.update { it.copy(selectedWayId = null) }
 
     fun nameStreet(wayId: String, name: String) {
-        val author = viewer.value ?: return
+        val author = viewer.value.profile ?: return
         viewModelScope.launch {
             streetNameRepository.propose(wayId, name, author)
                 .onSuccess { dismissStreetSheet() }
@@ -308,7 +311,7 @@ class MapViewModel @Inject constructor(
     }
 
     fun toggleStreetConfirmation(wayId: String, confirmed: Boolean) {
-        val me = viewer.value ?: return
+        val me = viewer.value.profile ?: return
         viewModelScope.launch {
             streetNameRepository.setConfirmed(wayId, me.id, confirmed)
                 .onFailure { error -> showError(error) }

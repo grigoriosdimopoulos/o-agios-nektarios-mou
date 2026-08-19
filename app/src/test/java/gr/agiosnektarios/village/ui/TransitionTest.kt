@@ -24,6 +24,15 @@ import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.VillageTheme
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_755_000_000_000L
 
 /**
  * A single frame from the middle of a navigation push.
@@ -48,38 +57,40 @@ class TransitionTest {
 
     private fun push(dark: Boolean = false, incoming: @Composable () -> Unit) {
         paparazzi.snapshot {
-            VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // Outgoing: slides a third out, dims under the new screen.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .slideX(-progress / Motion.PARALLAX_FRACTION)
-                                .drawWithContent {
-                                    drawContent()
-                                    // A scrim, not alpha: alpha on an opaque
-                                    // screen blends it toward the page colour,
-                                    // which in the light theme means it gets
-                                    // *lighter* the further back it goes.
-                                    drawRect(
-                                        Color.Black.copy(
-                                            alpha = Motion.UNDERLAY_DIM * progress,
-                                        ),
-                                    )
-                                },
-                        ) { UnderlyingScreen() }
-                        // Incoming. Opaque throughout: nothing fades a moving
-                        // full-screen surface, because a translucent one is a
-                        // window onto the screen it is covering.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .slideX(1f - progress),
-                        ) { incoming() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Outgoing: slides a third out, dims under the new screen.
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .slideX(-progress / Motion.PARALLAX_FRACTION)
+                                    .drawWithContent {
+                                        drawContent()
+                                        // A scrim, not alpha: alpha on an opaque
+                                        // screen blends it toward the page colour,
+                                        // which in the light theme means it gets
+                                        // *lighter* the further back it goes.
+                                        drawRect(
+                                            Color.Black.copy(
+                                                alpha = Motion.UNDERLAY_DIM * progress,
+                                            ),
+                                        )
+                                    },
+                            ) { UnderlyingScreen() }
+                            // Incoming. Opaque throughout: nothing fades a moving
+                            // full-screen surface, because a translucent one is a
+                            // window onto the screen it is covering.
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .slideX(1f - progress),
+                            ) { incoming() }
+                        }
                     }
                 }
             }

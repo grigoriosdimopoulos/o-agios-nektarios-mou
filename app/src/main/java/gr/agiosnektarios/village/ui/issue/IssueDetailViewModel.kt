@@ -42,6 +42,8 @@ data class IssueDetailUiState(
     val commentDraft: String = "",
     val sendingComment: Boolean = false,
     val errorMessage: String? = null,
+    /** Remembered after the first forward, so nobody types it twice. */
+    val councilEmail: String = "",
 ) {
     val canEdit: Boolean get() = issue?.canEdit(viewer) == true
     val canChangeStatus: Boolean get() = issue?.canChangeStatus(viewer) == true
@@ -57,6 +59,7 @@ class IssueDetailViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val notificationRepository: NotificationRepository,
     private val messages: UserMessages,
+    private val settingsRepository: gr.agiosnektarios.village.data.settings.SettingsRepository,
 ) : ViewModel() {
 
     private val issueId: String = savedStateHandle.get<String>("issueId").orEmpty()
@@ -85,8 +88,10 @@ class IssueDetailViewModel @Inject constructor(
         commentsAndPhotos,
         vote,
         sessionRepository.profile,
-        local,
-    ) { issue, (comments, photos), myVote, viewer, localState ->
+        combine(local, settingsRepository.settings) { localState, settings ->
+            localState to settings.councilEmail
+        },
+    ) { issue, (comments, photos), myVote, viewer, (localState, councilEmail) ->
         IssueDetailUiState(
             issue = issue,
             comments = comments,
@@ -102,6 +107,7 @@ class IssueDetailViewModel @Inject constructor(
             commentDraft = localState.commentDraft,
             sendingComment = localState.sendingComment,
             errorMessage = localState.errorMessage,
+            councilEmail = councilEmail,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), IssueDetailUiState())
 
@@ -271,6 +277,26 @@ class IssueDetailViewModel @Inject constructor(
                     local.update { it.copy(errorMessage = messages.of(error)) }
                 }
         }
+    }
+
+    /**
+     * Records that the report was handed to the municipality.
+     *
+     * Only a moderator may, and the rules say so too: this asserts something
+     * that happened outside the app, and an assertion anybody could make is one
+     * nobody can rely on.
+     */
+    fun setCouncilReport(reference: String, sent: Boolean) {
+        viewModelScope.launch {
+            val result = issueRepository.setCouncilReport(issueId, reference, sent)
+            result.exceptionOrNull()?.let { error ->
+                local.update { it.copy(errorMessage = messages.of(error)) }
+            }
+        }
+    }
+
+    fun rememberCouncilEmail(address: String) {
+        viewModelScope.launch { settingsRepository.setCouncilEmail(address) }
     }
 
     fun consumeError() = local.update { it.copy(errorMessage = null) }

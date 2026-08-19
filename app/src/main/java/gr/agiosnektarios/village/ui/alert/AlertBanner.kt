@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,14 +75,21 @@ fun EmergencyBanner(
             .background(MaterialTheme.colorScheme.error)
             .clickable { onOpen(emergency) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
             imageVector = emergency.alertKind.icon(),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onError,
-            modifier = Modifier.size(24.dp).alpha(pulse),
+            // The one icon in the app that grows with the text. Everywhere
+            // else a fixed 24dp beside larger type is only slightly odd; here
+            // the flame is how someone identifies the banner before reading a
+            // word of it, and at twice the text size a fixed icon shrinks to a
+            // speck next to the heading it belongs to.
+            modifier = Modifier
+                .size(24.dp * LocalDensity.current.fontScale.coerceIn(1f, 1.6f))
+                .alpha(pulse),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -90,16 +98,32 @@ fun EmergencyBanner(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onError,
             )
-            Text(
-                text = listOfNotNull(
-                    emergency.placeLabel.takeIf { it.isNotBlank() },
-                    emergency.note.takeIf { it.isNotBlank() },
-                ).joinToString(" · ").ifBlank { emergency.raisedByName },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onError,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // Place and note on separate lines rather than joined by a dot.
+            // Joined, a street name plus a neighbourhood filled both permitted
+            // lines at large text and the actual message — the thing that says
+            // what is burning and which way it is going — was cut off after
+            // three words.
+            val place = emergency.placeLabel.takeIf { it.isNotBlank() }
+            val note = emergency.note.takeIf { it.isNotBlank() }
+            if (place != null) {
+                Text(
+                    text = place,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onError,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (note != null || place == null) {
+                Text(
+                    text = note ?: emergency.raisedByName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onError,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -132,12 +156,15 @@ fun OutageCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Top, not centre. With a long name at large text the second line
+        // wraps to three, and centring floated the icon down beside the
+        // timestamp while the heading it belongs to sat alone at the top.
+        Row(verticalAlignment = Alignment.Top) {
             Icon(
                 imageVector = alert.alertKind.icon(),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.padding(top = 2.dp).size(20.dp),
             )
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {

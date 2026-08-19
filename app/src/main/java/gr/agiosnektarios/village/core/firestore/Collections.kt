@@ -17,6 +17,10 @@ object Collections {
     const val EVENTS = "events"
     const val CONTACTS = "contacts"
     const val ALERTS = "alerts"
+
+    /** Per-resident documents nobody else may read. See [Collections.HOME]. */
+    const val PRIVATE = "private"
+    const val HOME = "home"
 }
 
 /** FCM topics every signed-in device subscribes to. */

@@ -68,6 +68,10 @@ import gr.agiosnektarios.village.ui.components.VoteBar
 import gr.agiosnektarios.village.ui.components.relativeTime
 import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.theme.raisedContainer
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.ui.res.pluralStringResource
+import gr.agiosnektarios.village.ui.map.MiniMap
 import gr.agiosnektarios.village.ui.theme.Space
 import androidx.compose.foundation.border
 import gr.agiosnektarios.village.ui.components.SecondaryButton
@@ -84,6 +88,7 @@ fun IssueDetailScreen(
     onEdit: (String) -> Unit,
     onDeleted: () -> Unit,
     onOpenChatWith: (String) -> Unit,
+    onOpenMap: () -> Unit,
     showSnackbar: (String) -> Unit,
     viewModel: IssueDetailViewModel = hiltViewModel(),
 ) {
@@ -166,6 +171,10 @@ fun IssueDetailScreen(
                 onDeleteComment = viewModel::deleteComment,
                 contentPadding = padding,
                 onToggleAssignment = viewModel::toggleAssignment,
+                onOpenMap = onOpenMap,
+                councilEmail = state.councilEmail,
+                onRememberCouncilEmail = viewModel::rememberCouncilEmail,
+                onRecordCouncil = viewModel::setCouncilReport,
             )
         }
     }
@@ -221,7 +230,12 @@ internal fun IssueDetailContent(
     onDeleteComment: (String) -> Unit,
     contentPadding: PaddingValues,
     onToggleAssignment: () -> Unit = {},
+    onOpenMap: () -> Unit = {},
+    councilEmail: String = "",
+    onRememberCouncilEmail: (String) -> Unit = {},
+    onRecordCouncil: (String, Boolean) -> Unit = { _, _ -> },
 ) {
+    var showCouncil by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -247,6 +261,21 @@ internal fun IssueDetailContent(
                         )
                     }
                 }
+            }
+        }
+
+        // Where it is, before what was said about it.
+        if (issue.lat != 0.0 || issue.lng != 0.0) {
+            item {
+                MiniMap(
+                    issue = issue,
+                    onOpenMap = onOpenMap,
+                    modifier = Modifier.padding(
+                        start = Space.page,
+                        end = Space.page,
+                        top = Space.gutter,
+                    ),
+                )
             }
         }
 
@@ -300,6 +329,17 @@ internal fun IssueDetailContent(
                     issue = issue,
                     viewer = viewer,
                     onToggle = onToggleAssignment,
+                )
+
+                // Getting it in front of somebody whose job it is.
+                //
+                // Anybody may forward a report — it is their own email, over
+                // their own name. Recording that it *is* with the municipality
+                // is a moderator's act, because the whole village reads it and
+                // then stops sending it again.
+                CouncilRow(
+                    issue = issue,
+                    onSend = { showCouncil = true },
                 )
 
                 if (issue.status.isTerminal && issue.resolutionNote.isNotBlank()) {
@@ -361,6 +401,17 @@ internal fun IssueDetailContent(
                 )
             }
         }
+    }
+
+    if (showCouncil) {
+        CouncilSheet(
+            issue = issue,
+            savedEmail = councilEmail,
+            canRecord = viewer?.canModerate == true,
+            onRememberEmail = onRememberCouncilEmail,
+            onRecord = onRecordCouncil,
+            onDismiss = { showCouncil = false },
+        )
     }
 }
 
@@ -576,6 +627,33 @@ private fun StatusDialog(
  * nobody has, hand it back if you hold it, and if a neighbour holds it, say so
  * and offer nothing — there is nothing for a bystander to do here.
  */
+@Composable
+private fun CouncilRow(issue: Issue, onSend: () -> Unit) {
+    val sentDays = CouncilHandoff.daysSince(issue.reportedToCouncilAt)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SecondaryButton(
+            text = stringResource(R.string.council_send),
+            onClick = onSend,
+            icon = Icons.AutoMirrored.Filled.Send,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (sentDays != null) {
+            Text(
+                text = buildString {
+                    append(stringResource(R.string.council_sent))
+                    append(" · ")
+                    append(pluralStringResource(R.plurals.council_waiting, sentDays, sentDays))
+                    if (issue.councilReference.isNotBlank()) {
+                        append(" · ").append(issue.councilReference)
+                    }
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
 @Composable
 private fun TakeItOn(issue: Issue, viewer: UserProfile?, onToggle: () -> Unit) {
     // Putting your name against a job is the loudest thing a resident can do

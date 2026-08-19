@@ -32,6 +32,15 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_787_120_700_000L
 
 /**
  * The weather, rendered.
@@ -66,11 +75,13 @@ class WeatherTest {
     ) {
         config?.let(paparazzi::unsafeUpdateConfig)
         paparazzi.snapshot(name = name) {
-            VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) { content() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
             }
         }
     }
@@ -333,7 +344,7 @@ private val august = WeatherSnapshot(
     // prints "taken N minutes ago" against the wall clock, so a constant here
     // would make the golden go stale within the hour. The extra second keeps
     // the floor a whole minute away from flipping to four.
-    fetchedAt = System.currentTimeMillis() - (5 * 60_000L + 1_000L),
+    fetchedAt = GOLDEN_NOW - (5 * 60_000L + 1_000L),
     temperature = 25.7,
     feelsLike = 26.8,
     humidity = 55,

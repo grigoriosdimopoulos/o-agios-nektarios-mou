@@ -319,6 +319,12 @@ fun VillageNavHost(
                 onEdit = { navController.navigate(Routes.editIssue(it)) },
                 onDeleted = navController::popBackStack,
                 onOpenChatWith = { chatId -> navController.navigate(Routes.chatRoom(chatId)) },
+                onOpenMap = {
+                    navController.navigate(Routes.MAP) {
+                        popUpTo(Routes.MAP) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
                 showSnackbar = showSnackbar,
             )
         }

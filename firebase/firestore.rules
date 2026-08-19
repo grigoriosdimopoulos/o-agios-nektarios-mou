@@ -95,6 +95,7 @@ service cloud.firestore {
         && uid() == userId
         && request.resource.data.get('role', 'USER') == 'USER'
         && request.resource.data.get('disabled', false) == false
+        && profileFieldsOnly()
         && imageWithin('avatar', 30000);
 
       /**
@@ -113,11 +114,39 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/adminClaims/$(uid()));
       }
 
+      /**
+       * Everything a profile document is allowed to contain.
+       *
+       * An allowlist, not a denylist, and that is the whole point. This
+       * document is readable by every signed-in resident, so a field that
+       * nobody thought about is a field the whole village can read. The house
+       * pin used to live here and was exactly that: added for the ambulance,
+       * legible to all forty-six phones, and permitted by a rule that only
+       * knew how to say no to `role` and `disabled`. It now lives in
+       * `private/home`, and this list is what stops the next such field from
+       * being added without anyone noticing.
+       *
+       * The last four are not written by any current version. They are kept
+       * because documents created by earlier ones still carry them, and an
+       * update sends the whole document — drop a legacy key from this list and
+       * every resident who signed up before it was removed stops being able to
+       * change their telephone number.
+       */
+      function profileFieldsOnly() {
+        return request.resource.data.keys().hasOnly([
+          'firstName', 'lastName', 'nameLower', 'email', 'phone', 'address',
+          'blockId', 'avatar', 'role', 'disabled', 'fcmTokens',
+          'notificationPrefs', 'createdAt', 'updatedAt',
+          'photoUrl', 'issueCount', 'resolvedCount', 'upvotesReceived',
+        ]);
+      }
+
       // Residents edit their own contact details but never their own standing.
       // Administrators may edit anyone — including role and suspension — except
       // themselves, so the last admin cannot lock the village out by accident.
       allow update: if isSignedIn()
         && imageWithin('avatar', 30000)
+        && profileFieldsOnly()
         && (
           (uid() == userId && !changed(['role', 'disabled', 'createdAt']))
           || (isAdmin() && uid() != userId && !changed(['createdAt']))
@@ -156,6 +185,38 @@ service cloud.firestore {
           && request.resource.data.get('body', '').size() <= 500
           && request.resource.data.get('bodyArg', '').size() <= 500
           && request.resource.data.get('deepLink', '').size() <= 300;
+      }
+
+      // ------------------------------------------------------- the house pin
+
+      /**
+       * Documents about a resident that no other resident may read.
+       *
+       * At the moment there is exactly one, `private/home`, holding the
+       * coordinates of the house. It is here rather than on the profile for a
+       * single reason: the profile is readable by every signed-in resident,
+       * and the screen that asks for the pin says it is so an ambulance can be
+       * told where to come. Storing it on the profile would have made every
+       * phone in the village able to read every household's exact position,
+       * quietly, for a purpose nobody agreed to.
+       *
+       * Administrators are not exempt. There is nothing an administrator does
+       * in this app that needs a neighbour's coordinates, and a rule that says
+       * "only you" is worth more than one that says "only you, and whoever
+       * holds the passphrase".
+       */
+      match /private/{document} {
+        allow read, delete: if isSignedIn() && uid() == userId;
+
+        allow write: if isSignedIn()
+          && uid() == userId
+          && document == 'home'
+          && request.resource.data.lat is number
+          && request.resource.data.lng is number
+          && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+          && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
+          && request.resource.data.get('place', '').size() <= 80
+          && request.resource.data.keys().hasOnly(['lat', 'lng', 'place', 'updatedAt']);
       }
     }
 
@@ -239,12 +300,23 @@ service cloud.firestore {
           && movedByOne('commentCount');
       }
 
-      // The author or a moderator may edit the report itself, but never its
-      // tallies, its authorship, or when it was filed.
+      /**
+       * The author or a moderator editing the report itself.
+       *
+       * A denylist, which is worth being explicit about because it means every
+       * field added to this schema is editable here unless it is named. The
+       * municipal record was added and was immediately writable by any author
+       * through this branch, which quietly contradicted the moderator-only rule
+       * written directly beneath it — so it is named. Tallies, authorship and
+       * the filing date were always named for the same reason.
+       */
       function isContentEdit() {
         return isActiveResident()
           && (resource.data.authorId == uid() || isModerator())
-          && !changed(['upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt']);
+          && !changed([
+            'upvotes', 'downvotes', 'score', 'commentCount', 'authorId', 'createdAt',
+            'reportedToCouncilAt', 'councilReference'
+          ]);
       }
 
       /**
@@ -292,8 +364,28 @@ service cloud.firestore {
           );
       }
 
+      /**
+       * Recording that a report has been handed to the municipality.
+       *
+       * A moderator's act, and the one rule here that is about something which
+       * happened outside the app entirely. Anybody may forward a report — that
+       * is their own e-mail over their own name and this app has no part in it
+       * — but "this is now with the δήμος, protocol 1234" is read by the whole
+       * village and is why nobody sends it again. A claim anybody could make is
+       * a claim nobody can rely on.
+       */
+      function isCouncilRecord() {
+        return isModerator()
+          && touchesOnly(['reportedToCouncilAt', 'councilReference', 'updatedAt'])
+          && (request.resource.data.get('councilReference', '') is string)
+          && (request.resource.data.get('councilReference', '').size() <= 60);
+      }
+
       allow update: if imageWithin('thumbnail', 20000)
-        && (isContentEdit() || isVoteTallyWrite() || isCommentCountWrite() || isTakeOrRelease());
+        && (
+          isContentEdit() || isVoteTallyWrite() || isCommentCountWrite()
+            || isTakeOrRelease() || isCouncilRecord()
+        );
 
       allow delete: if isActiveResident()
         && (resource.data.authorId == uid() || isModerator());

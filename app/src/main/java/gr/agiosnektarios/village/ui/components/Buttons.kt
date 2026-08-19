@@ -11,12 +11,13 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -49,6 +50,13 @@ fun PrimaryButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     icon: ImageVector? = null,
+    // Almost everywhere the app has exactly one primary action and it is
+    // green. The emergency screen is the exception: there the green button is
+    // "tell the village" and it sits below "call 199", so if the call button
+    // were also green the two would look like alternatives rather than an
+    // order.
+    container: Color = MaterialTheme.colorScheme.primary,
+    content: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -70,7 +78,11 @@ fun PrimaryButton(
     Button(
         onClick = onClick,
         modifier = modifier
-            .height(54.dp)
+            // A floor, not a height. Greek at twice the text size wraps
+            // "SMS σε όλους τους κατοίκους" onto a second line, and a fixed
+            // height cropped the second line to a sliver — a button whose
+            // label the people who most need large text could not read.
+            .heightIn(min = 54.dp)
             .scale(scale)
             .clip(MaterialTheme.shapes.large)
             .drawWithContent {
@@ -100,8 +112,10 @@ fun PrimaryButton(
         // While loading, keep the live colours and only slightly recede them.
         colors = if (loading) {
             ButtonDefaults.buttonColors(
-                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
-                disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = container,
+                contentColor = content,
+                disabledContainerColor = container.copy(alpha = 0.82f),
+                disabledContentColor = content,
             )
         } else {
             // The disabled fill is named rather than left to Material, whose
@@ -110,6 +124,8 @@ fun PrimaryButton(
             // pine, and conspicuous for it. surfaceContainerHighest is the
             // same warm family as everything around it.
             ButtonDefaults.buttonColors(
+                containerColor = container,
+                contentColor = content,
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             )
@@ -138,7 +154,7 @@ private fun PrimaryButtonContent(
             CircularProgressIndicator(
                 modifier = Modifier.size(22.dp),
                 strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = LocalContentColor.current,
             )
         }
         AnimatedVisibility(
@@ -177,7 +193,7 @@ fun SecondaryButton(
 
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(54.dp).scale(scale),
+        modifier = modifier.heightIn(min = 54.dp).scale(scale),
         enabled = enabled,
         interactionSource = interactionSource,
         shape = MaterialTheme.shapes.large,

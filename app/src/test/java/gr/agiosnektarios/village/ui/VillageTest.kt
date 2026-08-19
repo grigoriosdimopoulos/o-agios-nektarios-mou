@@ -1,5 +1,6 @@
 package gr.agiosnektarios.village.ui
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -12,6 +13,15 @@ import gr.agiosnektarios.village.core.model.EventKind
 import gr.agiosnektarios.village.core.model.VillageContact
 import gr.agiosnektarios.village.core.model.VillageEvent
 import gr.agiosnektarios.village.data.settings.ThemeMode
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.core.geo.GeoPoint
+import gr.agiosnektarios.village.core.model.AlertKind
+import gr.agiosnektarios.village.core.model.VillageAlert
+import gr.agiosnektarios.village.ui.alert.AlertRaiseContent
+import gr.agiosnektarios.village.ui.alert.EmergencyBanner
+import gr.agiosnektarios.village.ui.alert.OutageCard
+import gr.agiosnektarios.village.ui.alert.RaiseAlertState
 import gr.agiosnektarios.village.ui.contacts.ContactsContent
 import gr.agiosnektarios.village.ui.contacts.ContactsUiState
 import gr.agiosnektarios.village.ui.events.CalendarContent
@@ -23,6 +33,15 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_787_120_700_000L
 
 /**
  * The calendar and the telephone list, rendered.
@@ -54,11 +73,13 @@ class VillageTest {
     ) {
         config?.let(paparazzi::unsafeUpdateConfig)
         paparazzi.snapshot(name = name) {
-            VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) { content() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
             }
         }
     }
@@ -87,6 +108,155 @@ class VillageTest {
         name = "large",
     ) {
         Calendar()
+    }
+
+    /**
+     * The alarm, in both states.
+     *
+     * Six large targets and nothing else, then the chosen one with the
+     * telephone above the "tell the village" button — that ordering is the
+     * ethic of the screen and it is worth a golden, because it is the thing
+     * most likely to be quietly rearranged later.
+     */
+    @Test fun alert_pick() = render {
+        AlertRaiseContent(
+            state = RaiseAlertState(),
+            numbersAvailable = true,
+            onPick = {},
+            onNote = {},
+            onPlace = {},
+            onBack = {},
+            onSend = {},
+            onDial = {},
+            onSms = {},
+        )
+    }
+
+    @Test fun alert_fire_chosen() = render {
+        AlertRaiseContent(
+            state = RaiseAlertState(
+                kind = AlertKind.FIRE,
+                note = "Καπνός πάνω από το ρέμα.",
+                placeLabel = "Άνω γειτονιά",
+                position = GeoPoint(38.1646, 23.2902),
+            ),
+            numbersAvailable = true,
+            onPick = {},
+            onNote = {},
+            onPlace = {},
+            onBack = {},
+            onSend = {},
+            onDial = {},
+            onSms = {},
+        )
+    }
+
+    /** Greek at one and a half times the text, where the honesty paragraph lands. */
+    @Test
+    fun alert_power_greek_large() = render(
+        config = DeviceConfig.PIXEL_5.copy(fontScale = 1.5f, locale = "el"),
+        name = "power",
+    ) {
+        AlertRaiseContent(
+            state = RaiseAlertState(
+                kind = AlertKind.POWER,
+                placeLabel = "Κέντρο",
+            ),
+            numbersAvailable = false,
+            onPick = {},
+            onNote = {},
+            onPlace = {},
+            onBack = {},
+            onSend = {},
+            onDial = {},
+            onSms = {},
+        )
+    }
+
+    /** An outage with six households behind it, above the reports. */
+    @Test fun outage_card() = render {
+        // Wrapped, because Surface propagates its minimum constraints to a
+        // single child and the card would otherwise be stretched down the
+        // whole screen — a golden nobody can read is a golden nobody checks.
+        Column { OutageCard(
+            alert = VillageAlert(
+                id = "a",
+                kind = AlertKind.WATER.name,
+                note = "Από χθες το βράδυ, σε όλη την πάνω γειτονιά.",
+                raisedById = "d",
+                raisedByName = "Δημήτρης Α.",
+                raisedAt = java.util.Date(GOLDEN_NOW - 3 * 60 * 60 * 1000L),
+                confirmedBy = listOf("d", "m", "n", "p", "k", "s"),
+                confirmedNames = listOf("Δημήτρης", "Μαρία", "Νίκος", "Παναγιώτης", "Κατερίνα", "Σοφία"),
+            ),
+            userId = "m",
+            canResolve = false,
+            onConfirm = {},
+            onResolve = {},
+            modifier = Modifier.padding(20.dp),
+        ) }
+    }
+
+    /**
+     * The banner that sits across the top of the map when something is on
+     * fire, at twice the text size.
+     *
+     * It is the most consequential fifty pixels in the app and it had no
+     * golden at all, which meant nothing would have told anyone if a long
+     * note had pushed the words "Fire or smoke" out of it.
+     */
+    @Test
+    fun emergency_banner_greek_max() = render(
+        config = DeviceConfig.PIXEL_5.copy(fontScale = 2.0f, locale = "el"),
+        name = "banner",
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            EmergencyBanner(
+                alerts = listOf(
+                    VillageAlert(
+                        id = "e",
+                        kind = AlertKind.FIRE.name,
+                        note = "Καπνός πάνω από το ρέμα, κατεβαίνει με τον αέρα.",
+                        placeLabel = "Οδός Ελατιάς, Άνω γειτονιά",
+                        raisedById = "d",
+                        raisedByName = "Δημήτρης Αναγνωστόπουλος",
+                        raisedAt = java.util.Date(GOLDEN_NOW - 4 * 60_000L),
+                    ),
+                ),
+                onOpen = {},
+            )
+        }
+    }
+
+    /**
+     * The same card in Greek at one and a half times the text, with the long
+     * form of the name and a moderator's "it is over" beside the confirm.
+     *
+     * Two controls and a count on one line is exactly the arrangement that
+     * collapses when the words get longer, which is why it has a golden.
+     */
+    @Test
+    fun outage_card_greek_large() = render(
+        config = DeviceConfig.PIXEL_5.copy(fontScale = 1.5f, locale = "el"),
+        name = "outage",
+    ) {
+        Column { OutageCard(
+            alert = VillageAlert(
+                id = "a",
+                kind = AlertKind.POWER.name,
+                note = "Από χθες το βράδυ, σε όλη την πάνω γειτονιά.",
+                raisedById = "d",
+                raisedByName = "Δημήτρης Αναγνωστόπουλος",
+                raisedAt = java.util.Date(GOLDEN_NOW - 40 * 60_000L),
+                confirmedBy = listOf("d"),
+                confirmedNames = listOf("Δημήτρης"),
+            ),
+            userId = "m",
+            canResolve = true,
+            onConfirm = {},
+            onResolve = {},
+            modifier = Modifier.padding(20.dp),
+        ) }
     }
 
     @Test fun contacts_light() = render { Contacts() }
@@ -137,7 +307,7 @@ class VillageTest {
 }
 
 /** Wednesday 19 August 2026, 09:30 in Athens — the instant the whole suite pretends it is. */
-private const val CALENDAR_NOW = 1_787_120_700_000L
+private const val CALENDAR_NOW = GOLDEN_NOW
 
 private fun at(daysFromNow: Int, hour: Int, minute: Int = 0): Date {
     val calendar = java.util.Calendar.getInstance().apply {

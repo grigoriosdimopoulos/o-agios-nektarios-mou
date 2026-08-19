@@ -11,6 +11,7 @@ import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
 import gr.agiosnektarios.village.core.runCatchingUnit
 import gr.agiosnektarios.village.core.firestore.Collections
+import gr.agiosnektarios.village.core.firestore.SERVER_ACK_MS
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.toObjectSafe
 import gr.agiosnektarios.village.core.firestore.toObjectsSafe
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** How the issue list is ordered. */
 enum class IssueSort { NEWEST, TOP, MOST_DISCUSSED }
@@ -101,6 +103,29 @@ class IssueRepository @Inject constructor(
                     .sortedByDescending { it.createdAt?.time ?: 0L }
             }
             .orEmptyOnError("issues by $authorId")
+
+    /**
+     * Records that a report has been sent to the municipality.
+     *
+     * Moderators only, and the rules are what enforce it: this is a claim about
+     * something that happened outside the app, and a claim anybody could make
+     * is a claim nobody can rely on. Clearing it takes an empty reference.
+     */
+    suspend fun setCouncilReport(
+        issueId: String,
+        reference: String,
+        sent: Boolean,
+    ): Result<Unit> = withContext(io) {
+        runCatchingUnit {
+            issueDoc(issueId).update(
+                mapOf(
+                    "reportedToCouncilAt" to if (sent) FieldValue.serverTimestamp() else null,
+                    "councilReference" to if (sent) reference.trim().take(60) else "",
+                    "updatedAt" to FieldValue.serverTimestamp(),
+                ),
+            ).await()
+        }
+    }
 
     /**
      * What this resident has put their name against.
@@ -189,6 +214,16 @@ class IssueRepository @Inject constructor(
             }
         }
 
+    /**
+     * Files a report, whether or not there is a signal.
+     *
+     * The document id is generated on the device, so the report exists and can
+     * be opened the moment this returns — even if the write is still sitting in
+     * Firestore's offline queue waiting for a bar of signal. See
+     * [awaitOrQueue]: the previous version awaited the server's acknowledgement
+     * and therefore spun forever on the hillsides where reports are actually
+     * written.
+     */
     suspend fun createIssue(draft: IssueDraft, author: UserProfile): Result<String> =
         withContext(io) {
             runCatching {
@@ -221,7 +256,12 @@ class IssueRepository @Inject constructor(
                         "createdAt" to FieldValue.serverTimestamp(),
                         "updatedAt" to FieldValue.serverTimestamp(),
                     ),
-                ).await()
+                ).let { task ->
+                    // Bounded, not unbounded. The write is already on disk and
+                    // in the queue; this only waits long enough to surface a
+                    // real refusal.
+                    withTimeoutOrNull(SERVER_ACK_MS) { task.await() }
+                }
                 writePhotos(doc.id, draft.photos, author.id)
                 doc.id
             }
@@ -247,7 +287,7 @@ class IssueRepository @Inject constructor(
                 ),
             )
         }
-        batch.commit().await()
+        withTimeoutOrNull(SERVER_ACK_MS) { batch.commit().await() }
     }
 
     /** The full photos of one report, read only when someone opens it. */

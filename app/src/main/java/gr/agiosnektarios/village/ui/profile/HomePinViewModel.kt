@@ -46,12 +46,17 @@ class HomePinViewModel @Inject constructor(
     init {
         // Opens on the house already pinned, if there is one, so correcting a
         // pin does not mean finding it again from nothing.
-        val profile = (session.state.value as? SessionState.SignedIn)?.profile
-        val lat = profile?.homeLat
-        val lng = profile?.homeLng
-        if (lat != null && lng != null) {
-            _uiState.update {
-                it.copy(pin = GeoPoint(lat, lng), placeLabel = profile.homePlace)
+        viewModelScope.launch {
+            // Collected rather than read once: the pin arrives from its own
+            // document, which on a cold start has not loaded yet when this
+            // screen is built.
+            session.home.collect { home ->
+                val position = home?.position ?: return@collect
+                _uiState.update { state ->
+                    if (state.pin != null) state else {
+                        state.copy(pin = position, placeLabel = home.place)
+                    }
+                }
             }
         }
         viewModelScope.launch {

@@ -1,6 +1,7 @@
 package gr.agiosnektarios.village.data.session
 
 import gr.agiosnektarios.village.core.di.ApplicationScope
+import gr.agiosnektarios.village.core.model.HomePin
 import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.user.UserRepository
@@ -74,6 +75,28 @@ class SessionRepository @Inject constructor(
 
     /** The profile, or null when nobody is fully signed in. */
     val profile: Flow<UserProfile?> = state.map { (it as? SessionState.SignedIn)?.profile }
+
+    /**
+     * The signed-in resident's own house pin.
+     *
+     * A second document and therefore a second listener, which is the price of
+     * it being readable by nobody else. Shared here so the map, the alarm and
+     * the pin screen do not each open their own.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val home: StateFlow<HomePin?> = state
+        .flatMapLatest { current ->
+            when (current) {
+                is SessionState.SignedIn -> userRepository.observeHome(current.profile.id)
+                    .catch { emit(null) }
+                else -> flowOf(null)
+            }
+        }
+        // Eagerly, like [state]. One extra listener on a document with three
+        // fields, in exchange for `home.value` being right the moment the
+        // alarm screen asks — and the alarm screen asks the instant somebody
+        // taps "my house", with no time to wait for a subscription to warm up.
+        .stateIn(scope, SharingStarted.Eagerly, null)
 
     val currentUserId: String? get() = authRepository.currentUserId
 

@@ -13,6 +13,7 @@ import gr.agiosnektarios.village.core.firestore.toObjectSafe
 import gr.agiosnektarios.village.core.firestore.toObjectsSafe
 import gr.agiosnektarios.village.core.model.NotificationPrefs
 import gr.agiosnektarios.village.core.model.Role
+import gr.agiosnektarios.village.core.model.HomePin
 import gr.agiosnektarios.village.core.model.UserProfile
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -109,16 +110,37 @@ class UserRepository @Inject constructor(
         place: String,
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
-            users.document(userId).update(
-                mapOf(
-                    "homeLat" to lat,
-                    "homeLng" to lng,
-                    "homePlace" to if (lat == null) "" else place.trim().take(80),
-                    "updatedAt" to FieldValue.serverTimestamp(),
-                ),
-            ).await()
+            val doc = homeDoc(userId)
+            if (lat == null || lng == null) {
+                // Cleared, not blanked. A document that exists with null
+                // coordinates is a house someone has to reason about; a
+                // document that is gone is a house nobody pinned.
+                doc.delete().await()
+            } else {
+                doc.set(
+                    mapOf(
+                        "lat" to lat,
+                        "lng" to lng,
+                        "place" to place.trim().take(80),
+                        "updatedAt" to FieldValue.serverTimestamp(),
+                    ),
+                ).await()
+            }
         }
     }
+
+    private fun homeDoc(userId: String) = users.document(userId)
+        .collection(Collections.PRIVATE)
+        .document(Collections.HOME)
+
+    /**
+     * The resident's own house pin.
+     *
+     * Only ever called for the signed-in user, and the rules would reject it
+     * for anyone else — see [HomePin] for why it is not on the profile.
+     */
+    fun observeHome(userId: String): Flow<HomePin?> =
+        homeDoc(userId).asFlow().map { it.toObjectSafe<HomePin>() }
 
     /** Sets or clears the resident's picture. Null removes it. */
     suspend fun updateAvatar(userId: String, bytes: ByteArray?): Result<Unit> = withContext(io) {

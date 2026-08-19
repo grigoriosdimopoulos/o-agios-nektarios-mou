@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import gr.agiosnektarios.village.core.di.IoDispatcher
 import gr.agiosnektarios.village.core.firestore.Collections
+import gr.agiosnektarios.village.core.firestore.SERVER_ACK_MS
 import gr.agiosnektarios.village.core.firestore.asFlow
 import gr.agiosnektarios.village.core.firestore.orEmptyOnError
 import gr.agiosnektarios.village.core.firestore.toObjectsSafe
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * What is wrong in the village right now.
@@ -87,7 +89,14 @@ class AlertRepository @Inject constructor(
                     "raisedAt" to FieldValue.serverTimestamp(),
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
-            ).await()
+            ).let { task ->
+                // An alarm raised on a hillside with one bar must not hang on
+                // the server. It is on disk and in the queue the instant the
+                // write is issued, and the screen that raised it says plainly
+                // that a phone which is not running the app will not see it
+                // either way.
+                withTimeoutOrNull(SERVER_ACK_MS) { task.await() }
+            }
             document.id
         }
     }

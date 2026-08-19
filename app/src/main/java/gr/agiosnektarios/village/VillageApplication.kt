@@ -7,6 +7,7 @@ import dagger.hilt.android.HiltAndroidApp
 import gr.agiosnektarios.village.core.crash.CrashReporter
 import gr.agiosnektarios.village.notifications.NotificationChannels
 import gr.agiosnektarios.village.notifications.NotificationDispatcher
+import gr.agiosnektarios.village.notifications.EventReminderWorker
 import gr.agiosnektarios.village.notifications.NotificationSyncWorker
 import gr.agiosnektarios.village.notifications.PushTokenSynchronizer
 import javax.inject.Inject
@@ -42,5 +43,6 @@ class VillageApplication : Application(), Configuration.Provider {
         // across app death and reboot, so notices still arrive when the app is
         // closed — just not instantly. See NotificationSyncWorker.
         NotificationSyncWorker.schedule(this)
+        EventReminderWorker.schedule(this)
     }
 }

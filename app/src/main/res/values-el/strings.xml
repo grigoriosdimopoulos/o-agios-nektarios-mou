@@ -436,6 +436,7 @@
     <string name="alert_where_home">Το σπίτι μου</string>
     <string name="alert_where_locating">Σε βρίσκω…</string>
     <string name="alert_where_unknown">Χωρίς θέση ακόμη</string>
+    <string name="alert_where_no_home">Δεν έχεις σημειώσει το σπίτι σου στον χάρτη — από το προφίλ σου.</string>
     <string name="alert_raise">Ειδοποίησε το χωριό</string>
     <string name="alert_raised">Το χωριό ειδοποιήθηκε</string>
     <string name="alert_sms">SMS σε όλους τους κατοίκους</string>
@@ -459,6 +460,7 @@
     <string name="alert_open">Άνοιγμα</string>
     <string name="alert_invalid">Διάλεξε πρώτα τι συμβαίνει.</string>
     <string name="alert_no_numbers">Κανένας κάτοικος δεν έχει τηλέφωνο στο προφίλ του, οπότε δεν υπάρχει σε ποιον να σταλεί.</string>
+    <string name="alert_reach_no_sms">Όποιος έχει την εφαρμογή ανοιχτή το βλέπει αμέσως. Κλειστό κινητό το βλέπει σε κανένα τέταρτο, και κινητό στο συρτάρι δεν το βλέπει καθόλου.</string>
     <string name="issues_filters">Φίλτρα</string>
     <string name="issues_filters_active">Φίλτρα · %1$d</string>
     <string name="home_pin_title">Το σπίτι μου στον χάρτη</string>
@@ -466,4 +468,26 @@
     <string name="home_pin_set">Μπήκε</string>
     <string name="home_pin_clear">Αφαίρεση</string>
     <string name="home_pin_open">Σημείωσε το σπίτι μου</string>
+    <string name="council_send">Αποστολή στον δήμο</string>
+    <string name="council_send_email">Με email</string>
+    <string name="council_send_other">Με άλλον τρόπο</string>
+    <string name="council_subject">Άγιος Νεκτάριος: %1$s</string>
+    <string name="council_intro">Αναφορά από τους κατοίκους του Αγίου Νεκταρίου Αττικής (Βίλια, Μάνδρας-Ειδυλλίας).</string>
+    <string name="council_what">Πρόβλημα: %1$s</string>
+    <string name="council_where">Σημείο: %1$s</string>
+    <string name="council_coordinates">Συντεταγμένες: %1$s, %2$s</string>
+    <string name="council_reported">Πρώτη αναφορά: %1$s</string>
+    <string name="council_supporters">Κάτοικοι που το επιβεβαίωσαν: %1$d</string>
+    <string name="council_sign">Στάλθηκε από την εφαρμογή του χωριού.</string>
+    <string name="council_address">Email του δήμου</string>
+    <string name="council_mark">Καταγραφή ότι στάλθηκε</string>
+    <string name="council_reference">Αριθμός πρωτοκόλλου, αν υπάρχει</string>
+    <string name="council_sent">Στάλθηκε στον δήμο</string>
+    <plurals name="council_waiting">
+        <item quantity="one">στον δήμο εδώ και %1$d μέρα</item>
+        <item quantity="other">στον δήμο εδώ και %1$d μέρες</item>
+    </plurals>
+    <string name="council_clear">Δεν εκκρεμεί πια</string>
+    <string name="reminder_title">Αύριο στο χωριό</string>
+    <string name="reminder_line">%1$s — %2$s</string>
 </resources>

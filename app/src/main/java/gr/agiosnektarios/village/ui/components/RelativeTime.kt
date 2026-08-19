@@ -1,12 +1,25 @@
 package gr.agiosnektarios.village.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import gr.agiosnektarios.village.R
 import java.text.DateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
+
+/**
+ * Where "now" comes from.
+ *
+ * Everything below reads the clock through this rather than calling
+ * [System.currentTimeMillis] directly, so a snapshot test can pin it. Without
+ * it, any golden showing "3 hours ago" says something different tomorrow, and
+ * the only way to keep such a golden green is to never render a recent time —
+ * which is exactly the case that needs looking at, because it is the one the
+ * strings are longest in.
+ */
+val LocalClock = staticCompositionLocalOf<() -> Long> { { System.currentTimeMillis() } }
 
 /**
  * "just now" / "12 min ago" / a real date once it stops being useful as an
@@ -17,7 +30,7 @@ import java.util.concurrent.TimeUnit
 fun relativeTime(date: Date?): String {
     if (date == null) return ""
     val locale = LocalConfiguration.current.locales[0]
-    val elapsed = System.currentTimeMillis() - date.time
+    val elapsed = LocalClock.current() - date.time
     val minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed)
     val hours = TimeUnit.MILLISECONDS.toHours(elapsed)
     val days = TimeUnit.MILLISECONDS.toDays(elapsed)

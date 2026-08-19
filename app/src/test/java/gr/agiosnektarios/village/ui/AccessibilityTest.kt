@@ -19,6 +19,15 @@ import gr.agiosnektarios.village.ui.theme.VillageTheme
 import java.util.Date
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_755_000_000_000L
 
 /**
  * The app at the text size older residents actually use.
@@ -44,19 +53,21 @@ class AccessibilityTest {
     @Test
     fun issue_list_large_text() {
         paparazzi.snapshot {
-            VillageTheme(themeMode = ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    IssueListContent(
-                        state = IssueListUiState(issues = sampleIssues, loading = false),
-                        onOpenIssue = {},
-                        onQueryChange = {},
-                        onSortChange = {},
-                        onToggleStatus = {},
-                        onToggleCategory = {},
-                    )
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        IssueListContent(
+                            state = IssueListUiState(issues = sampleIssues, loading = false),
+                            onOpenIssue = {},
+                            onQueryChange = {},
+                            onSortChange = {},
+                            onToggleStatus = {},
+                            onToggleCategory = {},
+                        )
+                    }
                 }
             }
         }
@@ -69,25 +80,27 @@ class AccessibilityTest {
     @Test
     fun quick_report_stuck_large_text() {
         paparazzi.snapshot {
-            VillageTheme(themeMode = ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    QuickReportSheet(
-                        state = QuickReportUiState(
-                            photo = ByteArray(64),
-                            text = "Πεσμένο δέντρο",
-                            position = null,
-                            fix = FixState.UNAVAILABLE,
-                        ),
-                        onTextChange = {},
-                        onRetakePhoto = {},
-                        onRetryLocation = {},
-                        onPickOnMap = {},
-                        onSubmit = {},
-                        onCategoryChange = {},
-                    )
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        QuickReportSheet(
+                            state = QuickReportUiState(
+                                photo = ByteArray(64),
+                                text = "Πεσμένο δέντρο",
+                                position = null,
+                                fix = FixState.UNAVAILABLE,
+                            ),
+                            onTextChange = {},
+                            onRetakePhoto = {},
+                            onRetryLocation = {},
+                            onPickOnMap = {},
+                            onSubmit = {},
+                            onCategoryChange = {},
+                        )
+                    }
                 }
             }
         }
@@ -106,11 +119,13 @@ class AccessibilityTest {
             DeviceConfig.PIXEL_5.copy(fontScale = 2.0f, locale = "el"),
         )
         paparazzi.snapshot(name = name) {
-            VillageTheme(themeMode = ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) { content() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
             }
         }
     }
@@ -142,7 +157,7 @@ class AccessibilityTest {
                 authorName = "Μαρία Καραγιάννη",
                 assigneeId = "d",
                 assigneeName = "Δημήτρης Αναγνωστόπουλος",
-                createdAt = Date(1_755_000_000_000L),
+                createdAt = Date(GOLDEN_NOW - 40 * 60_000L),
                 assignedAt = Date(1_755_003_000_000L),
             ),
         )

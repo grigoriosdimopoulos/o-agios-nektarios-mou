@@ -60,6 +60,12 @@ import gr.agiosnektarios.village.ui.components.ErrorBanner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
+import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
@@ -99,6 +105,43 @@ fun AlertScreen(
         }
     }
 
+    AlertRaiseContent(
+        state = state,
+        numbersAvailable = live.residentNumbers.isNotEmpty(),
+        onPick = viewModel::pick,
+        onNote = viewModel::onNote,
+        onPlace = viewModel::onPlace,
+        onBack = viewModel::reset,
+        onSend = viewModel::send,
+        onDial = dial,
+        onSms = { body -> sendSms(context, live.residentNumbers, body) },
+        onClose = onDone,
+    )
+}
+
+/**
+ * The screen without its view model, so it can be rendered and looked at.
+ *
+ * The ordering inside it — telephone above "tell the village", for the three
+ * kinds that cannot wait — is the ethic of the whole feature, and the sort of
+ * thing that gets quietly rearranged by a later hand unless there is an image
+ * of it in the repository.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AlertRaiseContent(
+    state: RaiseAlertState,
+    numbersAvailable: Boolean,
+    onPick: (AlertKind) -> Unit,
+    onNote: (String) -> Unit,
+    onPlace: (AlertPlace) -> Unit,
+    onBack: () -> Unit,
+    onSend: () -> Unit,
+    onDial: (String) -> Unit,
+    onSms: (String) -> Unit,
+    onClose: () -> Unit = {},
+) {
+    val haptics = rememberHaptics()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,7 +149,7 @@ fun AlertScreen(
             .verticalScroll(rememberScrollState()),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onDone, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
+            IconButton(onClick = onClose, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.action_back),
@@ -125,32 +168,43 @@ fun AlertScreen(
         ) {
             ErrorBanner(message = state.errorMessage)
 
-            if (state.kind == null) {
+            // Slower than anything else in the app moves.
+            //
+            // Speed is read before words are, and this is the one screen where
+            // a mistake costs something. Everything else here settles in about
+            // a fifth of a second; this takes its time arriving, so the hand
+            // pauses with it. See Motion.deliberate.
+            AnimatedContent(
+                targetState = state.kind,
+                transitionSpec = {
+                    (fadeIn(Motion.deliberate()) + slideInVertically(Motion.offsetSpring()) { it / 8 })
+                        .togetherWith(fadeOut(Motion.quick()))
+                },
+                label = "alertStage",
+            ) { chosen ->
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (chosen == null) {
                 Text(
                     text = stringResource(R.string.alert_pick),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 AlertKind.entries.forEach { kind ->
-                    KindButton(kind = kind, onClick = { haptics.warning(); viewModel.pick(kind) })
+                    KindButton(kind = kind, onClick = { haptics.warning(); onPick(kind) })
                 }
             } else {
                 Chosen(
                     state = state,
-                    onNote = viewModel::onNote,
-                    onPlace = viewModel::onPlace,
-                    onBack = viewModel::reset,
-                    onSend = viewModel::send,
-                    onDial = dial,
-                    onSms = {
-                        sendSms(
-                            context = context,
-                            numbers = live.residentNumbers,
-                            body = it,
-                        )
-                    },
-                    numbersAvailable = live.residentNumbers.isNotEmpty(),
+                    onNote = onNote,
+                    onPlace = onPlace,
+                    onBack = onBack,
+                    onSend = onSend,
+                    onDial = onDial,
+                    onSms = onSms,
+                    numbersAvailable = numbersAvailable,
                 )
+            }
+            }
             }
         }
     }
@@ -269,6 +323,8 @@ private fun Chosen(
                 )
             },
             icon = Icons.Filled.Call,
+            container = MaterialTheme.colorScheme.error,
+            content = MaterialTheme.colorScheme.onError,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -316,7 +372,13 @@ private fun Chosen(
     }
 
     Text(
-        text = stringResource(R.string.alert_reach),
+        // The full version ends "so if it cannot wait, send the text message
+        // too". With no numbers on file there is no text message to send, and
+        // telling someone in an emergency to do a thing the app has just
+        // greyed out is worse than telling them nothing.
+        text = stringResource(
+            if (numbersAvailable) R.string.alert_reach else R.string.alert_reach_no_sms,
+        ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -354,6 +416,11 @@ private fun WhereRow(state: RaiseAlertState, onPlace: (AlertPlace) -> Unit) {
                     state.position.lat,
                     state.position.lng,
                 )
+                // "My house" with no house pinned is not the same failure as
+                // the phone not knowing where it is, and being told the
+                // generic one sends people looking for a signal problem
+                // instead of a setting.
+                state.place == AlertPlace.HOME -> stringResource(R.string.alert_where_no_home)
                 else -> stringResource(R.string.alert_where_unknown)
             },
             style = MaterialTheme.typography.bodyMedium,

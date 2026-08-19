@@ -41,6 +41,15 @@ import gr.agiosnektarios.village.ui.theme.VillageTheme
 import java.util.Date
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_755_000_000_000L
 
 /**
  * Renders the app's own surfaces to PNG so they can be *looked at*.
@@ -70,15 +79,17 @@ class LookTest {
 
     private fun render(dark: Boolean = false, content: @Composable () -> Unit) {
         paparazzi.snapshot {
-            VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
-                // Surface, not a bare Box: Surface is what publishes the
-                // matching content colour, and without it every Text here
-                // defaulted to black — which is why the dark render's labels
-                // were invisible against the dark page.
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) { content() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
+                    // Surface, not a bare Box: Surface is what publishes the
+                    // matching content colour, and without it every Text here
+                    // defaulted to black — which is why the dark render's labels
+                    // were invisible against the dark page.
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
             }
         }
     }
@@ -223,7 +234,7 @@ private fun EmptyGallery() {
     )
 }
 
-internal fun at(minutesAgo: Long) = Date(1_755_000_000_000L - minutesAgo * 60_000L)
+internal fun at(minutesAgo: Long) = Date(GOLDEN_NOW - minutesAgo * 60_000L)
 
 internal val sampleIssues = listOf(
     Issue(

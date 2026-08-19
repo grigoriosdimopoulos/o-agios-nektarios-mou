@@ -129,16 +129,12 @@ class AlertViewModel @Inject constructor(
     }
 
     private fun useHome() {
-        val home = profile?.let { current ->
-            val lat = current.homeLat
-            val lng = current.homeLng
-            if (lat != null && lng != null) GeoPoint(lat, lng) else null
-        }
+        val home = session.home.value
         _raise.update {
             it.copy(
                 locating = false,
-                position = home,
-                placeLabel = profile?.homePlace.orEmpty(),
+                position = home?.position,
+                placeLabel = home?.place.orEmpty(),
             )
         }
     }

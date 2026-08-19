@@ -57,6 +57,21 @@ object Motion {
     )
 
     /**
+     * Anything irreversible: a delete, a suspension, an alarm.
+     *
+     * Slower than [gentle] and noticeably so. The app used to move everything
+     * at the same speed, which meant a dialog asking "remove this permanently?"
+     * arrived with exactly the same weight as a dialog offering to sort a list
+     * — and speed is the one property of a transition a person reads before
+     * they have read any words. Something that cannot be undone should take
+     * long enough to arrive that the hand pauses.
+     */
+    fun <T> deliberate() = spring<T>(
+        dampingRatio = 1f,
+        stiffness = 130f,
+    )
+
+    /**
      * The one place bounce is allowed: the upvote. A single overshoot on the
      * thing the resident chose to do, and nowhere else.
      */

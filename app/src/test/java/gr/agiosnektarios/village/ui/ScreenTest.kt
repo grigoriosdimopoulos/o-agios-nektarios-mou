@@ -31,6 +31,15 @@ import androidx.compose.ui.unit.dp
 import java.util.Date
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.CompositionLocalProvider
+import gr.agiosnektarios.village.ui.components.LocalClock
+
+/**
+ * The instant every golden in this file pretends it is.
+ *
+ * Pinned through [LocalClock] so "3 hours ago" stays "3 hours ago" tomorrow.
+ */
+private const val GOLDEN_NOW = 1_755_000_000_000L
 
 /**
  * Whole screens, rendered.
@@ -48,11 +57,13 @@ class ScreenTest {
 
     private fun render(dark: Boolean = false, content: @Composable () -> Unit) {
         paparazzi.snapshot {
-            VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) { content() }
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
             }
         }
     }
@@ -225,7 +236,7 @@ private val me = UserProfile(
  * the point of verifying them, because a diff nobody can explain is a diff
  * everybody starts ignoring.
  */
-private const val FIXTURE_NOW = 1_755_000_000_000L
+private const val FIXTURE_NOW = GOLDEN_NOW
 
 private fun ago(minutes: Long) = Date(FIXTURE_NOW - minutes * 60_000L)
 

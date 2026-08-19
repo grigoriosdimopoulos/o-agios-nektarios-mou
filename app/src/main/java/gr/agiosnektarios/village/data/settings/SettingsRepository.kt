@@ -77,6 +77,16 @@ data class AppSettings(
      * on the map's own control column for anyone who does not.
      */
     val showWeatherLayer: Boolean = true,
+    /**
+     * Where reports get forwarded, remembered after the first time.
+     *
+     * Device-local rather than shared, and empty until somebody types it. The
+     * app does not ship a municipal address because it does not know one that
+     * has been checked, and a plausible-looking wrong address would send the
+     * village's reports into nothing while everyone believed they had been
+     * sent. Whoever forwards the first one supplies it.
+     */
+    val councilEmail: String = "",
 )
 
 @Singleton
@@ -96,6 +106,7 @@ class SettingsRepository @Inject constructor(
         val ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
         val STREET_HINT = booleanPreferencesKey("has_seen_street_hint")
         val WEATHER_LAYER = booleanPreferencesKey("weather_layer")
+        val COUNCIL_EMAIL = stringPreferencesKey("council_email")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -115,6 +126,7 @@ class SettingsRepository @Inject constructor(
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
                 hasSeenStreetHint = prefs[Keys.STREET_HINT] ?: false,
                 showWeatherLayer = prefs[Keys.WEATHER_LAYER] ?: true,
+                councilEmail = prefs[Keys.COUNCIL_EMAIL].orEmpty(),
             )
         }
 
@@ -131,6 +143,10 @@ class SettingsRepository @Inject constructor(
     suspend fun setStreetHintSeen() = edit { it[Keys.STREET_HINT] = true }
 
     suspend fun setShowWeatherLayer(show: Boolean) = edit { it[Keys.WEATHER_LAYER] = show }
+
+    suspend fun setCouncilEmail(address: String) = edit {
+        it[Keys.COUNCIL_EMAIL] = address.trim()
+    }
 
     suspend fun setNotificationPref(pref: NotificationPref, enabled: Boolean) = edit {
         it[pref.key] = enabled
