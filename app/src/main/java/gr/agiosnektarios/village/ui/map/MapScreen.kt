@@ -29,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Layers
@@ -248,6 +249,8 @@ fun MapScreen(
                 showQuickReport = true
             },
             peekHeight = peekHeight,
+            weatherOnMap = weather.animateOnMap,
+            onToggleWeather = { weatherViewModel.setAnimateOnMap(!weather.animateOnMap) },
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -575,6 +578,8 @@ private fun StreetNameSheet(
 private fun MapOverlay(
     state: MapUiState,
     peekHeight: Dp,
+    weatherOnMap: Boolean,
+    onToggleWeather: () -> Unit,
     onToggleFilters: () -> Unit,
     onToggleBlocks: () -> Unit,
     onSelectBasemap: (MapBasemap) -> Unit,
@@ -617,6 +622,20 @@ private fun MapOverlay(
                     contentDescription = stringResource(R.string.map_blocks_layer),
                     active = state.showBlocks,
                     onClick = onToggleBlocks,
+                )
+                ControlDivider()
+                // The weather layer, beside the other layer switches.
+                //
+                // It used to live only at the bottom of the weather sheet,
+                // behind the chip in the drawer — three deliberate steps from
+                // the map, which is three too many for something whose whole
+                // point is to be looked at. This is where a resident already
+                // goes to turn the neighbourhoods on and off.
+                MapControl(
+                    icon = Icons.Filled.Air,
+                    contentDescription = stringResource(R.string.weather_animate),
+                    active = weatherOnMap,
+                    onClick = onToggleWeather,
                 )
             }
         }

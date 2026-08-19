@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.core.model.VillageBlock
@@ -106,6 +107,7 @@ class EditProfileViewModel @Inject constructor(
     private val imageCodec: ImageCodec,
     private val authRepository: AuthRepository,
     blockRepository: VillageBlockRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditProfileUiState())
@@ -147,7 +149,7 @@ class EditProfileViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     uploadingPhoto = false,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -192,7 +194,7 @@ class EditProfileViewModel @Inject constructor(
                 it.copy(
                     saving = false,
                     saved = result.isSuccess,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }

@@ -238,6 +238,25 @@ class WeatherTest {
         }
     }
 
+    /**
+     * An ordinary breeze, which is what the village mostly gets.
+     *
+     * The layer used to start at 3 Beaufort and this frame was therefore
+     * blank — and since 72% of hours here are below that, "blank" was the
+     * normal appearance of a feature somebody had switched on to watch. It has
+     * to show something at 2 Bft without shouting.
+     */
+    @Test
+    fun overlay_light_breeze() = render {
+        Box(modifier = Modifier.fillMaxSize()) {
+            WeatherOverlay(
+                snapshot = august.copy(wind = Wind(9.0, 17.0, 45)),
+                phase = 0.35f,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+
     @Composable
     private fun Chip(snapshot: WeatherSnapshot) {
         Row(

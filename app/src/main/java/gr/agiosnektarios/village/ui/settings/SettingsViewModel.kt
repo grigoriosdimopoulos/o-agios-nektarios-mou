@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.NotificationPrefs
 import gr.agiosnektarios.village.data.admin.AdminElevationRepository
@@ -32,6 +33,7 @@ class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val adminRepository: AdminRepository,
     private val adminElevationRepository: AdminElevationRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
@@ -134,7 +136,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val result = adminRepository.deleteMyAccount()
             _events.update {
-                it.copy(errorMessage = result.exceptionOrNull()?.localizedMessage)
+                it.copy(errorMessage = messages.of(result.exceptionOrNull()))
             }
             // On success the auth account is gone; signing out locally clears
             // the cached session immediately rather than waiting for a refresh.
@@ -168,6 +170,7 @@ data class ChangePasswordUiState(
 @HiltViewModel
 class ChangePasswordViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChangePasswordUiState())
@@ -186,7 +189,7 @@ class ChangePasswordViewModel @Inject constructor(
                 it.copy(
                     loading = false,
                     done = result.isSuccess,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }

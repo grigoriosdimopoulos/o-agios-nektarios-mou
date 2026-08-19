@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.R
@@ -62,6 +63,7 @@ class IssueComposeViewModel @Inject constructor(
     private val imageCodec: ImageCodec,
     private val blockRepository: VillageBlockRepository,
     private val sessionRepository: SessionRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val editingIssueId: String = savedStateHandle.get<String>("issueId").orEmpty()
@@ -169,7 +171,7 @@ class IssueComposeViewModel @Inject constructor(
                     uploadingPhoto = false,
                     newPhotos = result.getOrNull()?.let { state.newPhotos + it }
                         ?: state.newPhotos,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
             // The card thumbnail is cut from whatever is now first.
@@ -253,7 +255,7 @@ class IssueComposeViewModel @Inject constructor(
                 it.copy(
                     saving = false,
                     savedIssueId = result.getOrNull(),
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }

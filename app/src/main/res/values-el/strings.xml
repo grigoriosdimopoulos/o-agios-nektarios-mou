@@ -21,6 +21,9 @@
     <string name="action_confirm">Επιβεβαίωση</string>
     <string name="loading">Φόρτωση…</string>
     <string name="error_generic">Κάτι πήγε στραβά. Δοκιμάστε ξανά.</string>
+    <string name="error_not_allowed">Δεν επιτρέπεται για τον λογαριασμό σου. Αν μόλις ενημερώθηκε η εφαρμογή, μπορεί να μην έχει ανεβάσει ακόμη ο διαχειριστής τα νέα δικαιώματα.</string>
+    <string name="error_signed_out">Η σύνδεση έληξε. Μπες ξανά.</string>
+    <string name="error_busy">Η υπηρεσία είναι απασχολημένη. Δοκίμασε σε λίγο.</string>
     <string name="error_no_network">Δεν υπάρχει σύνδεση στο διαδίκτυο.</string>
 
     <string name="sign_in">Σύνδεση</string>

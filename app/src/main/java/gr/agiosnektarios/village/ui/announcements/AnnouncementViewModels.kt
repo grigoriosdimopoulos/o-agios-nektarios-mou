@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Announcement
 import gr.agiosnektarios.village.data.announcement.AnnouncementRepository
 import gr.agiosnektarios.village.data.media.ImageCodec
@@ -64,6 +65,7 @@ class AnnouncementComposeViewModel @Inject constructor(
     private val imageCodec: ImageCodec,
     private val notificationRepository: NotificationRepository,
     private val sessionRepository: SessionRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val announcementId: String =
@@ -107,7 +109,7 @@ class AnnouncementComposeViewModel @Inject constructor(
                 it.copy(
                     uploading = false,
                     image = result.getOrNull() ?: it.image,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -164,7 +166,7 @@ class AnnouncementComposeViewModel @Inject constructor(
                 it.copy(
                     saving = false,
                     saved = result.isSuccess,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }

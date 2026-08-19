@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Comment
 import gr.agiosnektarios.village.data.notification.NotificationRepository
 import gr.agiosnektarios.village.data.notification.NotificationType
@@ -55,6 +56,7 @@ class IssueDetailViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val notificationRepository: NotificationRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val issueId: String = savedStateHandle.get<String>("issueId").orEmpty()
@@ -126,7 +128,7 @@ class IssueDetailViewModel @Inject constructor(
                     // Clearing the optimistic value hands control back to the
                     // server snapshot, which is authoritative either way.
                     optimisticVote = null,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -151,7 +153,7 @@ class IssueDetailViewModel @Inject constructor(
                 it.copy(
                     sendingComment = false,
                     commentDraft = if (result.isSuccess) "" else it.commentDraft,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -217,7 +219,7 @@ class IssueDetailViewModel @Inject constructor(
                 )
             }
             result.exceptionOrNull()?.let { error ->
-                local.update { it.copy(errorMessage = error.localizedMessage) }
+                local.update { it.copy(errorMessage = messages.of(error)) }
             }
         }
     }
@@ -251,7 +253,7 @@ class IssueDetailViewModel @Inject constructor(
             if (result.isSuccess) {
                 onDeleted()
             } else {
-                local.update { it.copy(errorMessage = result.exceptionOrNull()?.localizedMessage) }
+                local.update { it.copy(errorMessage = messages.of(result.exceptionOrNull())) }
             }
         }
     }
@@ -266,7 +268,7 @@ class IssueDetailViewModel @Inject constructor(
             chatRepository.openDirectChat(viewer, author)
                 .onSuccess(onReady)
                 .onFailure { error ->
-                    local.update { it.copy(errorMessage = error.localizedMessage) }
+                    local.update { it.copy(errorMessage = messages.of(error)) }
                 }
         }
     }

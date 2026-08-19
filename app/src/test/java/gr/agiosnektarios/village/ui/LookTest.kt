@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Map
@@ -310,6 +311,15 @@ internal fun MapChrome() {
                     icon = Icons.Filled.Layers,
                     contentDescription = "blocks",
                     active = false,
+                    onClick = {},
+                )
+                ControlDivider()
+                // The weather layer's switch, which used to be three steps
+                // deep inside a sheet and was reported as a missing feature.
+                MapControl(
+                    icon = Icons.Filled.Air,
+                    contentDescription = "weather",
+                    active = true,
                     onClick = {},
                 )
             }

@@ -69,12 +69,14 @@ data class AppSettings(
     /**
      * Whether the map animates the weather over itself.
      *
-     * Off by default, and that is a decision rather than caution. The map's job
-     * is reports; rain drawn across it at all times competes with the pins for
-     * the same pixels and keeps a frame loop running while the screen is on.
-     * It is worth having, and it is worth being asked for.
+     * On by default. It was off, on the argument that the map's job is reports
+     * and that motion across it should be asked for — but the only switch was
+     * at the bottom of a sheet behind a chip, so in practice the feature was
+     * invisible and the village reported it missing. It is the kind of thing
+     * you want to see the first time you open the map, and the switch is now
+     * on the map's own control column for anyone who does not.
      */
-    val showWeatherLayer: Boolean = false,
+    val showWeatherLayer: Boolean = true,
 )
 
 @Singleton
@@ -112,7 +114,7 @@ class SettingsRepository @Inject constructor(
                 basemap = MapBasemap.fromId(prefs[Keys.BASEMAP]),
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
                 hasSeenStreetHint = prefs[Keys.STREET_HINT] ?: false,
-                showWeatherLayer = prefs[Keys.WEATHER_LAYER] ?: false,
+                showWeatherLayer = prefs[Keys.WEATHER_LAYER] ?: true,
             )
         }
 

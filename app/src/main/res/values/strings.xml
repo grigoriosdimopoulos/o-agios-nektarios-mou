@@ -26,6 +26,9 @@
     <string name="action_confirm">Confirm</string>
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_not_allowed">This is not allowed for your account. If the app was just updated, an administrator may still need to publish the new permissions.</string>
+    <string name="error_signed_out">Your session has ended. Please sign in again.</string>
+    <string name="error_busy">The service is busy. Try again in a moment.</string>
     <string name="error_no_network">No internet connection.</string>
 
     <!-- Auth -->

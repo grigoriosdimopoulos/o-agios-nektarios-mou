@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Chat
 import gr.agiosnektarios.village.core.model.ChatMessage
 import gr.agiosnektarios.village.core.model.UserProfile
@@ -86,6 +87,7 @@ class ChatRoomViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val sessionRepository: SessionRepository,
     private val notificationRepository: NotificationRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val chatId: String = savedStateHandle.get<String>("chatId").orEmpty()
@@ -146,7 +148,7 @@ class ChatRoomViewModel @Inject constructor(
                     sending = false,
                     // Restore the text so a failed send is recoverable.
                     draft = if (result.isFailure) text else it.draft,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -202,6 +204,7 @@ class NewChatViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val sessionRepository: SessionRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -255,7 +258,7 @@ class NewChatViewModel @Inject constructor(
                 it.copy(
                     creating = false,
                     createdChatId = result.getOrNull(),
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }

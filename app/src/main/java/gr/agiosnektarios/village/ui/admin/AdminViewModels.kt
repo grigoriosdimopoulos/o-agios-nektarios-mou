@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.Role
 import gr.agiosnektarios.village.core.model.UserProfile
@@ -86,6 +87,7 @@ class AdminUserViewModel @Inject constructor(
     userRepository: UserRepository,
     issueRepository: IssueRepository,
     private val adminRepository: AdminRepository,
+    private val messages: UserMessages,
 ) : ViewModel() {
 
     private val userId: String = savedStateHandle.get<String>("userId").orEmpty()
@@ -132,7 +134,7 @@ class AdminUserViewModel @Inject constructor(
                 it.copy(
                     working = false,
                     deleted = result.isSuccess,
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
@@ -149,7 +151,7 @@ class AdminUserViewModel @Inject constructor(
                 it.copy(
                     working = false,
                     message = successMessage?.takeIf { _ -> result.isSuccess },
-                    errorMessage = result.exceptionOrNull()?.localizedMessage,
+                    errorMessage = messages.of(result.exceptionOrNull()),
                 )
             }
         }
