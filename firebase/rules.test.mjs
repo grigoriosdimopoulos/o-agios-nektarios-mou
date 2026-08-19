@@ -736,6 +736,89 @@ await check("calendar: an event with no attendee field can still be joined",
   assertSucceeds(updateDoc(doc(maria, "events/legacy"),
     { "attendees.maria": "Maria Test", updatedAt: serverTimestamp() })));
 
+// ---- alerts: what is wrong right now
+//
+// Any resident may raise one; that is the feature, not a gap. What must hold is
+// that the "I have it too" count cannot be moved by anyone for anyone else,
+// because that count is the whole content of an outage report.
+const alertSeed = (uid, name, extra = {}) => ({
+  kind: "POWER",
+  note: "Από τις 8 το πρωί.",
+  lat: 38.164, lng: 23.29, placeLabel: "Κέντρο",
+  raisedById: uid, raisedByName: name,
+  confirmedBy: [uid], confirmedNames: [name],
+  resolvedAt: null, resolvedById: "",
+  raisedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  ...extra,
+});
+
+await check("alerts: an ordinary resident raises one",
+  assertSucceeds(setDoc(doc(maria, "alerts/power"), alertSeed("maria", "Maria Test"))));
+await check("alerts: it must credit its real author",
+  assertFails(setDoc(doc(giorgos, "alerts/forged"), alertSeed("maria", "Maria Test"))));
+await check("alerts: it cannot open with the village already agreeing",
+  assertFails(setDoc(doc(giorgos, "alerts/stuffed"),
+    alertSeed("giorgos", "Giorgos Test",
+      { confirmedBy: ["giorgos", "maria"], confirmedNames: ["Giorgos Test", "Maria Test"] }))));
+await check("alerts: it cannot be born already over",
+  assertFails(setDoc(doc(giorgos, "alerts/done"),
+    alertSeed("giorgos", "Giorgos Test", { resolvedAt: new Date() }))));
+await check("alerts: a name is required",
+  assertFails(setDoc(doc(giorgos, "alerts/nameless"),
+    alertSeed("giorgos", ""))));
+await check("alerts: coordinates must be coordinates",
+  assertFails(setDoc(doc(giorgos, "alerts/moon"),
+    alertSeed("giorgos", "Giorgos Test", { lat: 999 }))));
+await check("alerts: no arbitrary extra fields",
+  assertFails(setDoc(doc(giorgos, "alerts/payload"),
+    alertSeed("giorgos", "Giorgos Test", { payload: "x".repeat(40000) }))));
+await check("alerts: everyone reads them",
+  assertSucceeds(getDoc(doc(giorgos, "alerts/power"))));
+await check("alerts: a suspended resident does not",
+  assertFails(getDoc(doc(banned, "alerts/power"))));
+
+await check("alerts: a neighbour says they have it too",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/power"), {
+    confirmedBy: ["maria", "giorgos"],
+    confirmedNames: ["Maria Test", "Giorgos Test"],
+    updatedAt: serverTimestamp(),
+  })));
+await check("alerts: and takes it back",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/power"), {
+    confirmedBy: ["maria"], confirmedNames: ["Maria Test"], updatedAt: serverTimestamp(),
+  })));
+await check("alerts: nobody confirms on a neighbour's behalf",
+  assertFails(updateDoc(doc(giorgos, "alerts/power"), {
+    confirmedBy: ["maria", "boss"],
+    confirmedNames: ["Maria Test", "Boss Test"],
+    updatedAt: serverTimestamp(),
+  })));
+// Adding yourself while quietly dropping four neighbours would inflate nothing
+// and deflate everything; the set difference is checked in both directions.
+await check("alerts: confirming is not a way to strike others off",
+  assertFails(updateDoc(doc(giorgos, "alerts/power"), {
+    confirmedBy: ["giorgos"], confirmedNames: ["Giorgos Test"], updatedAt: serverTimestamp(),
+  })));
+await check("alerts: confirming is not a way to rewrite the alert",
+  assertFails(updateDoc(doc(giorgos, "alerts/power"), {
+    confirmedBy: ["maria", "giorgos"],
+    confirmedNames: ["Maria Test", "Giorgos Test"],
+    kind: "FIRE", updatedAt: serverTimestamp(),
+  })));
+await check("alerts: a neighbour cannot declare it over",
+  assertFails(updateDoc(doc(giorgos, "alerts/power"),
+    { resolvedAt: serverTimestamp(), resolvedById: "giorgos", updatedAt: serverTimestamp() })));
+await check("alerts: the person who raised it can",
+  assertSucceeds(updateDoc(doc(maria, "alerts/power"),
+    { resolvedAt: serverTimestamp(), resolvedById: "maria", updatedAt: serverTimestamp() })));
+await check("alerts: a moderator can too",
+  assertSucceeds(setDoc(doc(giorgos, "alerts/road"), alertSeed("giorgos", "Giorgos Test", { kind: "ROAD" }))));
+await check("alerts: moderator resolves a neighbour's alert",
+  assertSucceeds(updateDoc(doc(boss, "alerts/road"),
+    { resolvedAt: serverTimestamp(), resolvedById: "boss", updatedAt: serverTimestamp() })));
+await check("alerts: residents cannot delete the record",
+  assertFails(deleteDoc(doc(maria, "alerts/power"))));
+
 // ---- the village's own telephone numbers
 const contactSeed = {
   name: "Αγροτικό Ιατρείο Βιλίων",

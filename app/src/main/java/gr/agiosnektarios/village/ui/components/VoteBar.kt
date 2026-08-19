@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.Motion
 import gr.agiosnektarios.village.ui.theme.VillageAccents
@@ -50,6 +51,13 @@ fun VoteBar(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    // A vote is the smallest thing in this app that changes what everybody
+    // else sees, so it is the smallest thing that earns a tick.
+    val haptics = rememberHaptics()
+    val vote: (Int) -> Unit = { value ->
+        haptics.tick()
+        onVote(value)
+    }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -63,7 +71,7 @@ fun VoteBar(
             inactiveIcon = Icons.Outlined.ThumbUp,
             contentDescription = stringResource(R.string.issue_upvote),
             enabled = enabled,
-            onClick = { onVote(if (myVote == 1) 0 else 1) },
+            onClick = { vote(if (myVote == 1) 0 else 1) },
         )
         VoteButton(
             count = downvotes,
@@ -73,7 +81,7 @@ fun VoteBar(
             inactiveIcon = Icons.Outlined.ThumbDown,
             contentDescription = stringResource(R.string.issue_downvote),
             enabled = enabled,
-            onClick = { onVote(if (myVote == -1) 0 else -1) },
+            onClick = { vote(if (myVote == -1) 0 else -1) },
         )
     }
 }

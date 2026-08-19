@@ -181,8 +181,8 @@ internal fun ProfileContent(
                     modifier = Modifier.weight(1f),
                 )
                 StatTile(
-                    value = state.upvotesReceived,
-                    label = stringResource(R.string.profile_stats_upvotes),
+                    value = state.takenOnCount,
+                    label = stringResource(R.string.profile_stats_taken_on),
                     modifier = Modifier.weight(1f),
                 )
             }

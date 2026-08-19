@@ -36,15 +36,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.Avatar
+import androidx.compose.material.icons.filled.Home
 import gr.agiosnektarios.village.ui.components.BlockDropdown
 import gr.agiosnektarios.village.ui.components.InlineSpinner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
+import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     onBack: () -> Unit,
+    onPinHome: () -> Unit,
     showSnackbar: (String) -> Unit,
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
@@ -155,6 +158,16 @@ fun EditProfileScreen(
                 blocks = state.blocks,
                 selectedBlockId = state.blockId,
                 onSelect = viewModel::onBlock,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // An address in this village is a description, not a street and
+            // number — so the field above can never be given to an ambulance.
+            // This can.
+            SecondaryButton(
+                text = stringResource(R.string.home_pin_open),
+                onClick = onPinHome,
+                icon = Icons.Filled.Home,
                 modifier = Modifier.fillMaxWidth(),
             )
 

@@ -76,16 +76,13 @@ fun EmptyState(
     subtitle: String? = null,
     action: @Composable (() -> Unit)? = null,
 ) {
-    val transition = rememberInfiniteTransition(label = "emptyState")
-    val breathe by transition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2600),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "breathe",
-    )
+    // Nothing animates here any more.
+    //
+    // This used to scale between 0.94 and 1.06 forever. A thing that pulses
+    // permanently in the corner of the eye is not warmth, it is a tic — and an
+    // empty state is, by definition, on screen while somebody is reading it and
+    // working out what to do. The one thing in this app that pulses on purpose
+    // is an emergency, and it can only mean that if nothing else does.
 
     Column(
         modifier = modifier
@@ -97,7 +94,6 @@ fun EmptyState(
         Text(
             text = emoji,
             style = MaterialTheme.typography.displaySmall,
-            modifier = Modifier.scale(breathe),
         )
         Text(
             text = title,

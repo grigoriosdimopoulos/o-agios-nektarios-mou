@@ -47,6 +47,8 @@ object Routes {
     const val ANNOUNCEMENT_COMPOSE = "announcement-compose?announcementId={announcementId}"
     const val EVENT_COMPOSE = "event-compose?eventId={eventId}"
     const val CONTACTS = "contacts"
+    const val ALERT = "alert"
+    const val HOME_PIN = "profile/home"
 
     fun issueDetail(issueId: String) = "issue/$issueId"
 

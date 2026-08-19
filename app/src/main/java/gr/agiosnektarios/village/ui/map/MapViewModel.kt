@@ -59,6 +59,16 @@ data class MapUiState(
     /** Whether to offer the "tap a street to name it" hint over the map. */
     val showStreetHint: Boolean = false,
     val errorMessage: String? = null,
+    /**
+     * Where the phone is, when it knows and when it is inside the village.
+     *
+     * Held in the map's own state rather than asked for by the map, because a
+     * position is a fact about the session and the map is only one of the
+     * things that wants it.
+     */
+    val myPosition: GeoPoint? = null,
+    /** The signed-in resident's own house pin, if they have set one. */
+    val homePosition: GeoPoint? = null,
 )
 
 /**
@@ -81,6 +91,7 @@ class MapViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val streetNameRepository: StreetNameRepository,
     private val sessionRepository: SessionRepository,
+    private val locationProvider: gr.agiosnektarios.village.data.location.LocationProvider,
 ) : ViewModel() {
 
     /** Kept out of [MapUiState] so camera movement never re-renders the sheets. */
@@ -160,6 +171,12 @@ class MapViewModel @Inject constructor(
             loading = false,
             placingPin = interactionState.placingPin,
             pendingPin = interactionState.pendingPin,
+            myPosition = interactionState.myPosition,
+            homePosition = context.viewer?.let { profile ->
+                val lat = profile.homeLat
+                val lng = profile.homeLng
+                if (lat != null && lng != null) GeoPoint(lat, lng) else null
+            },
             // Re-resolved from the live list so an open sheet updates when a
             // report inside it changes, instead of showing a frozen snapshot.
             selectedCluster = interactionState.selectedClusterId?.let { id ->
@@ -190,6 +207,21 @@ class MapViewModel @Inject constructor(
                 interactionState.selectedWayId == null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MapUiState())
+
+    /**
+     * Asks the phone where it is, for the dot on the map.
+     *
+     * Silent about failure on purpose: a map with no blue dot is a map, while a
+     * map with an error banner about location services is a scolding. The
+     * provider already refuses anything outside the village, so a fix from a
+     * drive down to Vilia does not put the dot in the wrong place.
+     */
+    fun locate() {
+        viewModelScope.launch {
+            val point = locationProvider.current() ?: return@launch
+            interaction.update { it.copy(myPosition = point) }
+        }
+    }
 
     fun onZoomChanged(newZoom: Float) {
         // Clustering only changes meaningfully at half-step granularity; snapping
@@ -307,5 +339,14 @@ class MapViewModel @Inject constructor(
         val selectedClusterId: String? = null,
         val selectedBlockId: String? = null,
         val selectedWayId: String? = null,
+        /**
+         * Where the phone last said it was.
+         *
+         * Kept with the other transient map state rather than as a sixth
+         * source, because `combine` tops out at five and because this is
+         * exactly what interaction state is for: it belongs to looking at the
+         * map, not to the village.
+         */
+        val myPosition: GeoPoint? = null,
     )
 }

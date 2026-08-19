@@ -16,6 +16,7 @@ object Collections {
     const val STREET_NAMES = "streetNames"
     const val EVENTS = "events"
     const val CONTACTS = "contacts"
+    const val ALERTS = "alerts"
 }
 
 /** FCM topics every signed-in device subscribes to. */

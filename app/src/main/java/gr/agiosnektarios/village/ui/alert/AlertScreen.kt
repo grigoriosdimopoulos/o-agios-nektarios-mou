@@ -1,0 +1,435 @@
+package gr.agiosnektarios.village.ui.alert
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.PersonSearch
+import androidx.compose.material.icons.filled.PowerOff
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
+import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.core.model.AlertKind
+import gr.agiosnektarios.village.core.model.AlertSeverity
+import gr.agiosnektarios.village.ui.components.ErrorBanner
+import gr.agiosnektarios.village.ui.components.PrimaryButton
+import gr.agiosnektarios.village.ui.components.SecondaryButton
+import gr.agiosnektarios.village.ui.components.VillageTextField
+import gr.agiosnektarios.village.ui.theme.Space
+import gr.agiosnektarios.village.ui.theme.raisedContainer
+import gr.agiosnektarios.village.ui.theme.raisedOutline
+
+/**
+ * Telling the village something is wrong.
+ *
+ * Two states, not a wizard. The first is six large targets and nothing else,
+ * because the person using this screen is frightened or in a hurry and every
+ * field between them and the point is a field they have to read. The second is
+ * the one they picked, a place, an optional note, and the actions.
+ *
+ * For the three emergencies the *first* thing on the second state is the
+ * telephone. That ordering is the whole ethic of the screen: this app tells
+ * neighbours, and neighbours are not a fire brigade. Saying so in the layout is
+ * more honest than saying so in a paragraph nobody reads.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AlertScreen(
+    onDone: () -> Unit,
+    viewModel: AlertViewModel = hiltViewModel(),
+) {
+    val state by viewModel.raise.collectAsStateWithLifecycle()
+    val live by viewModel.active.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val haptics = rememberHaptics()
+
+    LaunchedEffect(state.raisedId) { if (state.raisedId != null) onDone() }
+
+    val dial: (String) -> Unit = { number ->
+        runCatching {
+            context.startActivity(
+                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onDone, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.action_back),
+                )
+            }
+            Text(
+                text = stringResource(R.string.alert_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Column(
+            modifier = Modifier.padding(horizontal = Space.page).padding(bottom = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            ErrorBanner(message = state.errorMessage)
+
+            if (state.kind == null) {
+                Text(
+                    text = stringResource(R.string.alert_pick),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                AlertKind.entries.forEach { kind ->
+                    KindButton(kind = kind, onClick = { haptics.warning(); viewModel.pick(kind) })
+                }
+            } else {
+                Chosen(
+                    state = state,
+                    onNote = viewModel::onNote,
+                    onPlace = viewModel::onPlace,
+                    onBack = viewModel::reset,
+                    onSend = viewModel::send,
+                    onDial = dial,
+                    onSms = {
+                        sendSms(
+                            context = context,
+                            numbers = live.residentNumbers,
+                            body = it,
+                        )
+                    },
+                    numbersAvailable = live.residentNumbers.isNotEmpty(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun KindButton(kind: AlertKind, onClick: () -> Unit) {
+    val emergency = kind.severity == AlertSeverity.EMERGENCY
+    val container = if (emergency) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        raisedContainer
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(container)
+            .then(
+                if (emergency) {
+                    Modifier
+                } else {
+                    raisedOutline?.let { Modifier.border(it, RoundedCornerShape(16.dp)) } ?: Modifier
+                },
+            )
+            .clickable(onClick = onClick)
+            // Deliberately tall. This is the one screen in the app where a
+            // mis-tap costs something, and where the hands using it may be
+            // unsteady.
+            .padding(horizontal = 18.dp, vertical = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(
+            imageVector = kind.icon(),
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = if (emergency) {
+                MaterialTheme.colorScheme.onErrorContainer
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        )
+        Text(
+            text = kind.label(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (emergency) {
+                MaterialTheme.colorScheme.onErrorContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Chosen(
+    state: RaiseAlertState,
+    onNote: (String) -> Unit,
+    onPlace: (AlertPlace) -> Unit,
+    onBack: () -> Unit,
+    onSend: () -> Unit,
+    onDial: (String) -> Unit,
+    onSms: (String) -> Unit,
+    numbersAvailable: Boolean,
+) {
+    val kind = state.kind ?: return
+    val haptics = rememberHaptics()
+    val emergency = kind.severity == AlertSeverity.EMERGENCY
+    val label = kind.label()
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = kind.icon(),
+            contentDescription = null,
+            tint = if (emergency) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(text = label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        Text(
+            text = stringResource(R.string.action_back),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
+        )
+    }
+
+    // The telephone first, for the three that cannot wait.
+    if (emergency) {
+        Text(
+            text = stringResource(R.string.alert_first),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
+        PrimaryButton(
+            text = stringResource(
+                when (kind) {
+                    AlertKind.FIRE -> R.string.alert_call_199
+                    AlertKind.MEDICAL -> R.string.alert_call_166
+                    else -> R.string.alert_call_112
+                },
+            ),
+            onClick = {
+                onDial(
+                    when (kind) {
+                        AlertKind.FIRE -> "199"
+                        AlertKind.MEDICAL -> "166"
+                        else -> "112"
+                    },
+                )
+            },
+            icon = Icons.Filled.Call,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    WhereRow(state = state, onPlace = onPlace)
+
+    VillageTextField(
+        value = state.note,
+        onValueChange = onNote,
+        label = stringResource(R.string.alert_note),
+        singleLine = false,
+        minLines = 2,
+    )
+
+    PrimaryButton(
+        text = stringResource(R.string.alert_raise),
+        onClick = { haptics.committed(); onSend() },
+        enabled = state.canRaise,
+        loading = state.raising,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    val body = stringResource(
+        R.string.alert_sms_body,
+        label,
+        listOfNotNull(
+            state.placeLabel.takeIf { it.isNotBlank() },
+            state.note.takeIf { it.isNotBlank() },
+            state.position?.let { "https://maps.google.com/?q=${it.lat},${it.lng}" },
+        ).joinToString(" · "),
+    )
+    SecondaryButton(
+        text = stringResource(R.string.alert_sms),
+        onClick = { onSms(body) },
+        enabled = numbersAvailable,
+        icon = Icons.Filled.Sms,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    if (!numbersAvailable) {
+        Text(
+            text = stringResource(R.string.alert_no_numbers),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.alert_reach),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WhereRow(state: RaiseAlertState, onPlace: (AlertPlace) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.alert_where),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PlacePill(
+                label = stringResource(R.string.alert_where_me),
+                selected = state.place == AlertPlace.HERE,
+                onClick = { onPlace(AlertPlace.HERE) },
+            )
+            PlacePill(
+                label = stringResource(R.string.alert_where_home),
+                selected = state.place == AlertPlace.HOME,
+                onClick = { onPlace(AlertPlace.HOME) },
+            )
+        }
+        Text(
+            text = when {
+                state.locating -> stringResource(R.string.alert_where_locating)
+                state.placeLabel.isNotBlank() -> state.placeLabel
+                state.position != null -> "%.5f, %.5f".format(
+                    state.position.lat,
+                    state.position.lng,
+                )
+                else -> stringResource(R.string.alert_where_unknown)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun PlacePill(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+    }
+}
+
+/**
+ * Hands the message to the phone's own SMS app, addressed to everyone.
+ *
+ * `ACTION_SENDTO` with an `smsto:` list opens the composer with the recipients
+ * and the text filled in and sends nothing by itself — the person still presses
+ * send. That is the right division: this app has no business sending messages
+ * from somebody's number without them seeing what goes out, and SMS is the only
+ * channel here that reaches a phone that is not running the app.
+ */
+private fun sendSms(context: android.content.Context, numbers: List<String>, body: String) {
+    if (numbers.isEmpty()) return
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + numbers.joinToString(";")))
+        .putExtra("sms_body", body)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
+}
+
+@Composable
+internal fun AlertKind.label(): String = stringResource(
+    when (this) {
+        AlertKind.FIRE -> R.string.alert_kind_fire
+        AlertKind.MEDICAL -> R.string.alert_kind_medical
+        AlertKind.MISSING -> R.string.alert_kind_missing
+        AlertKind.POWER -> R.string.alert_kind_power
+        AlertKind.WATER -> R.string.alert_kind_water
+        AlertKind.ROAD -> R.string.alert_kind_road
+        AlertKind.OTHER -> R.string.alert_kind_other
+    },
+)
+
+internal fun AlertKind.icon(): ImageVector = when (this) {
+    AlertKind.FIRE -> Icons.Filled.LocalFireDepartment
+    AlertKind.MEDICAL -> Icons.Filled.MedicalServices
+    AlertKind.MISSING -> Icons.Filled.PersonSearch
+    AlertKind.POWER -> Icons.Filled.PowerOff
+    AlertKind.WATER -> Icons.Filled.WaterDrop
+    AlertKind.ROAD -> Icons.Filled.Construction
+    AlertKind.OTHER -> Icons.Filled.Campaign
+}

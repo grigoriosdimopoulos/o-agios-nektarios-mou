@@ -34,6 +34,8 @@ import gr.agiosnektarios.village.core.model.UserProfile
 import gr.agiosnektarios.village.ui.admin.AdminScreen
 import gr.agiosnektarios.village.ui.admin.AdminUserDetailScreen
 import gr.agiosnektarios.village.ui.announcements.AnnouncementComposeScreen
+import gr.agiosnektarios.village.ui.alert.AlertScreen
+import gr.agiosnektarios.village.ui.profile.HomePinScreen
 import gr.agiosnektarios.village.ui.contacts.ContactsScreen
 import gr.agiosnektarios.village.ui.events.EventComposeScreen
 import gr.agiosnektarios.village.ui.village.VillageScreen
@@ -249,6 +251,7 @@ fun VillageNavHost(
                     navController.navigate(Routes.newIssueAt(lat, lng))
                 },
                 onOpenContacts = { navController.navigate(Routes.CONTACTS) },
+                onRaiseAlert = { navController.navigate(Routes.ALERT) },
             )
         }
         screen(Routes.ISSUES, motion = ScreenMotion.TAB) {
@@ -280,6 +283,12 @@ fun VillageNavHost(
         }
         screen(Routes.CONTACTS) {
             ContactsScreen(onBack = navController::popBackStack)
+        }
+        screen(Routes.ALERT) {
+            AlertScreen(onDone = navController::popBackStack)
+        }
+        screen(Routes.HOME_PIN) {
+            HomePinScreen(onDone = navController::popBackStack)
         }
 
         screen(Routes.CHATS, motion = ScreenMotion.TAB) {
@@ -351,7 +360,11 @@ fun VillageNavHost(
 
         // -------------------------------------------------- profile & admin
         screen(Routes.EDIT_PROFILE) {
-            EditProfileScreen(onBack = navController::popBackStack, showSnackbar = showSnackbar)
+            EditProfileScreen(
+                onBack = navController::popBackStack,
+                onPinHome = { navController.navigate(Routes.HOME_PIN) },
+                showSnackbar = showSnackbar,
+            )
         }
         screen(Routes.SETTINGS) {
             SettingsScreen(

@@ -184,6 +184,7 @@
     <string name="profile_my_comments">My comments</string>
     <string name="profile_stats_reports">Reports</string>
     <string name="profile_stats_resolved">Resolved</string>
+    <string name="profile_stats_taken_on">Taken on</string>
     <string name="profile_stats_upvotes">Upvotes</string>
     <string name="profile_saved">Profile saved.</string>
     <string name="profile_change_photo">Change photo</string>
@@ -448,4 +449,52 @@
     <string name="event_time">Time</string>
     <string name="event_new">New event</string>
     <string name="event_invalid">It needs a name and a date.</string>
+
+    <!-- Emergency and outages -->
+    <string name="alert_button">Urgent</string>
+    <string name="alert_title">Tell the village</string>
+    <string name="alert_pick">What is happening?</string>
+    <string name="alert_kind_fire">Fire or smoke</string>
+    <string name="alert_kind_medical">Ambulance needed</string>
+    <string name="alert_kind_missing">Someone is missing</string>
+    <string name="alert_kind_power">Power cut</string>
+    <string name="alert_kind_water">No water</string>
+    <string name="alert_kind_road">Road blocked</string>
+    <string name="alert_kind_other">Something else</string>
+    <string name="alert_note">Anything that helps — what, and exactly where</string>
+    <string name="alert_where">Where</string>
+    <string name="alert_where_me">Where I am</string>
+    <string name="alert_where_home">My house</string>
+    <string name="alert_where_locating">Finding you…</string>
+    <string name="alert_where_unknown">No location yet</string>
+    <string name="alert_raise">Tell the village</string>
+    <string name="alert_raised">The village has been told</string>
+    <string name="alert_sms">Text every resident</string>
+    <string name="alert_call_112">Call 112 now</string>
+    <string name="alert_call_199">Call the fire service — 199</string>
+    <string name="alert_call_166">Call an ambulance — 166</string>
+    <string name="alert_first">Call first. This app tells your neighbours; it does not call anyone for you.</string>
+    <string name="alert_reach">Anyone with the app open sees this at once. A phone that is closed sees it within about a quarter of an hour, and a phone in a drawer sees nothing — so if it cannot wait, send the text message too.</string>
+    <string name="alert_active">Happening now</string>
+    <string name="alert_confirm_have">I have it too</string>
+    <string name="alert_confirm_have_done">You said you have it</string>
+    <plurals name="alert_confirmed">
+        <item quantity="one">%1$d household</item>
+        <item quantity="other">%1$d households</item>
+    </plurals>
+    <string name="alert_resolve">It is over</string>
+    <string name="alert_resolve_confirm">Mark this as over?</string>
+    <string name="alert_raised_by">%1$s · %2$s</string>
+    <string name="alert_sms_body">%1$s at Agios Nektarios. %2$s</string>
+    <string name="alert_none">Nothing wrong right now.</string>
+    <string name="alert_open">Open</string>
+    <string name="alert_invalid">Pick what is happening first.</string>
+    <string name="alert_no_numbers">No resident has a telephone number on their profile yet, so there is nobody to text.</string>
+    <string name="issues_filters">Filters</string>
+    <string name="issues_filters_active">Filters · %1$d</string>
+    <string name="home_pin_title">My house on the map</string>
+    <string name="home_pin_hint">Tap where your house is. An ambulance can be given this.</string>
+    <string name="home_pin_set">Pinned</string>
+    <string name="home_pin_clear">Remove</string>
+    <string name="home_pin_open">Pin my house</string>
 </resources>

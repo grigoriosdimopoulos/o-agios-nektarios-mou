@@ -77,6 +77,10 @@ import gr.agiosnektarios.village.ui.components.EmptyState
 import gr.agiosnektarios.village.ui.components.GlassSurface
 import gr.agiosnektarios.village.ui.components.IssueRow
 import gr.agiosnektarios.village.ui.issue.QuickReportSheet
+import gr.agiosnektarios.village.ui.alert.AlertViewModel
+import gr.agiosnektarios.village.ui.alert.EmergencyBanner
+import gr.agiosnektarios.village.ui.alert.OutageCard
+import gr.agiosnektarios.village.ui.alert.UrgentButton
 import gr.agiosnektarios.village.ui.issue.QuickReportViewModel
 import gr.agiosnektarios.village.ui.weather.DateLine
 import gr.agiosnektarios.village.ui.weather.WeatherChip
@@ -109,9 +113,11 @@ fun MapScreen(
     onOpenIssue: (String) -> Unit,
     onCreateIssueAt: (Double, Double) -> Unit,
     onOpenContacts: () -> Unit,
+    onRaiseAlert: () -> Unit,
     viewModel: MapViewModel = hiltViewModel(),
     quickReport: QuickReportViewModel = hiltViewModel(),
     weatherViewModel: WeatherViewModel = hiltViewModel(),
+    alertViewModel: AlertViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val darkTheme = LocalIsDarkTheme.current
@@ -144,12 +150,14 @@ fun MapScreen(
     // decides whether the radio is worth waking.
     LifecycleResumeEffect(Unit) {
         weatherViewModel.refresh()
+        viewModel.locate()
         onPauseOrDispose { }
     }
     var showWeather by remember { mutableStateOf(false) }
     // Measured by the drawer rather than assumed, so the button and the street
     // hint clear it at every text size.
     var peekHeight by remember { mutableStateOf(MapSheetDefaults.peekHeight) }
+    val alerts by alertViewModel.active.collectAsStateWithLifecycle()
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -167,6 +175,8 @@ fun MapScreen(
             greekLabels = greek,
             streetNames = state.streetNames,
             focusedIssueId = focusedIssueId.takeUnless { state.placingPin },
+            myPosition = state.myPosition,
+            homePosition = state.homePosition,
             allowRoadTaps = !state.placingPin,
             focusBounds = focusBounds,
             onZoomChanged = viewModel::onZoomChanged,
@@ -206,6 +216,22 @@ fun MapScreen(
                 onOpenIssue = onOpenIssue,
                 onFocusedIssue = { focusedIssueId = it },
                 onPeekHeight = { peekHeight = it },
+                leading = {
+                    val outages = alerts.alerts.filter {
+                        it.alertKind.severity == gr.agiosnektarios.village.core.model
+                            .AlertSeverity.OUTAGE
+                    }
+                    items(outages, key = { "alert-${it.id}" }) { alert ->
+                        OutageCard(
+                            alert = alert,
+                            userId = alerts.userId,
+                            canResolve = alerts.canModerate ||
+                                alert.raisedById == alerts.userId,
+                            onConfirm = { alertViewModel.toggleConfirmed(alert) },
+                            onResolve = { alertViewModel.resolve(alert) },
+                        )
+                    }
+                },
                 subtitle = {
                     weather.snapshot?.let { DateLine(it.observedAt) }
                 },
@@ -214,6 +240,21 @@ fun MapScreen(
                 },
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+
+        // What is wrong right now, and the way to say so — both above the map
+        // and both on the screen the app opens on, because neither is any use
+        // three taps deep.
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .fillMaxWidth(0.72f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            UrgentButton(onClick = onRaiseAlert)
+            EmergencyBanner(alerts = alerts.alerts, onOpen = { onRaiseAlert() })
         }
 
         MapOverlay(

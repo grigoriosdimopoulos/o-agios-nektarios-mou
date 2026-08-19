@@ -219,6 +219,11 @@ fun IssueComposeScreen(
                         // their names are not fetched for a thumbnail map.
                         streetNames = emptyMap(),
                         focusedIssueId = null,
+            // The picker is about one point; the blue dot would compete with
+            // the pin being placed, and the house pin is not what is being
+            // chosen here.
+            myPosition = null,
+            homePosition = null,
                         allowRoadTaps = false,
                         focusBounds = state.position?.let {
                             GeoBounds(it.lat, it.lng, it.lat, it.lng)

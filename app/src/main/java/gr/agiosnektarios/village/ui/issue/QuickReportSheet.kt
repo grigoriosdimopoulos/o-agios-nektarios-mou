@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.BytesImage
 import gr.agiosnektarios.village.ui.components.PrimaryButton
@@ -76,6 +77,7 @@ fun QuickReportSheet(
     onCategoryChange: (IssueCategory) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = rememberHaptics()
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -121,7 +123,7 @@ fun QuickReportSheet(
 
         PrimaryButton(
             text = stringResource(R.string.quick_report_send),
-            onClick = onSubmit,
+            onClick = { haptics.committed(); onSubmit() },
             enabled = state.canSubmit,
             loading = state.submitting,
             modifier = Modifier.fillMaxWidth(),

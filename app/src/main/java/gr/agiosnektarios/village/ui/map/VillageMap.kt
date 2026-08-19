@@ -50,6 +50,11 @@ private const val LAYER_BLOCK_LABEL = "village-block-label"
 private const val LAYER_PINS = "village-pin-symbols"
 private const val SOURCE_FOCUS = "village-focus"
 private const val LAYER_FOCUS = "village-focus-halo"
+private const val SOURCE_ME = "village-me"
+private const val LAYER_ME_HALO = "village-me-halo"
+private const val LAYER_ME_DOT = "village-me-dot"
+private const val SOURCE_HOME = "village-home"
+private const val LAYER_HOME = "village-home"
 private const val ROADS_ASSET = "village_roads.json"
 private const val SOURCE_ROADS = "village-roads"
 private const val LAYER_ROAD_CASING = "village-road-casing"
@@ -150,6 +155,10 @@ fun VillageMap(
      * read as one screen rather than as a list next to a picture.
      */
     focusedIssueId: String?,
+    /** Where the phone thinks it is, or null when it does not know. */
+    myPosition: GeoPoint?,
+    /** The resident's own house, if they have pinned one. */
+    homePosition: GeoPoint?,
     /** False while a pin is being placed, when every tap belongs to the pin. */
     allowRoadTaps: Boolean,
     onMapTap: (GeoPoint) -> Unit,
@@ -290,6 +299,8 @@ fun VillageMap(
                 greekLabels = greekLabels,
                 streetNames = streetNames,
                 focusedIssueId = focusedIssueId,
+                myPosition = myPosition,
+                homePosition = homePosition,
             )
             // Guarded: without this, every recomposition restarts the fly-to
             // and the camera never settles while a neighbourhood is open.
@@ -364,6 +375,8 @@ private class VillageMapState {
             loaded.addSource(GeoJsonSource(SOURCE_BLOCKS))
             loaded.addSource(GeoJsonSource(SOURCE_PINS))
             loaded.addSource(GeoJsonSource(SOURCE_FOCUS))
+            loaded.addSource(GeoJsonSource(SOURCE_ME))
+            loaded.addSource(GeoJsonSource(SOURCE_HOME))
 
             // Neighbourhood shading goes *under* the street network rather than
             // over it. Painted on top it washed the roads out — which is the
@@ -489,6 +502,54 @@ private class VillageMapState {
                 ),
             )
 
+            // The resident's own house, if they have pinned one. Under the
+            // pins and under the position dot: it is a landmark, not a thing
+            // that has happened.
+            loaded.addLayer(
+                CircleLayer(LAYER_HOME, SOURCE_HOME).withProperties(
+                    PropertyFactory.circleColor(if (dark) "#E0C070" else "#8A6D0B"),
+                    PropertyFactory.circleOpacity(0.9f),
+                    PropertyFactory.circleStrokeColor(if (dark) "#1A1A1A" else "#FFFFFF"),
+                    PropertyFactory.circleStrokeWidth(2f),
+                    PropertyFactory.circleRadius(
+                        Expression.interpolate(
+                            Expression.linear(), Expression.zoom(),
+                            Expression.stop(14f, 4f),
+                            Expression.stop(18f, 8f),
+                        ),
+                    ),
+                ),
+            )
+
+            // Where you are.
+            //
+            // The first thing anyone looks for on a map of their own village,
+            // and the app did not have it — you could see forty reports and not
+            // yourself. Two layers because a plain dot on a busy map is
+            // ambiguous: a wide soft halo says "roughly here", the hard dot
+            // inside it says "here".
+            loaded.addLayer(
+                CircleLayer(LAYER_ME_HALO, SOURCE_ME).withProperties(
+                    PropertyFactory.circleColor("#2F6FE0"),
+                    PropertyFactory.circleOpacity(0.16f),
+                    PropertyFactory.circleRadius(
+                        Expression.interpolate(
+                            Expression.linear(), Expression.zoom(),
+                            Expression.stop(14f, 12f),
+                            Expression.stop(18f, 34f),
+                        ),
+                    ),
+                ),
+            )
+            loaded.addLayer(
+                CircleLayer(LAYER_ME_DOT, SOURCE_ME).withProperties(
+                    PropertyFactory.circleColor("#2F6FE0"),
+                    PropertyFactory.circleStrokeColor("#FFFFFF"),
+                    PropertyFactory.circleStrokeWidth(2.5f),
+                    PropertyFactory.circleRadius(6f),
+                ),
+            )
+
             // Pins last so they sit above the neighbourhood shading.
             loaded.addLayer(
                 SymbolLayer(LAYER_PINS, SOURCE_PINS).withProperties(
@@ -531,6 +592,8 @@ private class VillageMapState {
         greekLabels: Boolean,
         streetNames: Map<String, String>,
         focusedIssueId: String?,
+        myPosition: GeoPoint?,
+        homePosition: GeoPoint?,
     ) {
         // Cheap identity of the inputs. Clusters and summaries are rebuilt as
         // new instances each time the view model emits, so their contents —
@@ -539,6 +602,7 @@ private class VillageMapState {
             clusters.map { it.id to it.size },
             blocks.map { it.block.id to it.openCount },
             showBlocks, pendingPin, greekLabels, streetNames, focusedIssueId,
+            myPosition, homePosition,
         ).hashCode()
         if (signature == lastRender && style != null) return
         lastRender = signature
@@ -550,6 +614,8 @@ private class VillageMapState {
                 renderRoadNames(loaded, streetNames)
                 renderPins(loaded, clusters, pendingPin)
                 renderFocus(loaded, clusters, focusedIssueId)
+                renderPoint(loaded, SOURCE_ME, myPosition)
+                renderPoint(loaded, SOURCE_HOME, homePosition)
             }
         }
         if (style != null) work() else pending = work
@@ -655,6 +721,20 @@ private class VillageMapState {
             }
         }
         source.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+
+    /** A single point, or an empty collection when there is nothing to show. */
+    private fun renderPoint(style: Style, sourceId: String, point: GeoPoint?) {
+        val source = style.getSourceAs<GeoJsonSource>(sourceId) ?: return
+        source.setGeoJson(
+            FeatureCollection.fromFeatures(
+                if (point == null) {
+                    emptyList()
+                } else {
+                    listOf(Feature.fromGeometry(Point.fromLngLat(point.lng, point.lat)))
+                },
+            ),
+        )
     }
 
     /** One circle under the report the drawer is centred on, or nothing. */

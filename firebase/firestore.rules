@@ -489,6 +489,92 @@ service cloud.firestore {
         && (uid() == resource.data.authorId || isModerator());
     }
 
+    // --------------------------------------------------------------- alerts
+
+    /**
+     * What is wrong in the village right now, at `alerts/{id}`.
+     *
+     * Any resident may raise one, and that is not a loose end — it is the
+     * feature. A fire on the hill at four in the morning is not something to
+     * route through a moderator, and a power cut is only worth reporting if the
+     * person sitting in the dark can report it.
+     *
+     * What the rules police is the same thing they police on the calendar:
+     * nobody may speak for anybody else. An alert credits its author, and the
+     * "I have it too" count may only ever be moved by one person, for
+     * themselves — because the count is the entire content of an outage report,
+     * and a count one person can inflate is a count nobody should act on.
+     */
+    match /alerts/{alertId} {
+
+      function validAlert() {
+        return request.resource.data.kind is string
+          && request.resource.data.kind.size() <= 20
+          && request.resource.data.get('note', '') is string
+          && request.resource.data.get('note', '').size() <= 240
+          && request.resource.data.get('placeLabel', '') is string
+          && request.resource.data.get('placeLabel', '').size() <= 80
+          && request.resource.data.raisedByName is string
+          && request.resource.data.raisedByName.size() > 0
+          && request.resource.data.raisedByName.size() <= 80
+          && (request.resource.data.get('lat', null) == null
+              || (request.resource.data.lat is number
+                  && request.resource.data.lat >= -90 && request.resource.data.lat <= 90))
+          && (request.resource.data.get('lng', null) == null
+              || (request.resource.data.lng is number
+                  && request.resource.data.lng >= -180 && request.resource.data.lng <= 180))
+          && request.resource.data.keys().hasOnly([
+            'kind', 'note', 'lat', 'lng', 'placeLabel',
+            'raisedById', 'raisedByName', 'raisedAt',
+            'confirmedBy', 'confirmedNames',
+            'resolvedAt', 'resolvedById', 'updatedAt'
+          ]);
+      }
+
+      /**
+       * "I have it too", and nothing else.
+       *
+       * The same shape as the street-name confirmation: the write is confined
+       * to the two arrays and the timestamp, and the difference between the old
+       * and new id sets may only ever be the caller's own uid, in either
+       * direction. Without the set difference on *both* sides a resident could
+       * add themselves while quietly removing four neighbours.
+       */
+      function isConfirmationToggle() {
+        return touchesOnly(['confirmedBy', 'confirmedNames', 'updatedAt'])
+          && request.resource.data.kind == resource.data.kind
+          && request.resource.data.raisedById == resource.data.raisedById
+          && request.resource.data.get('confirmedBy', []).toSet()
+              .difference(resource.data.get('confirmedBy', []).toSet())
+              in [[].toSet(), [uid()].toSet()]
+          && resource.data.get('confirmedBy', []).toSet()
+              .difference(request.resource.data.get('confirmedBy', []).toSet())
+              in [[].toSet(), [uid()].toSet()];
+      }
+
+      /** Marking it over touches only that, and only for those entitled to. */
+      function isResolution() {
+        return touchesOnly(['resolvedAt', 'resolvedById', 'updatedAt'])
+          && request.resource.data.resolvedById == uid()
+          && (uid() == resource.data.raisedById || isModerator());
+      }
+
+      allow read: if isActiveResident();
+
+      allow create: if isActiveResident()
+        && validAlert()
+        && request.resource.data.raisedById == uid()
+        && request.resource.data.get('confirmedBy', []) == [uid()]
+        && request.resource.data.get('resolvedAt', null) == null;
+
+      allow update: if isActiveResident() && (isConfirmationToggle() || isResolution());
+
+      // Never deleted, only resolved. An alert is a record of something that
+      // happened, and the village may want to know afterwards how long the
+      // water was off.
+      allow delete: if isAdmin();
+    }
+
     // ------------------------------------------------------------- contacts
 
     /**

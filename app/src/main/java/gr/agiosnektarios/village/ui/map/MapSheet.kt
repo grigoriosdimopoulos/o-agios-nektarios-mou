@@ -103,6 +103,13 @@ fun MapSheet(
      * closed over its own contents.
      */
     onPeekHeight: (Dp) -> Unit = {},
+    /**
+     * Anything that belongs above the reports — currently the outages the
+     * village is living with. Given the list's own scope rather than a
+     * composable slot, so a handful of cards do not all compose at once inside
+     * a single item.
+     */
+    leading: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -242,12 +249,18 @@ fun MapSheet(
                     ),
                     verticalArrangement = Arrangement.spacedBy(Space.gutter),
                 ) {
+                    leading()
                     items(issues, key = { it.id }) { issue ->
                         // No shared-element key here. The Reports tab's list
                         // already claims these keys, and two live elements on
                         // one key inside a single SharedTransitionLayout is an
                         // artefact waiting to happen when the tabs cross-fade.
-                        IssueCard(issue = issue, onClick = { onOpenIssue(issue.id) }, shareKey = false)
+                        IssueCard(
+                            issue = issue,
+                            onClick = { onOpenIssue(issue.id) },
+                            shareKey = false,
+                            modifier = Modifier.animateItem(),
+                        )
                     }
                 }
             }

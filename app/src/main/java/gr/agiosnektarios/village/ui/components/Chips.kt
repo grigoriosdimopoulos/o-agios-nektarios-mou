@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -138,7 +139,12 @@ fun CategoryBadge(
             .border(1.dp, category.tint.copy(alpha = 0.4f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = category.emoji, style = MaterialTheme.typography.titleMedium)
+        Icon(
+            imageVector = category.icon,
+            contentDescription = null,
+            tint = category.tint,
+            modifier = Modifier.size(size * 0.5f),
+        )
     }
 }
 

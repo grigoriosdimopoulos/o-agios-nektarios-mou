@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.Comment
 import gr.agiosnektarios.village.core.model.IssuePhoto
@@ -577,16 +578,21 @@ private fun StatusDialog(
  */
 @Composable
 private fun TakeItOn(issue: Issue, viewer: UserProfile?, onToggle: () -> Unit) {
+    // Putting your name against a job is the loudest thing a resident can do
+    // here short of raising an alarm, so it is the firm tick rather than the
+    // light one. Handing it back is the light one: it undoes rather than
+    // promises.
+    val haptics = rememberHaptics()
     when {
         issue.canTake(viewer) -> SecondaryButton(
             text = stringResource(R.string.issue_take_on),
-            onClick = onToggle,
+            onClick = { haptics.committed(); onToggle() },
             icon = Icons.Filled.PanTool,
             modifier = Modifier.fillMaxWidth(),
         )
         issue.isTakenBy(viewer) -> SecondaryButton(
             text = stringResource(R.string.issue_release),
-            onClick = onToggle,
+            onClick = { haptics.tick(); onToggle() },
             modifier = Modifier.fillMaxWidth(),
         )
         issue.isTaken -> Text(

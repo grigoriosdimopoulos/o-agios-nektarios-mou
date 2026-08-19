@@ -33,13 +33,24 @@ import kotlinx.coroutines.launch
 data class ProfileUiState(
     val profile: UserProfile? = null,
     val myIssues: List<Issue> = emptyList(),
+    /** Reports this resident is currently dealing with, whoever filed them. */
+    val takenOn: List<Issue> = emptyList(),
     val blockNameEl: String = "",
     val blockNameEn: String = "",
     val loading: Boolean = true,
 ) {
     /** Counted from the live list rather than the stored counter, which lags. */
     val resolvedCount: Int get() = myIssues.count { it.status.isTerminal }
-    val upvotesReceived: Int get() = myIssues.sumOf { it.upvotes }
+    /**
+     * How many of the village's problems this resident took on.
+     *
+     * Replaces a count of upvotes received. In a settlement of forty-six
+     * people, "53 upvotes" is a vanity number borrowed from a social network —
+     * it measures how agreeable your reports were, which is not a thing anybody
+     * here needs to know about a neighbour. What is worth counting is the work:
+     * the jobs somebody put their name against.
+     */
+    val takenOnCount: Int get() = takenOn.size
 }
 
 @HiltViewModel
@@ -64,12 +75,14 @@ class ProfileViewModel @Inject constructor(
             } else {
                 combine(
                     issueRepository.observeIssuesByAuthor(profile.id),
+                    issueRepository.observeIssuesAssignedTo(profile.id),
                     blocks,
-                ) { issues, allBlocks ->
+                ) { issues, assigned, allBlocks ->
                     val block = allBlocks.firstOrNull { it.id == profile.blockId }
                     ProfileUiState(
                         profile = profile,
                         myIssues = issues,
+                        takenOn = assigned,
                         blockNameEl = block?.nameEl.orEmpty(),
                         blockNameEn = block?.nameEn.orEmpty(),
                         loading = false,

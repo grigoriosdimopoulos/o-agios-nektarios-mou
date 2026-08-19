@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.core.model.EventKind
 import gr.agiosnektarios.village.core.model.VillageEvent
@@ -112,6 +113,7 @@ fun CalendarContent(
         ) {
             items(state.events, key = { it.id }) { event ->
                 EventCard(
+                    modifier = Modifier.animateItem(),
                     event = event,
                     now = now,
                     userId = state.userId,
@@ -146,6 +148,7 @@ fun CalendarContent(
 
 @Composable
 private fun EventCard(
+    modifier: Modifier = Modifier,
     event: VillageEvent,
     now: Long,
     userId: String,
@@ -155,10 +158,11 @@ private fun EventCard(
     onDelete: () -> Unit,
 ) {
     val attending = event.isAttending(userId)
+    val haptics = rememberHaptics()
     val past = event.isPast(now)
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(raisedContainer)
@@ -234,7 +238,7 @@ private fun EventCard(
             // the button rather than as the state of the list it describes.
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AttendeeSummary(event)
-                if (!past) AttendButton(attending = attending, onClick = onAttend)
+                if (!past) AttendButton(attending = attending, onClick = { haptics.tick(); onAttend() })
             }
         }
     }

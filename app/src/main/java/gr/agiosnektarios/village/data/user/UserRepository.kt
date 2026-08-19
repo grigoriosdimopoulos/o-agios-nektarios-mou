@@ -95,6 +95,31 @@ class UserRepository @Inject constructor(
         }
     }
 
+    /**
+     * Sets or clears the resident's own house pin.
+     *
+     * Separate from [updateProfile] because it is set from the map rather than
+     * from the form, and because clearing it has to be possible without
+     * retyping a name.
+     */
+    suspend fun updateHome(
+        userId: String,
+        lat: Double?,
+        lng: Double?,
+        place: String,
+    ): Result<Unit> = withContext(io) {
+        runCatchingUnit {
+            users.document(userId).update(
+                mapOf(
+                    "homeLat" to lat,
+                    "homeLng" to lng,
+                    "homePlace" to if (lat == null) "" else place.trim().take(80),
+                    "updatedAt" to FieldValue.serverTimestamp(),
+                ),
+            ).await()
+        }
+    }
+
     /** Sets or clears the resident's picture. Null removes it. */
     suspend fun updateAvatar(userId: String, bytes: ByteArray?): Result<Unit> = withContext(io) {
         runCatchingUnit {

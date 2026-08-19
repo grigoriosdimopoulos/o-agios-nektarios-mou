@@ -49,6 +49,8 @@ data class IssueDraft(
     val category: IssueCategory,
     val position: GeoPoint,
     val blockId: String,
+    /** Where it is in words, worked out by PlaceNamer before the draft is sent. */
+    val placeLabel: String = "",
     val photos: List<ByteArray> = emptyList(),
     val thumbnail: ByteArray? = null,
 )
@@ -99,6 +101,22 @@ class IssueRepository @Inject constructor(
                     .sortedByDescending { it.createdAt?.time ?: 0L }
             }
             .orEmptyOnError("issues by $authorId")
+
+    /**
+     * What this resident has put their name against.
+     *
+     * A single equality on `assigneeId`, sorted in memory, so it needs no
+     * composite index — the same shape as every other query here.
+     */
+    fun observeIssuesAssignedTo(userId: String): Flow<List<Issue>> =
+        issues.whereEqualTo("assigneeId", userId)
+            .limit(200)
+            .asFlow()
+            .map { snapshot ->
+                snapshot.toObjectsSafe<Issue>()
+                    .sortedByDescending { it.createdAt?.time ?: 0L }
+            }
+            .orEmptyOnError("issues assigned to $userId")
 
     /** One-shot read for the edit screen, which needs the photos it already has. */
     suspend fun getPhotos(issueId: String): Result<List<IssuePhoto>> = withContext(io) {
@@ -185,6 +203,7 @@ class IssueRepository @Inject constructor(
                         "lng" to draft.position.lng,
                         "geohash" to geohash(draft.position.lat, draft.position.lng),
                         "blockId" to draft.blockId,
+                        "placeLabel" to draft.placeLabel,
                         "photoCount" to draft.photos.size,
                         "thumbnail" to draft.thumbnail?.let(Blob::fromBytes),
                         "authorId" to author.id,

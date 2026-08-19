@@ -17,6 +17,7 @@ import gr.agiosnektarios.village.data.issue.IssueRepository
 import gr.agiosnektarios.village.core.model.IssuePhoto
 import gr.agiosnektarios.village.data.media.ImageCodec
 import gr.agiosnektarios.village.data.media.ImageSpec
+import gr.agiosnektarios.village.core.geo.label
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
@@ -61,6 +62,7 @@ class IssueComposeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val issueRepository: IssueRepository,
     private val imageCodec: ImageCodec,
+    private val placeNamer: gr.agiosnektarios.village.data.village.PlaceNamer,
     private val blockRepository: VillageBlockRepository,
     private val sessionRepository: SessionRepository,
     private val messages: UserMessages,
@@ -229,12 +231,14 @@ class IssueComposeViewModel @Inject constructor(
             _uiState.update { it.copy(saving = true, errorMessage = null) }
             val position = state.position!!
             val block = blockRepository.blockAt(position)
+            val place = runCatching { placeNamer.describe(position) }.getOrNull()
             val draft = IssueDraft(
                 title = state.title,
                 description = state.description,
                 category = state.category!!,
                 position = position,
                 blockId = block?.id.orEmpty(),
+                placeLabel = place.label(),
                 photos = state.newPhotos,
                 thumbnail = state.thumbnail,
             )

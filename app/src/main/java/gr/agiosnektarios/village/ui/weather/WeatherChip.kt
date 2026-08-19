@@ -55,9 +55,14 @@ fun WeatherChip(
     val windLabel = stringResource(R.string.weather_beaufort, snapshot.wind.beaufort)
     val sector = snapshot.wind.sectorLabel()
     val conditionLabel = snapshot.condition.label()
-    val shownFire = fire?.takeIf {
-        state.fireIsToday && it.level.ordinal >= FireRisk.Level.HIGH.ordinal
-    }
+    // Shown at every level, not only the alarming ones.
+    //
+    // It used to appear from "high" upward, which meant that on the ordinary
+    // days — half of them — somebody opening the map to ask "can I burn these
+    // cuttings" found nothing at all and had to open the sheet to be told.
+    // A fire indicator that is absent whenever the answer is reassuring is an
+    // indicator you cannot trust the absence of.
+    val shownFire = fire?.takeIf { state.fireIsToday }
     // Spelled out for a screen reader, where the colour and the flame that
     // qualify the pill visually are not available at all.
     val fireLabel = shownFire?.let {
@@ -112,11 +117,8 @@ fun WeatherChip(
             )
         }
 
-        // Silent below "high", and silent on a reading that is not today's.
-        //
-        // A badge present every day of August is a badge nobody reads on the
-        // day it turns purple; a badge carried over from a cached reading
-        // taken while the phone was out of signal is worse, because it is a
+        // Silent only on a reading that is not today's: a colour carried over
+        // from a cached reading taken while the phone was out of signal is a
         // claim about right now with no date attached to it. The level is
         // still in the sheet either way, where it can say which day it is for.
         if (shownFire != null) {

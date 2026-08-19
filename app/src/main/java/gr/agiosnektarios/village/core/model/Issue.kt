@@ -27,6 +27,20 @@ data class Issue(
     val geohash: String = "",
     val blockId: String = "",
     /**
+     * Where this is, in the village's own words: "Οδός Ελατιάς, Κέντρο".
+     *
+     * Worked out from the coordinates when the report is filed, and then left
+     * alone. Every report in this app used to describe its location only
+     * because the author happened to type it into the title, so a list of
+     * reports told you what had happened and never where — on an app whose
+     * other half is a map.
+     *
+     * Frozen at filing time rather than recomputed on read: a street the
+     * village names next spring should not silently rewrite where last
+     * autumn's reports say they were.
+     */
+    val placeLabel: String = "",
+    /**
      * How many photos live in `issues/{id}/photos`.
      *
      * Denormalised so a card can say "3 photos" without reading them: the
