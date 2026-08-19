@@ -56,7 +56,17 @@ data class VillageAlert(
      * the fifth did.
      */
     val confirmedBy: List<String> = emptyList(),
-    val confirmedNames: List<String> = emptyList(),
+    /*
+     * There is no parallel list of names here, and there was.
+     *
+     * Nothing ever rendered it — the card shows a count — and it could not be
+     * bounded: Firestore's rules can size a list but not its elements, and
+     * there is no byte-length function, so one resident could write a single
+     * 900 KB "display name" onto a document every phone in the village fetches
+     * on launch and only an administrator can delete. Names are on the
+     * profiles, which are already loaded. A field nothing reads and nobody can
+     * police should not exist.
+     */
     val resolvedAt: Date? = null,
     val resolvedById: String = "",
     val updatedAt: Date? = null,

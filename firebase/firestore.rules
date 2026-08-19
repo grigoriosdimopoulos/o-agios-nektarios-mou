@@ -624,8 +624,6 @@ service cloud.firestore {
           && request.resource.data.raisedAt is timestamp
           && request.resource.data.raisedAt < request.time + duration.value(1, 'h')
           && request.resource.data.raisedAt > request.time - duration.value(1, 'd')
-          && request.resource.data.get('confirmedNames', []).size() ==
-             request.resource.data.get('confirmedBy', []).size()
           && (request.resource.data.get('lat', null) == null
               || (request.resource.data.lat is number
                   && request.resource.data.lat >= -90 && request.resource.data.lat <= 90))
@@ -635,7 +633,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             'kind', 'note', 'lat', 'lng', 'placeLabel',
             'raisedById', 'raisedByName', 'raisedAt',
-            'confirmedBy', 'confirmedNames',
+            'confirmedBy',
             'resolvedAt', 'resolvedById', 'updatedAt'
           ]);
       }
@@ -650,38 +648,16 @@ service cloud.firestore {
        * add themselves while quietly removing four neighbours.
        */
       function isConfirmationToggle() {
-        return touchesOnly(['confirmedBy', 'confirmedNames', 'updatedAt'])
+        return touchesOnly(['confirmedBy', 'updatedAt'])
           && request.resource.data.kind == resource.data.kind
           && request.resource.data.raisedById == resource.data.raisedById
-          // The id list is set-checked below; the name list beside it was not
-          // checked at all, so it could be replaced wholesale or grown to a
-          // quarter of a megabyte on a document all forty-six phones fetch on
-          // every launch.
-          //
-          // The names may move no further than the ids did. `<=` rather than
-          // `==` on purpose: display names are "Γιώργος Π." and two of those
-          // in a village of forty-six is not far-fetched, so adding a second
-          // person of the same name adds an id and no new name, and that must
-          // still be allowed. What it forbids is the case that has no
-          // innocent reading — the ids standing still while the names change.
+          // Forty-six residents; sixty is room to spare and a ceiling either
+          // way. There used to be a parallel list of display names here to
+          // police as well, and two rounds of review caught this function out
+          // over it — first for not bounding it, then for refusing the
+          // duplicate-name case its own comment said was allowed. The list is
+          // gone (see VillageAlert), which is most of why this is now short.
           && request.resource.data.get('confirmedBy', []).size() <= 60
-          // `<=`, not `==`, and this is the second time the same duplicate-name
-          // case has caught this rule out. The client adds with arrayUnion,
-          // which de-duplicates, so the *second* "Γιώργος Π." to confirm adds
-          // an id and no name — sizes 2 and 1. With `==` the rules refused it,
-          // and the client discards the failure, so the count ticked up from
-          // the local cache and silently fell back a second later. On the
-          // number that is the whole content of an outage report.
-          && request.resource.data.get('confirmedNames', []).size() <=
-             request.resource.data.get('confirmedBy', []).size()
-          && request.resource.data.get('confirmedNames', []).toSet()
-               .difference(resource.data.get('confirmedNames', []).toSet()).size() <=
-             request.resource.data.get('confirmedBy', []).toSet()
-               .difference(resource.data.get('confirmedBy', []).toSet()).size()
-          && resource.data.get('confirmedNames', []).toSet()
-               .difference(request.resource.data.get('confirmedNames', []).toSet()).size() <=
-             resource.data.get('confirmedBy', []).toSet()
-               .difference(request.resource.data.get('confirmedBy', []).toSet()).size()
           && request.resource.data.get('confirmedBy', []).toSet()
               .difference(resource.data.get('confirmedBy', []).toSet())
               in [[].toSet(), [uid()].toSet()]

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Who is using the app right now.
@@ -73,8 +74,20 @@ class SessionRepository @Inject constructor(
         }
         .stateIn(scope, SharingStarted.Eagerly, SessionState.Loading)
 
-    /** The profile, or null when nobody is fully signed in. */
-    val profile: Flow<UserProfile?> = state.map { (it as? SessionState.SignedIn)?.profile }
+    /**
+     * The profile, or null when nobody is fully signed in.
+     *
+     * Distinct, because `NotificationDispatcher` flatMapLatests over this and
+     * every write to your own document re-emitted it: an upvote on your report
+     * bumps `upvotesReceived`, which tore down the inbox listener and re-primed
+     * it, and priming marks whatever is in the first snapshot as already shown.
+     * The notice about that very upvote is written at the same moment — so it
+     * was swallowed, and only reappeared when the background sync ran up to
+     * fifteen minutes later.
+     */
+    val profile: Flow<UserProfile?> = state
+        .map { (it as? SessionState.SignedIn)?.profile }
+        .distinctUntilChanged { old, new -> old?.id == new?.id }
 
     /**
      * The signed-in resident's own house pin.

@@ -777,7 +777,7 @@ const alertSeed = (uid, name, extra = {}) => ({
   note: "Από τις 8 το πρωί.",
   lat: 38.164, lng: 23.29, placeLabel: "Κέντρο",
   raisedById: uid, raisedByName: name,
-  confirmedBy: [uid], confirmedNames: [name],
+  confirmedBy: [uid],
   resolvedAt: null, resolvedById: "",
   raisedAt: serverTimestamp(), updatedAt: serverTimestamp(),
   ...extra,
@@ -790,7 +790,7 @@ await check("alerts: it must credit its real author",
 await check("alerts: it cannot open with the village already agreeing",
   assertFails(setDoc(doc(giorgos, "alerts/stuffed"),
     alertSeed("giorgos", "Giorgos Test",
-      { confirmedBy: ["giorgos", "maria"], confirmedNames: ["Giorgos Test", "Maria Test"] }))));
+      { confirmedBy: ["giorgos", "maria"] }))));
 await check("alerts: it cannot be born already over",
   assertFails(setDoc(doc(giorgos, "alerts/done"),
     alertSeed("giorgos", "Giorgos Test", { resolvedAt: new Date() }))));
@@ -811,29 +811,26 @@ await check("alerts: a suspended resident does not",
 await check("alerts: a neighbour says they have it too",
   assertSucceeds(updateDoc(doc(giorgos, "alerts/power"), {
     confirmedBy: ["maria", "giorgos"],
-    confirmedNames: ["Maria Test", "Giorgos Test"],
     updatedAt: serverTimestamp(),
   })));
 await check("alerts: and takes it back",
   assertSucceeds(updateDoc(doc(giorgos, "alerts/power"), {
-    confirmedBy: ["maria"], confirmedNames: ["Maria Test"], updatedAt: serverTimestamp(),
+    confirmedBy: ["maria"], updatedAt: serverTimestamp(),
   })));
 await check("alerts: nobody confirms on a neighbour's behalf",
   assertFails(updateDoc(doc(giorgos, "alerts/power"), {
     confirmedBy: ["maria", "boss"],
-    confirmedNames: ["Maria Test", "Boss Test"],
     updatedAt: serverTimestamp(),
   })));
 // Adding yourself while quietly dropping four neighbours would inflate nothing
 // and deflate everything; the set difference is checked in both directions.
 await check("alerts: confirming is not a way to strike others off",
   assertFails(updateDoc(doc(giorgos, "alerts/power"), {
-    confirmedBy: ["giorgos"], confirmedNames: ["Giorgos Test"], updatedAt: serverTimestamp(),
+    confirmedBy: ["giorgos"], updatedAt: serverTimestamp(),
   })));
 await check("alerts: confirming is not a way to rewrite the alert",
   assertFails(updateDoc(doc(giorgos, "alerts/power"), {
     confirmedBy: ["maria", "giorgos"],
-    confirmedNames: ["Maria Test", "Giorgos Test"],
     kind: "FIRE", updatedAt: serverTimestamp(),
   })));
 await check("alerts: a neighbour cannot declare it over",
@@ -925,15 +922,14 @@ await check("profile: the fields that exist still work",
 await env.withSecurityRulesDisabled(async (ctx) => {
   await ctx.firestore().doc("alerts/live").set({
     kind: "WATER", note: "", placeLabel: "", raisedById: "giorgos",
-    raisedByName: "Giorgos", raisedAt: new Date(), confirmedBy: ["giorgos"],
-    confirmedNames: ["Giorgos"], resolvedAt: null,
+    raisedByName: "Giorgos", raisedAt: new Date(), confirmedBy: ["giorgos"], resolvedAt: null,
   });
 });
 
 const alertNow = (extra = {}) => ({
   kind: "FIRE", note: "Smoke", placeLabel: "Ano", raisedById: "maria",
   raisedByName: "Maria", raisedAt: serverTimestamp(),
-  confirmedBy: ["maria"], confirmedNames: ["Maria"], resolvedAt: null,
+  confirmedBy: ["maria"], resolvedAt: null,
   ...extra,
 });
 
@@ -943,18 +939,9 @@ await check("alerts: nor dug in from last week to outlive the window",
   assertFails(setDoc(doc(maria, "alerts/old"), alertNow({ raisedAt: new Date("2020-01-01") }))));
 await check("alerts: the server's own timestamp is fine",
   assertSucceeds(setDoc(doc(maria, "alerts/nowish"), alertNow())));
-await check("alerts: names and ids must be the same length",
-  assertFails(setDoc(doc(maria, "alerts/mismatch"),
-    alertNow({ confirmedNames: ["Maria", "Invented", "Also invented"] }))));
-await check("alerts: a confirmation cannot smuggle in a list of names",
-  assertFails(updateDoc(doc(giorgos, "alerts/live"), {
-    confirmedBy: ["giorgos", "maria"],
-    confirmedNames: ["Giorgos", "x".repeat(100000)],
-  })));
-await check("alerts: nor rewrite the names of the people already on it",
-  assertFails(updateDoc(doc(giorgos, "alerts/live"), {
-    confirmedBy: ["giorgos"], confirmedNames: ["Somebody Else"],
-  })));
+await check("alerts: a parallel list of display names is refused outright",
+  assertFails(setDoc(doc(maria, "alerts/named"),
+    alertNow({ confirmedNames: ["Maria"] }))));
 await check("alerts: resolving with something that is not a time",
   assertFails(updateDoc(doc(giorgos, "alerts/live"),
     { resolvedAt: "whenever", resolvedById: "giorgos" })));
@@ -962,28 +949,30 @@ await check("alerts: resolving properly still works",
   assertSucceeds(updateDoc(doc(giorgos, "alerts/live"),
     { resolvedAt: serverTimestamp(), resolvedById: "giorgos" })));
 
-// Two residents called "Γιώργος Π." is not far-fetched in a village of 46,
-// and arrayUnion de-duplicates the names while the ids stay distinct.
+// Two residents of the same name used to break this: arrayUnion de-duplicated
+// the display names while the ids stayed distinct, and the sizes no longer
+// matched. There is no name list any more, so the case is simply ordinary —
+// which is the point of removing it.
 await env.withSecurityRulesDisabled(async (ctx) => {
   await ctx.firestore().doc("alerts/samename").set({
     kind: "WATER", note: "", placeLabel: "", raisedById: "maria",
     raisedByName: "Giorgos P.", raisedAt: new Date(),
-    confirmedBy: ["maria"], confirmedNames: ["Giorgos P."], resolvedAt: null,
+    confirmedBy: ["maria"], resolvedAt: null,
   });
 });
-await check("alerts: a second resident of the same name may still confirm",
+await check("alerts: a second resident of the same name confirms like anyone else",
   assertSucceeds(updateDoc(doc(giorgos, "alerts/samename"), {
-    confirmedBy: ["maria", "giorgos"], confirmedNames: ["Giorgos P."],
-  })));
-await check("alerts: and may take it back again",
-  assertSucceeds(updateDoc(doc(giorgos, "alerts/samename"), {
-    confirmedBy: ["maria"], confirmedNames: ["Giorgos P."],
-  })));
-await check("alerts: but the names still cannot outnumber the ids",
-  assertFails(updateDoc(doc(giorgos, "alerts/samename"), {
     confirmedBy: ["maria", "giorgos"],
-    confirmedNames: ["Giorgos P.", "Invented", "Also invented"],
   })));
+await check("alerts: and takes it back like anyone else",
+  assertSucceeds(updateDoc(doc(giorgos, "alerts/samename"), {
+    confirmedBy: ["maria"],
+  })));
+await check("alerts: still nobody drops a neighbour while confirming",
+  assertFails(updateDoc(doc(giorgos, "alerts/samename"), {
+    confirmedBy: ["giorgos"],
+  })));
+
 
 await check("streets: no arbitrary fields on a street name",
   assertFails(setDoc(doc(maria, "streetNames/w1"), {

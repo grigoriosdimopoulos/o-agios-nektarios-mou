@@ -56,10 +56,14 @@ private val NightSurfaceHigh = Color(0xFF1F282F)
  * cream page and 4.38:1 on a white card, and the sentence it was carrying is
  * the one that says the app does not telephone anyone for you. As a fill it
  * carried white at 4.38:1, on the fire banner, at twelve points. Both are
- * under 4.5:1. This is the same hue two steps darker: 5.05:1 as ink on cream,
- * 5.38:1 on white, and 5.38:1 carrying white.
+ * under 4.5:1. This is the same hue darker: as ink it measures 5.62:1 on the
+ * cream page, 5.99:1 on a white card and 4.97:1 on the container Material
+ * gives a dialog — which is where "delete my account" asks — and it carries
+ * white at 5.99:1. The first attempt at this stopped at #BE3C3C and left the
+ * dialog at 4.47:1, which is the kind of miss that comes of checking the two
+ * backgrounds you were thinking about.
  */
-private val Alarm = Color(0xFFBE3C3C)
+private val Alarm = Color(0xFFB53434)
 /**
  * The alarm red for the dark theme.
  *
@@ -175,6 +179,18 @@ val ColorScheme.errorInk: Color
     get() = if (surface.luminance() < 0.5f) AlarmDarkInk else Alarm
 
 /**
+ * The terracotta as text — on the ADMIN and MODERATOR badges, which draw it on
+ * a 12% wash of itself.
+ *
+ * Terracotta on that wash measures 2.59:1. In the dark theme TerracottaLight
+ * is already light enough to read (7.31:1 on the same wash), so only the light
+ * value moves: this is the same hue and saturation taken down until it clears
+ * both the page and its own pill, at 5.84:1 and 5.19:1.
+ */
+val ColorScheme.secondaryInk: Color
+    get() = if (surface.luminance() < 0.5f) TerracottaLight else Color(0xFFA73F1B)
+
+/**
  * The line that says "this is a control", as opposed to the hairline that
  * separates one surface from another.
  *
@@ -190,7 +206,11 @@ val ColorScheme.controlOutline: Color
 
 /** Semantic accents that are not part of the Material scheme. */
 object VillageAccents {
-    val upvote = Color(0xFF2F7D32)
+    /**
+     * The vote green, dark enough to read on its own 12% wash — which is what
+     * the active pill draws it on. At #2F7D32 that was 4.35:1.
+     */
+    val upvote = Color(0xFF276628)
     val downvote = Color(0xFFB4453D)
 
     private val upvoteDark = Color(0xFF5CBF60)

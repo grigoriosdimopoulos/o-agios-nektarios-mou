@@ -223,3 +223,22 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }
+
+/**
+ * A fresh JVM for every test class.
+ *
+ * The Paparazzi goldens are this app's only gate on layout and colour, and
+ * they were not deterministic: recording `UnlookedTest` on its own and then
+ * verifying the whole suite failed `chats_greek_max`, with "Μαρία Κ." drawn
+ * regular in one and bold in the other on an unchanged tree. All four weights
+ * come from a single variable font resource (see `ui/theme/Type.kt`), and
+ * layoutlib's typeface cache is per-JVM, so which weight a given resource
+ * resolves to depends on what else has already rendered in that worker.
+ *
+ * Forking per class costs a few seconds and buys a gate that means something.
+ * Without it, four rounds of judging hierarchy from these images were judging
+ * a weight the app might not draw.
+ */
+tasks.withType<Test>().configureEach {
+    forkEvery = 1
+}

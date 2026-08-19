@@ -258,8 +258,14 @@ private fun MessageBubble(
             Text(
                 text = timeOfDay(message.createdAt),
                 style = MaterialTheme.typography.labelSmall,
+                // Full opacity. At 70% the clock on your own messages measured
+                // 3.86:1 light and 3.16:1 dark against the bubble it sits on,
+                // at eleven points — and a chat timestamp is small, faint and
+                // the thing people squint at to work out whether a message is
+                // from this morning. Even solid it is only 4.71:1 in the dark
+                // theme, because the bubble fill there is a light green.
                 color = if (isMine) {
-                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                    MaterialTheme.colorScheme.onPrimary
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },

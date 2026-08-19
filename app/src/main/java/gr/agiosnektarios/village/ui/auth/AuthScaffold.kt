@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import gr.agiosnektarios.village.ui.theme.reducedMotion
+import gr.agiosnektarios.village.ui.components.glassBlur
 
 /**
  * Shared chrome for the authentication screens: a slow-drifting pair of colour
@@ -148,7 +148,10 @@ private fun AmbientBlob(
             .size(260.dp)
             // A heavy blur turns a flat circle into soft light; cheaper and far
             // more forgiving across densities than a hand-tuned radial gradient.
-            .blur(90.dp)
+            // Gated like every other blur in the app — below API 31 it is a
+            // no-op that still costs a layer, and the gradient underneath is
+            // what those devices see.
+            .glassBlur(90.dp)
             .clip(CircleShape)
             .background(
                 Brush.radialGradient(

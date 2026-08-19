@@ -90,7 +90,6 @@ class AlertRepository @Inject constructor(
                     // rather than at "nobody has said yet" under the person
                     // who just said it.
                     "confirmedBy" to listOf(author.id),
-                    "confirmedNames" to listOf(author.displayName.take(VillageAlert.MAX_NAME)),
                     "raisedAt" to FieldValue.serverTimestamp(),
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
@@ -119,7 +118,6 @@ class AlertRepository @Inject constructor(
         user: UserProfile,
         confirmed: Boolean,
     ): Result<Unit> = withContext(io) {
-        val name = user.displayName.take(VillageAlert.MAX_NAME)
         runCatching {
             alerts.document(alertId).update(
                 mapOf(
@@ -127,11 +125,6 @@ class AlertRepository @Inject constructor(
                         FieldValue.arrayUnion(user.id)
                     } else {
                         FieldValue.arrayRemove(user.id)
-                    },
-                    "confirmedNames" to if (confirmed) {
-                        FieldValue.arrayUnion(name)
-                    } else {
-                        FieldValue.arrayRemove(name)
                     },
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),

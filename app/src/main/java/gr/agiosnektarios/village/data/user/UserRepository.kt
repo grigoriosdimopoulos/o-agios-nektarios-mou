@@ -75,7 +75,9 @@ class UserRepository @Inject constructor(
                 "updatedAt" to FieldValue.serverTimestamp(),
             )
             // merge(): a Google sign-in may have raced a partially created doc.
-            users.document(userId).set(payload, com.google.firebase.firestore.SetOptions.merge()).await()
+            users.document(userId)
+                .set(payload, com.google.firebase.firestore.SetOptions.merge())
+                .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
         }
     }
 
@@ -98,7 +100,7 @@ class UserRepository @Inject constructor(
                     "blockId" to blockId,
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
-            ).await()
+            ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
         }
     }
 
@@ -132,11 +134,12 @@ class UserRepository @Inject constructor(
                     ),
                 )
             }
-            // Bounded, like every other write in this app. Somebody pins their
-            // house while standing outside it, which is the one place in the
-            // village with no signal and the whole reason the feature exists.
-            // Unbounded, the spinner never stopped and the screen never closed
-            // — while the write was already on disk and queued.
+            // Bounded, like every write in this file — which was not true
+            // when this comment was first written, and cost every other one of
+            // them a spinner that never stops. Somebody pins their house while
+            // standing outside it, which is the one place in the village with
+            // no signal and the whole reason the feature exists; the write is
+            // already on disk and queued by the time this returns.
             withTimeoutOrNull(SERVER_ACK_MS) { task.await() }
         }
     }
@@ -162,7 +165,7 @@ class UserRepository @Inject constructor(
                     "avatar", bytes?.let(Blob::fromBytes),
                     "updatedAt", FieldValue.serverTimestamp(),
                 )
-                .await()
+                .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
         }
     }
 
@@ -174,20 +177,22 @@ class UserRepository @Inject constructor(
                         "notificationPrefs" to prefs.toMap(),
                         "updatedAt" to FieldValue.serverTimestamp(),
                     ),
-                ).await()
+                ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
             }
         }
 
     /** Tokens are a set: adding is idempotent, and stale ones are pruned server-side. */
     suspend fun addFcmToken(userId: String, token: String): Result<Unit> = withContext(io) {
         runCatchingUnit {
-            users.document(userId).update("fcmTokens", FieldValue.arrayUnion(token)).await()
+            users.document(userId).update("fcmTokens", FieldValue.arrayUnion(token))
+                .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
         }
     }
 
     suspend fun removeFcmToken(userId: String, token: String): Result<Unit> = withContext(io) {
         runCatchingUnit {
-            users.document(userId).update("fcmTokens", FieldValue.arrayRemove(token)).await()
+            users.document(userId).update("fcmTokens", FieldValue.arrayRemove(token))
+                .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
         }
     }
 

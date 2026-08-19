@@ -189,7 +189,13 @@ class NotificationRepository @Inject constructor(
 
     suspend fun markSeen(userId: String, notificationId: String): Result<Unit> =
         withContext(io) {
-            runCatchingUnit { inbox(userId).document(notificationId).update("seen", true).await() }
+            runCatchingUnit {
+                // Bounded: the dispatcher awaits this inside its collect loop,
+                // so unbounded it parks the whole notification pipeline for as
+                // long as the signal is gone.
+                inbox(userId).document(notificationId).update("seen", true)
+                    .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
+            }
         }
 
     suspend fun markAllSeen(userId: String): Result<Unit> = withContext(io) {

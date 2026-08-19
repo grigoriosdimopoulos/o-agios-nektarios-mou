@@ -27,5 +27,22 @@ package gr.agiosnektarios.village.core.firestore
  * report open immediately from the local cache.
  */
 
+/**
+ * ## What this is *not* for
+ *
+ * Two kinds of write live in this app and only one belongs here.
+ *
+ * A resident writing their own content — a report, a comment, a house pin, an
+ * alert, a profile edit — is safe on disk the moment the call is made, so the
+ * wait is a courtesy and bounding it costs nothing.
+ *
+ * Signing in, creating an account, changing a role, suspending or deleting one
+ * — those mean nothing until the server has agreed. There is no local cache
+ * that can make you an administrator. Bounding those would report success for
+ * something that has not happened, so `AuthRepository`, `AdminRepository` and
+ * `AdminElevationRepository` await without a timeout on purpose, and the
+ * screens that call them say "no connection" rather than pretending.
+ */
+
 /** How long to wait for the server before deciding the queue can have it. */
 const val SERVER_ACK_MS = 4_000L

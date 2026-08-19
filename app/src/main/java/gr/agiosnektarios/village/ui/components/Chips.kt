@@ -31,6 +31,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.semantics.Role
 import gr.agiosnektarios.village.ui.theme.controlOutline
+import gr.agiosnektarios.village.ui.theme.primaryInk
 
 /**
  * What a filter chip is, to a finger and to a screen reader.
@@ -40,12 +41,26 @@ import gr.agiosnektarios.village.ui.theme.controlOutline
  * only filter controls in the app, and which ones are on was conveyed by a
  * half-density border and an alpha change of the same hue.
  *
- * The 48dp minimum lives on each chip's own modifier chain rather than here,
- * because it has to come *before* clip/background/border to reserve touch
- * rather than inflate the pill — see the note on [CategoryChip].
+ * The 48dp minimum is [touchTarget], applied on each chip's own chain.
  */
 private fun Modifier.filterToggle(selected: Boolean, onClick: () -> Unit): Modifier = this
     .toggleable(value = selected, role = Role.Checkbox) { onClick() }
+
+/**
+ * 48dp of touch, and only where there is something to touch.
+ *
+ * First in the chain, because a layout modifier wraps everything after it: at
+ * the end of a chain it expands the content and then clip/background/border
+ * draw over the expanded box, giving a 48dp pill rather than a 32dp pill with
+ * 48dp of touch around it.
+ *
+ * And conditional, because these same two chips are also used as labels — on
+ * every report card, and on the report detail. Applying it there added 21dp to
+ * every card in the list, 11% of the first one, as dead space above and below
+ * a status pill nobody can tap.
+ */
+private fun Modifier.touchTarget(interactive: Boolean): Modifier =
+    if (interactive) minimumInteractiveComponentSize() else this
 
 /**
  * Category pill. Selected chips fill with the category's own colour rather than
@@ -75,15 +90,7 @@ fun CategoryChip(
 
     Row(
         modifier = modifier
-            // First in the chain. A layout modifier wraps everything after it,
-            // so at the end of a chain this expands the content and then
-            // clip/background/border draw over the expanded box — a 48dp pill
-            // instead of a 32dp pill with 48dp of touch around it. Here it
-            // reports the larger size to the parent and centres the chip.
-            // The status chip measured 28dp tall and this one 32dp, which is a
-            // comfortable target for nobody and a miss for the older hands
-            // this village mostly has.
-            .minimumInteractiveComponentSize()
+            .touchTarget(onClick != null)
             .scale(scale)
             .clip(CircleShape)
             .background(background)
@@ -139,7 +146,7 @@ fun StatusChip(
 
     Row(
         modifier = modifier
-            .minimumInteractiveComponentSize()
+            .touchTarget(onClick != null)
             .clip(CircleShape)
             .background(background)
             .border(
@@ -190,20 +197,37 @@ fun CategoryBadge(
     }
 }
 
-/** Small role/count pill used in profile and admin rows. */
+/**
+ * Small role/count pill used in profile, admin and announcement rows.
+ *
+ * The ink and the fill are two colours, which sounds obvious and was not: this
+ * painted the label in the same value it used at 12% for the background, so an
+ * author's name on a pinned notice measured 1.83:1 against its own pill and
+ * the ADMIN badge 2.39:1. One parameter served two jobs that pull in opposite
+ * directions — the same mistake, in the same shape, as the primary and error
+ * colours before them.
+ *
+ * The fill is opaque, and that is the second half of the fix. A translucent
+ * wash takes its value from whatever is behind it, so the same pill that
+ * cleared 4.87:1 on an ordinary notice measured 4.09:1 on a pinned one, where
+ * the card underneath is yellow. An opaque fill plus a hairline reads as a
+ * pill on any background and can be checked once.
+ */
 @Composable
 fun TagPill(
     text: String,
     modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.primary,
+    ink: Color = MaterialTheme.colorScheme.primaryInk,
+    fill: Color = MaterialTheme.colorScheme.surface,
 ) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,
-        color = tint,
+        color = ink,
         modifier = modifier
             .clip(CircleShape)
-            .background(tint.copy(alpha = 0.12f))
+            .background(fill)
+            .border(1.dp, ink.copy(alpha = 0.45f), CircleShape)
             .padding(horizontal = 10.dp, vertical = 4.dp),
     )
 }

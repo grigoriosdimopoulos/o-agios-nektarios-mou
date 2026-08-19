@@ -52,6 +52,8 @@ import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.components.ScreenHeader
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.errorInk
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 /**
  * The notices, as a list.
@@ -104,6 +106,7 @@ fun AnnouncementsContent(
  * two lines long, and a full navigation for "the water is off on Tuesday" would
  * be more ceremony than content.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AnnouncementCard(
     announcement: Announcement,
@@ -159,14 +162,14 @@ private fun AnnouncementCard(
                         modifier = Modifier.weight(1f),
                     )
                     if (isAdmin) {
-                        IconButton(onClick = onEdit, modifier = Modifier.height(28.dp)) {
+                        IconButton(onClick = onEdit) {
                             Icon(
                                 imageVector = Icons.Filled.Edit,
                                 contentDescription = stringResource(R.string.action_edit),
                                 modifier = Modifier.height(16.dp),
                             )
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.height(28.dp)) {
+                        IconButton(onClick = onDelete) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = stringResource(R.string.action_delete),
@@ -184,16 +187,21 @@ private fun AnnouncementCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // FlowRow, and the date first. As an unweighted Row at twice
+                // the text size, "Δημήτρης Αναγνωστόπουλος" wrapped to two
+                // lines, took the whole width, and "πριν 3 ώ." was not drawn
+                // at all — on a notice reading "water off on Tuesday", where
+                // which Tuesday is the entire content.
+                FlowRow(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TagPill(text = announcement.authorName)
                     Text(
                         text = relativeTime(announcement.createdAt),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    TagPill(text = announcement.authorName)
                 }
             }
         }

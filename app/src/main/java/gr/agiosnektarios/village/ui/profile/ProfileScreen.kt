@@ -47,6 +47,7 @@ import gr.agiosnektarios.village.ui.theme.raisedOutline
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.ui.theme.secondaryInk
 
 @Composable
 fun ProfileScreen(
@@ -147,7 +148,7 @@ internal fun ProfileContent(
                                 R.string.profile_role_moderator
                             },
                         ),
-                        tint = MaterialTheme.colorScheme.secondary,
+                        ink = MaterialTheme.colorScheme.secondaryInk,
                     )
                 }
                 val blockName = if (greek) state.blockNameEl else state.blockNameEn
