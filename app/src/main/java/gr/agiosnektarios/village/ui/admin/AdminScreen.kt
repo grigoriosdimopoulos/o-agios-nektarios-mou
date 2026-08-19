@@ -136,7 +136,7 @@ fun AdminScreen(
 }
 
 @Composable
-private fun ResidentRow(profile: UserProfile, onClick: () -> Unit) {
+internal fun ResidentRow(profile: UserProfile, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,30 +151,44 @@ private fun ResidentRow(profile: UserProfile, onClick: () -> Unit) {
             seed = profile.id,
             size = 42.dp,
         )
-        Column(modifier = Modifier.weight(1f)) {
+        // The badge sits *under* the name, not beside it.
+        //
+        // Beside it, the pill measured at its intrinsic width first and the
+        // weighted column took what was left: at twice the text size in Greek
+        // "Αναστολή λογαριασμού" took the whole row and the suspended
+        // resident's name and address vanished entirely — an administrator
+        // looking at the list could see that somebody was suspended and not
+        // who. The others fared little better, breaking "Αναγνωστόπουλος"
+        // across four lines mid-word.
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             Text(text = profile.displayName, style = MaterialTheme.typography.titleSmall)
             Text(
                 text = profile.email,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-        if (profile.disabled) {
-            TagPill(
-                text = stringResource(R.string.admin_disable_user),
-                ink = MaterialTheme.colorScheme.errorInk,
-            )
-        } else if (profile.roleType != Role.USER) {
-            TagPill(
-                text = stringResource(
-                    if (profile.isAdmin) {
-                        R.string.profile_role_admin
-                    } else {
-                        R.string.profile_role_moderator
-                    },
-                ),
-                ink = MaterialTheme.colorScheme.secondaryInk,
-            )
+            if (profile.disabled) {
+                TagPill(
+                    text = stringResource(R.string.admin_disable_user),
+                    ink = MaterialTheme.colorScheme.errorInk,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else if (profile.roleType != Role.USER) {
+                TagPill(
+                    text = stringResource(
+                        if (profile.isAdmin) {
+                            R.string.profile_role_admin
+                        } else {
+                            R.string.profile_role_moderator
+                        },
+                    ),
+                    ink = MaterialTheme.colorScheme.secondaryInk,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Raises a device notification for each notice that arrives in the signed-in
@@ -56,18 +57,30 @@ class NotificationDispatcher @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun start() {
         scope.launch {
+            // Keyed on *who*, not on their document.
+            //
+            // This used to flatMapLatest over the whole profile, so every write
+            // to your own record re-subscribed: a neighbour upvoting your
+            // report bumps `upvotesReceived` and writes the notice about it in
+            // the same moment, the listener restarted, and priming marked that
+            // very notice as already seen. It surfaced up to fifteen minutes
+            // later, from the background sync, or not at all.
             sessionRepository.profile
-                .flatMapLatest { profile: UserProfile? ->
+                .map { it?.id }
+                .distinctUntilChanged()
+                .flatMapLatest { userId: String? ->
                     priming = true
                     alreadyShown.clear()
-                    if (profile == null) {
-                        flowOf(emptyList<AppNotification>() to null)
+                    if (userId == null) {
+                        flowOf(emptyList())
                     } else {
-                        notificationRepository.observe(profile.id).map { it to profile }
+                        notificationRepository.observe(userId)
                     }
                 }
-                .collect { (notices, profile) ->
-                    if (profile == null) return@collect
+                .collect { notices ->
+                    // Read fresh rather than captured, so a preference changed
+                    // a moment ago is honoured without restarting the listener.
+                    val profile = sessionRepository.currentProfile ?: return@collect
                     // The first snapshot is the backlog, not news. Raising a
                     // notification for every unread notice each time the app
                     // starts would be a burst of duplicates.

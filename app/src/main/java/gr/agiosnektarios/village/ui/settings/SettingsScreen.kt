@@ -261,7 +261,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionHeader(text: String) {
+internal fun SectionHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
@@ -271,7 +271,7 @@ private fun SectionHeader(text: String) {
 }
 
 @Composable
-private fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
+internal fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,7 +286,7 @@ private fun RadioRow(label: String, selected: Boolean, onSelect: () -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+internal fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -305,7 +305,7 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
 }
 
 @Composable
-private fun ActionRow(
+internal fun ActionRow(
     label: String,
     onClick: () -> Unit,
     tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,

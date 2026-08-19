@@ -75,9 +75,16 @@ class UserRepository @Inject constructor(
                 "updatedAt" to FieldValue.serverTimestamp(),
             )
             // merge(): a Google sign-in may have raced a partially created doc.
+            // Unbounded, unlike every *edit* in this file, and for the same
+            // reason as AuthRepository: you cannot create an account without a
+            // server, so by the time this runs there demonstrably is one. What
+            // the wait buys is the rules' answer. Bounded, a rejection arriving
+            // at four seconds and one millisecond would be swallowed, the
+            // resident would be told nothing was wrong, and every subsequent
+            // write would fail with a permission error nothing explains.
             users.document(userId)
                 .set(payload, com.google.firebase.firestore.SetOptions.merge())
-                .let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
+                .await()
         }
     }
 
