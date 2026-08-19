@@ -1,8 +1,8 @@
-1.0.49 (8235c84)
+1.0.59 (11bfd86)
 
-sha256  401a3762975b98c09b6984b27e64f07a87a06912948bfa16f193b358c46ab4b9
-bytes   17742949
-built   2026-08-18 20:21 UTC
+sha256  9e9d5cdc9cdf8252097fedefeed30e3987f701eb9241a237258db190138785cc
+bytes   17795077
+built   2026-08-19 04:36 UTC
 
 The same version string is shown inside the app under Settings > About, so
 what is installed on a phone can be compared against what is published here
@@ -12,4 +12,4 @@ The download URL never changes, which is what makes two different builds look
 like the same one. To check before installing: open this file on the phone and
 compare the version against Settings > About. To be certain the download is not
 a cached copy — the raw endpoint sends cache-control: max-age=300 — append
-anything to the URL as a query string, for example ?v=401a376
+anything to the URL as a query string, for example ?v=9e9d5cd
