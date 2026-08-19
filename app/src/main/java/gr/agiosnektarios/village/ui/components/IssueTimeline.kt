@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -100,7 +101,12 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxWidth()) {
         entries.forEachIndexed { index, entry ->
-            Row(modifier = Modifier.fillMaxWidth()) {
+            // IntrinsicSize.Min lets the rail measure against the text beside
+            // it, so the connector can fill whatever height the entry turns
+            // out to be. It used to be a fixed 26dp, which is fine at the
+            // default text size and leaves the line hanging in mid-air at 2x,
+            // where a two-line Greek name makes the entry three times taller.
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.width(24.dp),
@@ -110,7 +116,7 @@ fun IssueTimeline(issue: Issue, modifier: Modifier = Modifier) {
                         Box(
                             modifier = Modifier
                                 .width(2.dp)
-                                .height(26.dp)
+                                .weight(1f)
                                 .background(scheme.outlineVariant),
                         )
                     }

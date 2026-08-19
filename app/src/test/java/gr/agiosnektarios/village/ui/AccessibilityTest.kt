@@ -7,12 +7,16 @@ import androidx.compose.ui.Modifier
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import gr.agiosnektarios.village.data.settings.ThemeMode
+import androidx.compose.runtime.Composable
+import gr.agiosnektarios.village.core.model.Issue
+import gr.agiosnektarios.village.ui.components.IssueTimeline
 import gr.agiosnektarios.village.ui.issue.FixState
 import gr.agiosnektarios.village.ui.issue.IssueListContent
 import gr.agiosnektarios.village.ui.issue.QuickReportSheet
 import gr.agiosnektarios.village.ui.issue.QuickReportUiState
 import gr.agiosnektarios.village.ui.issue.IssueListUiState
 import gr.agiosnektarios.village.ui.theme.VillageTheme
+import java.util.Date
 import org.junit.Rule
 import org.junit.Test
 
@@ -88,5 +92,61 @@ class AccessibilityTest {
                 }
             }
         }
+    }
+
+    /**
+     * The screens this session added, at the largest scale Android offers.
+     *
+     * 2.0 is the end of the accessibility slider, and it is where a layout
+     * that merely wraps at 1.5 tends to break instead. `unsafeUpdateConfig`
+     * is the supported way to change the device for one snapshot; the rule's
+     * own config stays at 1.5, which is the size worth guarding by default.
+     */
+    private fun atMaxText(name: String, content: @Composable () -> Unit) {
+        paparazzi.unsafeUpdateConfig(
+            DeviceConfig.PIXEL_5.copy(fontScale = 2.0f, locale = "el"),
+        )
+        paparazzi.snapshot(name = name) {
+            VillageTheme(themeMode = ThemeMode.LIGHT) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) { content() }
+            }
+        }
+    }
+
+    @Test
+    fun quick_report_max_text() = atMaxText("quick_report") {
+        QuickReportSheet(
+            state = QuickReportUiState(
+                photo = ByteArray(64),
+                text = "Πεσμένο δέντρο",
+                position = null,
+                fix = FixState.UNAVAILABLE,
+            ),
+            onTextChange = {},
+            onRetakePhoto = {},
+            onRetryLocation = {},
+            onPickOnMap = {},
+            onSubmit = {},
+            onOpenFullForm = {},
+            offerFullForm = false,
+        )
+    }
+
+    @Test
+    fun timeline_max_text() = atMaxText("timeline") {
+        IssueTimeline(
+            issue = Issue(
+                id = "1",
+                title = "Πεσμένο δέντρο",
+                authorName = "Μαρία Καραγιάννη",
+                assigneeId = "d",
+                assigneeName = "Δημήτρης Αναγνωστόπουλος",
+                createdAt = Date(1_755_000_000_000L),
+                assignedAt = Date(1_755_003_000_000L),
+            ),
+        )
     }
 }
