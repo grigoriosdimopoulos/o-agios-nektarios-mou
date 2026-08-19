@@ -32,6 +32,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import gr.agiosnektarios.village.core.model.Feature
+import gr.agiosnektarios.village.data.settings.FeatureRepository
+import gr.agiosnektarios.village.data.user.EmergencyContactRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 
 /** Where the alert says it is. */
 enum class AlertPlace { HERE, HOME, NONE }
@@ -60,9 +66,18 @@ data class ActiveAlertsState(
      * this way, and the screen says so rather than pretending.
      */
     val residentNumbers: List<String> = emptyList(),
+    /**
+     * Whether the village allows texting everyone at all.
+     *
+     * Distinct from having no numbers: "nobody has agreed" and "the village
+     * has this switched off" are different sentences and the screen says
+     * whichever is true.
+     */
+    val smsEnabled: Boolean = false,
 )
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class AlertViewModel @Inject constructor(
     private val alerts: AlertRepository,
     private val session: SessionRepository,
@@ -70,6 +85,8 @@ class AlertViewModel @Inject constructor(
     private val location: LocationProvider,
     private val placeNamer: PlaceNamer,
     private val notifications: NotificationRepository,
+    private val emergencyContacts: EmergencyContactRepository,
+    private val features: FeatureRepository,
     private val messages: UserMessages,
     savedState: SavedStateHandle,
 ) : ViewModel() {
@@ -86,15 +103,31 @@ class AlertViewModel @Inject constructor(
     val active: StateFlow<ActiveAlertsState> = combine(
         alerts.observeActive(),
         session.state.map { it as? SessionState.SignedIn },
-        users.observeAllResidents(),
-    ) { live, signedIn, residents ->
+        // Only the residents who have said their number may be used, and only
+        // while the village has the feature on — the rules refuse this read
+        // otherwise, and the flow yields nothing rather than failing. It used
+        // to be the whole resident directory, which meant every phone held
+        // every number whether or not anybody ever pressed the button.
+        features.flags.flatMapLatest { flags ->
+            // Re-subscribed when the village switches texting on, because the
+            // read that failed while it was off would otherwise stay failed
+            // for as long as this screen is open.
+            if (flags.isOn(Feature.SMS_TO_ALL)) {
+                emergencyContacts.observeAll()
+            } else {
+                flowOf(emptyList())
+            }
+        },
+        features.flags,
+    ) { live, signedIn, shared, flags ->
         ActiveAlertsState(
             alerts = live,
             userId = signedIn?.profile?.id.orEmpty(),
             canModerate = signedIn?.profile?.canModerate == true,
-            residentNumbers = residents
+            smsEnabled = flags.isOn(Feature.SMS_TO_ALL),
+            residentNumbers = shared
                 .filter { it.id != signedIn?.profile?.id }
-                .map { it.phone.filter { character -> character.isDigit() || character == '+' } }
+                .map { it.dialable }
                 .filter { it.length >= 8 }
                 .distinct(),
         )

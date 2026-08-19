@@ -24,6 +24,7 @@ import kotlinx.coroutines.tasks.await
 import gr.agiosnektarios.village.core.firestore.SERVER_ACK_MS
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.catch
 
 /** Reads and writes the resident directory at `users/`. */
 @Singleton
@@ -154,6 +155,62 @@ class UserRepository @Inject constructor(
     private fun homeDoc(userId: String) = users.document(userId)
         .collection(Collections.PRIVATE)
         .document(Collections.HOME)
+
+    private fun contactDoc(userId: String) = users.document(userId)
+        .collection(Collections.PRIVATE)
+        .document(Collections.CONTACT)
+
+    /** The resident's own telephone number. Nobody else's is readable. */
+    fun observePhone(userId: String): Flow<String> = contactDoc(userId).asFlow()
+        .map { it?.getString("phone").orEmpty() }
+        .catch { emit("") }
+
+    suspend fun updatePhone(userId: String, phone: String): Result<Unit> = withContext(io) {
+        runCatchingUnit {
+            contactDoc(userId).set(
+                mapOf(
+                    "phone" to phone.trim().take(20),
+                    "updatedAt" to FieldValue.serverTimestamp(),
+                ),
+            ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }
+        }
+    }
+
+    /**
+     * Moves a telephone number off the profile, once, on the owner's device.
+     *
+     * The number used to live on the profile document, which every signed-in
+     * resident can read — so the village's whole directory of mobile numbers
+     * was legible to anyone who could sign in, to support one button most days
+     * nobody presses. It lives privately now, and is published to neighbours
+     * only if its owner says so and only while the village has that switched
+     * on.
+     *
+     * Existing profiles still carry the old field, and a server we do not have
+     * cannot clear them, so each resident's own device does it: copy across,
+     * then blank the profile copy. Blank rather than removed, because the
+     * field stays in the rules' allowlist for exactly as long as some
+     * documents still have it, and an empty string is what "no number here"
+     * has always looked like to the reader.
+     */
+    suspend fun migratePhoneToPrivate(userId: String): Result<Unit> = withContext(io) {
+        runCatchingUnit {
+            val profile = users.document(userId).get().await()
+            val legacy = profile.getString("phone").orEmpty()
+            if (legacy.isBlank()) return@runCatchingUnit
+
+            val already = contactDoc(userId).get().await().getString("phone").orEmpty()
+            if (already.isBlank()) {
+                contactDoc(userId).set(
+                    mapOf(
+                        "phone" to legacy.take(20),
+                        "updatedAt" to FieldValue.serverTimestamp(),
+                    ),
+                ).await()
+            }
+            users.document(userId).update("phone", "").await()
+        }
+    }
 
     /**
      * The resident's own house pin.

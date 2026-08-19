@@ -24,8 +24,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.core.model.Feature
+import gr.agiosnektarios.village.data.settings.FeatureRepository
+import gr.agiosnektarios.village.data.user.EmergencyContactRepository
+import gr.agiosnektarios.village.data.session.SessionState
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import gr.agiosnektarios.village.core.model.FeatureFlags
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val sessionRepository: SessionRepository,
@@ -33,8 +44,60 @@ class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val adminRepository: AdminRepository,
     private val adminElevationRepository: AdminElevationRepository,
+    private val emergencyContacts: EmergencyContactRepository,
+    private val features: FeatureRepository,
     private val messages: UserMessages,
 ) : ViewModel() {
+
+    /**
+     * Whether this resident has agreed their number may be texted, and whether
+     * the village allows it at all.
+     *
+     * Both, because the screen has to say which of the two is why the switch
+     * is not there — "you have not agreed" and "the village does not do this"
+     * are different facts and only one of them is the resident's to change.
+     */
+    data class SmsConsent(val enabled: Boolean = false, val shared: Boolean = false)
+
+    val smsConsent: StateFlow<SmsConsent> = combine(
+        features.flags,
+        sessionRepository.state.flatMapLatest { current ->
+            when (current) {
+                is SessionState.SignedIn -> emergencyContacts.observeMine(current.profile.id)
+                else -> flowOf(false)
+            }
+        },
+    ) { flags, shared ->
+        SmsConsent(enabled = flags.isOn(Feature.SMS_TO_ALL), shared = shared)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SmsConsent())
+
+    /**
+     * Agrees, or takes it back.
+     *
+     * The number is read from the private document at the moment of agreeing
+     * rather than held anywhere: agreeing publishes the number as it stands,
+     * and a resident who later changes it re-publishes by toggling. Nothing
+     * mirrors automatically, because a mirror that runs without being asked is
+     * how a number ends up somewhere its owner has forgotten about.
+     */
+    fun setSmsConsent(share: Boolean) {
+        val me = sessionRepository.currentProfile ?: return
+        viewModelScope.launch {
+            if (!share) {
+                emergencyContacts.withdraw(me.id)
+                return@launch
+            }
+            val phone = userRepository.observePhone(me.id).first()
+            if (phone.isBlank()) {
+                _events.update { it.copy(errorMessage = messages.string(R.string.sms_needs_number)) }
+                return@launch
+            }
+            emergencyContacts.share(me.id, me.displayName, phone)
+                .onFailure { error -> _events.update { it.copy(errorMessage = messages.of(error)) } }
+        }
+    }
+
+    val flags: StateFlow<FeatureFlags> = features.flags
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())

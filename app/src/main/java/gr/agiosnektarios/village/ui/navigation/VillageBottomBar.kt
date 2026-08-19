@@ -44,6 +44,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import androidx.compose.ui.graphics.Color
 import gr.agiosnektarios.village.ui.components.GlassSurface
+import gr.agiosnektarios.village.core.model.Feature
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.data.settings.FeatureRepository
 
 /**
  * How much room the bar takes at the bottom of the screen.
@@ -71,6 +74,7 @@ fun VillageBottomBar(
     viewModel: BottomBarViewModel = hiltViewModel(),
 ) {
     val unreadChats by viewModel.unreadChats.collectAsStateWithLifecycle()
+    val flags by viewModel.flags.collectAsStateWithLifecycle()
 
     // Glass rather than an opaque bar: content scrolling beneath tints through
     // it, which is what makes chrome feel like it is floating above the app
@@ -83,7 +87,12 @@ fun VillageBottomBar(
         containerColor = Color.Transparent,
         tonalElevation = 0.dp,
     ) {
-        TopLevelDestination.entries.forEach { destination ->
+        // A tab for a feature the village has switched off is a tab that opens
+        // an empty screen, so it is not drawn. The chat tab is the only one
+        // that can disappear: everything else in this bar is what the app is.
+        TopLevelDestination.entries
+            .filter { it != TopLevelDestination.CHATS || flags.isOn(Feature.CHAT) }
+            .forEach { destination ->
             val selected = currentRoute == destination.route
             // Selected icons swell slightly; combined with the crossfade between
             // outlined and filled variants this reads as a physical "press in".
@@ -146,7 +155,10 @@ fun VillageBottomBar(
 class BottomBarViewModel @Inject constructor(
     sessionRepository: SessionRepository,
     chatRepository: ChatRepository,
+    featureRepository: FeatureRepository,
 ) : ViewModel() {
+
+    val flags: StateFlow<FeatureFlags> = featureRepository.flags
 
     /** Number of conversations with at least one unseen message, not total messages. */
     @OptIn(ExperimentalCoroutinesApi::class)

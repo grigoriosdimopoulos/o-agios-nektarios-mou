@@ -45,6 +45,7 @@ import gr.agiosnektarios.village.data.settings.SettingsRepository
 import gr.agiosnektarios.village.data.settings.ThemeMode
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import gr.agiosnektarios.village.ui.theme.errorInk
+import gr.agiosnektarios.village.core.model.Feature
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +57,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val smsConsent by viewModel.smsConsent.collectAsStateWithLifecycle()
+    val flags by viewModel.flags.collectAsStateWithLifecycle()
     val events by viewModel.events.collectAsStateWithLifecycle()
     val adminUnlock by viewModel.adminUnlock.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -189,15 +192,53 @@ fun SettingsScreen(
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            SectionHeader(stringResource(R.string.contacts_title))
+            SectionHeader(stringResource(R.string.phone))
 
-            // A second way in. The first is the fire-risk card on the map,
-            // which is where somebody reaches for a number in a hurry; this is
-            // where they look for one calmly, and both go to the same list.
-            ActionRow(
-                label = stringResource(R.string.contacts_title),
-                onClick = onOpenContacts,
-            )
+            // Whether your number may be read by your neighbours' phones.
+            //
+            // Only shown when the village has the feature on at all: a switch
+            // that publishes nothing, because an administrator has switched
+            // the whole thing off, would be asking for consent to nothing.
+            if (smsConsent.enabled) {
+                SwitchRow(
+                    label = stringResource(R.string.sms_opt_in),
+                    checked = smsConsent.shared,
+                    onCheckedChange = viewModel::setSmsConsent,
+                )
+                Text(
+                    text = stringResource(
+                        if (smsConsent.shared) {
+                            R.string.sms_opt_in_explain
+                        } else {
+                            R.string.sms_opt_in_off
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Space.page),
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.sms_opt_in_off),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Space.page),
+                )
+            }
+
+            if (flags.isOn(Feature.CONTACTS)) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                SectionHeader(stringResource(R.string.contacts_title))
+
+                // A second way in. The first is the fire-risk card on the map,
+                // which is where somebody reaches for a number in a hurry;
+                // this is where they look for one calmly, and both go to the
+                // same list.
+                ActionRow(
+                    label = stringResource(R.string.contacts_title),
+                    onClick = onOpenContacts,
+                )
+            }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SectionHeader(stringResource(R.string.settings_account))

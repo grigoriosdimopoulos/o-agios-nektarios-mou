@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.core.model.Feature
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.data.settings.FeatureRepository
 
 data class AdminUiState(
     val query: String = "",
@@ -32,12 +35,14 @@ data class AdminUiState(
     val issues: List<Issue> = emptyList(),
     /** False for anyone who reaches this screen without the role. */
     val authorized: Boolean = false,
+    val flags: FeatureFlags = FeatureFlags(),
     val loading: Boolean = true,
 )
 
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val featureRepository: FeatureRepository,
     issueRepository: IssueRepository,
     sessionRepository: SessionRepository,
 ) : ViewModel() {
@@ -52,18 +57,24 @@ class AdminViewModel @Inject constructor(
         issueRepository.observeIssues(limit = 200),
         sessionRepository.profile,
         query,
-    ) { residents, issues, profile, currentQuery ->
+        featureRepository.flags,
+    ) { residents, issues, profile, currentQuery, flags ->
         AdminUiState(
             query = currentQuery,
             residents = residents,
             issues = issues,
             authorized = profile?.isAdmin == true,
+            flags = flags,
             loading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AdminUiState())
 
     fun onQueryChange(value: String) {
         query.value = value
+    }
+
+    fun setFeature(feature: Feature, on: Boolean) {
+        viewModelScope.launch { featureRepository.set(feature, on) }
     }
 }
 

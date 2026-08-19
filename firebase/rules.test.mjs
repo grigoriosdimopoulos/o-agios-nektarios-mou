@@ -985,6 +985,86 @@ await check("streets: a plain proposal still works",
     confirmedBy: ["maria"], createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   })));
 
+// ---- what the village has switched on, and the numbers that depend on it
+
+const flags = (enabled) => ({ enabled, updatedAt: serverTimestamp() });
+
+await check("features: every resident reads the flags",
+  assertSucceeds(getDoc(doc(maria, "featureFlags/village"))));
+await check("features: a resident cannot set them",
+  assertFails(setDoc(doc(maria, "featureFlags/village"), flags({ CHAT: false }))));
+await check("features: an administrator can",
+  assertSucceeds(setDoc(doc(boss, "featureFlags/village"), flags({ CHAT: false }))));
+await check("features: an invented feature is refused",
+  assertFails(setDoc(doc(boss, "featureFlags/village"), flags({ TELEPORT: true }))));
+await check("features: no arbitrary fields",
+  assertFails(setDoc(doc(boss, "featureFlags/village"),
+    { ...flags({ CHAT: true }), note: "why" })));
+await check("features: nobody deletes the document",
+  assertFails(deleteDoc(doc(boss, "featureFlags/village"))));
+
+// SMS to all starts off, so before anybody decides, no number is readable.
+const number = { name: "Maria T.", phone: "6971234567", updatedAt: serverTimestamp() };
+
+await check("numbers: with the feature off, a resident cannot publish one",
+  assertFails(setDoc(doc(maria, "emergencyContacts/maria"), number)));
+await check("numbers: and there is nothing to read",
+  assertFails(getDoc(doc(giorgos, "emergencyContacts/maria"))));
+
+await check("features: the administrator turns texting on",
+  assertSucceeds(setDoc(doc(boss, "featureFlags/village"),
+    flags({ SMS_TO_ALL: true }), { merge: true })));
+
+await check("numbers: now a resident may publish their own",
+  assertSucceeds(setDoc(doc(maria, "emergencyContacts/maria"), number)));
+await check("numbers: and a neighbour may read it",
+  assertSucceeds(getDoc(doc(giorgos, "emergencyContacts/maria"))));
+await check("numbers: but nobody publishes on somebody else's behalf",
+  assertFails(setDoc(doc(giorgos, "emergencyContacts/maria"), number)));
+await check("numbers: a number is required",
+  assertFails(setDoc(doc(maria, "emergencyContacts/maria"), { ...number, phone: "" })));
+await check("numbers: and is capped",
+  assertFails(setDoc(doc(maria, "emergencyContacts/maria"),
+    { ...number, phone: "6".repeat(21) })));
+await check("numbers: no arbitrary extra fields",
+  assertFails(setDoc(doc(maria, "emergencyContacts/maria"), { ...number, note: "x" })));
+await check("numbers: a suspended resident cannot read them",
+  assertFails(getDoc(doc(banned, "emergencyContacts/maria"))));
+await check("numbers: a stranger cannot read them",
+  assertFails(getDoc(doc(anon, "emergencyContacts/maria"))));
+
+await check("features: the administrator turns texting off again",
+  assertSucceeds(setDoc(doc(boss, "featureFlags/village"),
+    flags({ SMS_TO_ALL: false }), { merge: true })));
+await check("numbers: the neighbour can no longer read it",
+  assertFails(getDoc(doc(giorgos, "emergencyContacts/maria"))));
+// Taking consent back must never depend on a setting somebody else controls.
+await check("numbers: but its owner can still withdraw it",
+  assertSucceeds(deleteDoc(doc(maria, "emergencyContacts/maria"))));
+
+// ---- the telephone number itself, off the readable profile
+
+await check("contact: a resident stores their own number privately",
+  assertSucceeds(setDoc(doc(maria, "users/maria/private/contact"),
+    { phone: "6971234567", updatedAt: serverTimestamp() })));
+await check("contact: a neighbour cannot read it",
+  assertFails(getDoc(doc(giorgos, "users/maria/private/contact"))));
+await check("contact: an administrator can — they have to ring people",
+  assertSucceeds(getDoc(doc(boss, "users/maria/private/contact"))));
+await check("contact: but still not the house",
+  assertFails(getDoc(doc(boss, "users/maria/private/home"))));
+await check("contact: the number is capped",
+  assertFails(setDoc(doc(maria, "users/maria/private/contact"),
+    { phone: "6".repeat(21), updatedAt: serverTimestamp() })));
+await check("contact: no arbitrary fields",
+  assertFails(setDoc(doc(maria, "users/maria/private/contact"),
+    { phone: "697", note: "x", updatedAt: serverTimestamp() })));
+await check("contact: a neighbour cannot write one for you",
+  assertFails(setDoc(doc(giorgos, "users/maria/private/contact"),
+    { phone: "6971234567", updatedAt: serverTimestamp() })));
+await check("home: still pins after all that",
+  assertSucceeds(setDoc(doc(maria, "users/maria/private/home"), homeSeed)));
+
 await env.cleanup();
 
 const failed = results.filter(([ok]) => !ok);

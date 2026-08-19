@@ -43,6 +43,10 @@ import gr.agiosnektarios.village.ui.components.TagPill
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.theme.errorInk
 import gr.agiosnektarios.village.ui.theme.secondaryInk
+import androidx.compose.material3.Switch
+import gr.agiosnektarios.village.core.model.Feature
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.ui.theme.rememberHaptics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +97,11 @@ fun AdminScreen(
                     onClick = { selectedTab = 1 },
                     text = { Text(stringResource(R.string.admin_issues)) },
                 )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text(stringResource(R.string.admin_features)) },
+                )
             }
 
             when (selectedTab) {
@@ -113,6 +122,11 @@ fun AdminScreen(
                         }
                     }
                 }
+
+                2 -> FeatureSwitches(
+                    flags = state.flags,
+                    onChange = viewModel::setFeature,
+                )
 
                 else -> LazyColumn(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -190,5 +204,83 @@ internal fun ResidentRow(profile: UserProfile, onClick: () -> Unit) {
                 )
             }
         }
+    }
+}
+
+/**
+ * What this village uses, and what happens when it does not.
+ *
+ * Every switch says plainly what turning it off does, because an
+ * administrator here is a neighbour who was handed a passphrase, not somebody
+ * who has read the code. The one that publishes telephone numbers gets a
+ * longer sentence than the rest and sits where it cannot be missed.
+ */
+@Composable
+internal fun FeatureSwitches(
+    flags: FeatureFlags,
+    onChange: (Feature, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.admin_features_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        items(Feature.entries, key = { it.id }) { feature ->
+            FeatureSwitch(
+                feature = feature,
+                on = flags.isOn(feature),
+                // FIRE_RISK cannot be on without WEATHER, so its switch says
+                // so by going flat rather than by silently disagreeing with
+                // what the resident's screen shows.
+                enabled = feature != Feature.FIRE_RISK || flags[Feature.WEATHER],
+                onChange = { onChange(feature, it) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeatureSwitch(
+    feature: Feature,
+    on: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    val haptics = rememberHaptics()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(feature.labelRes),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(feature.explainRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = on,
+            enabled = enabled,
+            onCheckedChange = {
+                // A warning, not a tick: this changes the app for forty-six
+                // people at once.
+                haptics.warning()
+                onChange(it)
+            },
+        )
     }
 }

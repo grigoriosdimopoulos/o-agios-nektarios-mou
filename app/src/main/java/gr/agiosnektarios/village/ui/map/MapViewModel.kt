@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.data.settings.FeatureRepository
 
 data class MapFilters(
     val categories: Set<IssueCategory> = emptySet(),
@@ -87,6 +89,7 @@ data class SelectedStreet(
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
+    private val featureRepository: FeatureRepository,
     private val issueRepository: IssueRepository,
     private val blockRepository: VillageBlockRepository,
     private val settingsRepository: SettingsRepository,
@@ -127,6 +130,9 @@ class MapViewModel @Inject constructor(
      * refuse anything else — and that happens in a click handler, which needs
      * the value now rather than a flow to subscribe to.
      */
+    /** What the village uses, for the chrome that is not always drawn. */
+    val features: StateFlow<FeatureFlags> = featureRepository.flags
+
     private data class Viewer(val profile: UserProfile? = null, val home: HomePin? = null)
 
     // Profile and house pin travel together because they arrive from two

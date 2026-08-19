@@ -104,6 +104,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import androidx.compose.material3.minimumInteractiveComponentSize
+import gr.agiosnektarios.village.core.model.Feature
 
 /**
  * The village map: reports as pins, neighbourhoods as tinted polygons with
@@ -162,6 +163,7 @@ fun MapScreen(
     // hint clear it at every text size.
     var peekHeight by remember { mutableStateOf(MapSheetDefaults.peekHeight) }
     val alerts by alertViewModel.active.collectAsStateWithLifecycle()
+    val flags by viewModel.features.collectAsStateWithLifecycle()
     // A refused "I have it too" or "it is over" has nowhere on the card to say
     // so, and Firestore's local cache makes the failure look like a success
     // for about a second first.
@@ -225,7 +227,7 @@ fun MapScreen(
                 onFocusedIssue = { focusedIssueId = it },
                 onPeekHeight = { peekHeight = it },
                 leading = {
-                    val outages = alerts.alerts.filter {
+                    val outages = if (!flags.isOn(Feature.ALERTS)) emptyList() else alerts.alerts.filter {
                         it.alertKind.severity == gr.agiosnektarios.village.core.model
                             .AlertSeverity.OUTAGE
                     }
@@ -250,10 +252,14 @@ fun MapScreen(
                     }
                 },
                 subtitle = {
-                    weather.snapshot?.let { DateLine(it.observedAt) }
+                    if (flags.isOn(Feature.WEATHER)) {
+                        weather.snapshot?.let { DateLine(it.observedAt) }
+                    }
                 },
                 trailing = {
-                    WeatherChip(state = weather, onClick = { showWeather = true })
+                    if (flags.isOn(Feature.WEATHER)) {
+                        WeatherChip(state = weather, onClick = { showWeather = true })
+                    }
                 },
                 modifier = Modifier.fillMaxSize(),
             )
@@ -270,8 +276,10 @@ fun MapScreen(
                 .fillMaxWidth(0.72f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            UrgentButton(onClick = { onRaiseAlert(null) })
-            EmergencyBanner(alerts = alerts.alerts, onOpen = { onRaiseAlert(it.kind) })
+            if (flags.isOn(Feature.ALERTS)) {
+                UrgentButton(onClick = { onRaiseAlert(null) })
+                EmergencyBanner(alerts = alerts.alerts, onOpen = { onRaiseAlert(it.kind) })
+            }
         }
 
         MapOverlay(
@@ -518,7 +526,10 @@ fun MapScreen(
         }
     }
 
-    state.selectedStreet?.let { street ->
+    // Tapping a road opens nothing when the village has switched naming off.
+    // The names already agreed stay on the map: switching a feature off stops
+    // it being used, it does not delete what the village has already decided.
+    state.selectedStreet?.takeIf { flags.isOn(Feature.STREET_NAMES) }?.let { street ->
         StreetNameSheet(
             street = street,
             onDismiss = viewModel::dismissStreetSheet,

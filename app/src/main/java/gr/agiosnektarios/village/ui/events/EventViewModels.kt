@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.data.settings.FeatureRepository
 
 data class CalendarUiState(
     val events: List<VillageEvent> = emptyList(),
@@ -32,9 +34,13 @@ data class CalendarUiState(
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
+    featureRepository: FeatureRepository,
     private val repository: EventRepository,
     private val session: SessionRepository,
 ) : ViewModel() {
+
+    /** What the village uses, for the segmented control above this. */
+    val features: StateFlow<FeatureFlags> = featureRepository.flags
 
     val uiState: StateFlow<CalendarUiState> = combine(
         repository.observeUpcoming(),

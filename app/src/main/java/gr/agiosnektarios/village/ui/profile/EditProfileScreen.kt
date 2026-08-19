@@ -43,6 +43,7 @@ import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 import gr.agiosnektarios.village.ui.theme.primaryInk
+import gr.agiosnektarios.village.core.model.Feature
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +54,7 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val flags by viewModel.features.collectAsStateWithLifecycle()
     val savedMessage = stringResource(R.string.profile_saved)
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -165,12 +167,14 @@ fun EditProfileScreen(
             // An address in this village is a description, not a street and
             // number — so the field above can never be given to an ambulance.
             // This can.
-            SecondaryButton(
-                text = stringResource(R.string.home_pin_open),
-                onClick = onPinHome,
-                icon = Icons.Filled.Home,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (flags.isOn(Feature.HOME_PIN)) {
+                SecondaryButton(
+                    text = stringResource(R.string.home_pin_open),
+                    onClick = onPinHome,
+                    icon = Icons.Filled.Home,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
             PrimaryButton(
                 text = stringResource(R.string.action_save),

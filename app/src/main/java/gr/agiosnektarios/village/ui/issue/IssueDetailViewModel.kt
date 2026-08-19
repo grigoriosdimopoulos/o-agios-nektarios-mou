@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.data.settings.FeatureRepository
+import gr.agiosnektarios.village.core.model.Feature
 
 data class IssueDetailUiState(
     val issue: Issue? = null,
@@ -44,6 +46,7 @@ data class IssueDetailUiState(
     val errorMessage: String? = null,
     /** Remembered after the first forward, so nobody types it twice. */
     val councilEmail: String = "",
+    val councilEnabled: Boolean = true,
 ) {
     val canEdit: Boolean get() = issue?.canEdit(viewer) == true
     val canChangeStatus: Boolean get() = issue?.canChangeStatus(viewer) == true
@@ -52,6 +55,7 @@ data class IssueDetailUiState(
 
 @HiltViewModel
 class IssueDetailViewModel @Inject constructor(
+    private val featureRepository: FeatureRepository,
     savedStateHandle: SavedStateHandle,
     private val issueRepository: IssueRepository,
     private val sessionRepository: SessionRepository,
@@ -108,6 +112,7 @@ class IssueDetailViewModel @Inject constructor(
             sendingComment = localState.sendingComment,
             errorMessage = localState.errorMessage,
             councilEmail = councilEmail,
+            councilEnabled = featureRepository.isOn(Feature.COUNCIL),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), IssueDetailUiState())
 

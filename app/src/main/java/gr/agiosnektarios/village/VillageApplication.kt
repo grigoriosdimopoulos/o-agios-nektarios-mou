@@ -17,6 +17,9 @@ class VillageApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var pushTokenSynchronizer: PushTokenSynchronizer
 
+    @Inject
+    lateinit var phonePrivacyMigration: gr.agiosnektarios.village.data.user.PhonePrivacyMigration
+
     @Inject lateinit var crashReporter: CrashReporter
 
     @Inject lateinit var notificationDispatcher: NotificationDispatcher
@@ -35,6 +38,9 @@ class VillageApplication : Application(), Configuration.Provider {
         // Starts a long-lived collector: the device's push registration follows
         // whoever is signed in, for as long as the process lives.
         pushTokenSynchronizer.start()
+        // Moves this resident's telephone number off the directory every other
+        // resident can read. Once per account, then a no-op.
+        phonePrivacyMigration.start()
         // Watches the signed-in resident's inbox and raises a notification for
         // anything new. This is what stands in for server-sent push on the free
         // plan — see NotificationDispatcher for what that does and does not do.

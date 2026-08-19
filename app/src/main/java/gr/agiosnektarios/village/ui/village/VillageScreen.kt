@@ -40,6 +40,7 @@ import gr.agiosnektarios.village.ui.events.CalendarContent
 import gr.agiosnektarios.village.ui.events.CalendarViewModel
 import gr.agiosnektarios.village.ui.navigation.BottomBarDefaults
 import gr.agiosnektarios.village.ui.theme.Space
+import gr.agiosnektarios.village.core.model.Feature
 
 /**
  * Everything the village is telling itself: notices and the calendar.
@@ -65,9 +66,15 @@ fun VillageScreen(
     announcements: AnnouncementsViewModel = hiltViewModel(),
     calendar: CalendarViewModel = hiltViewModel(),
 ) {
+    val flags by calendar.features.collectAsStateWithLifecycle()
+    val calendarOn = flags.isOn(Feature.CALENDAR)
     // Saveable, so a rotation does not send someone back to the notices they
     // had just navigated away from.
     var showCalendar by rememberSaveable { mutableStateOf(false) }
+    // A village that has switched the calendar off is a village with one thing
+    // on this screen, so the segmented control goes too rather than sitting
+    // there with nothing on the other side of it.
+    if (!calendarOn && showCalendar) showCalendar = false
     val announcementState by announcements.uiState.collectAsStateWithLifecycle()
     val calendarState by calendar.uiState.collectAsStateWithLifecycle()
 
@@ -95,11 +102,13 @@ fun VillageScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ScreenHeader(title = stringResource(R.string.nav_village))
-            Segments(
-                showCalendar = showCalendar,
-                onSelect = { showCalendar = it },
-                modifier = Modifier.padding(horizontal = Space.page, vertical = 6.dp),
-            )
+            if (calendarOn) {
+                Segments(
+                    showCalendar = showCalendar,
+                    onSelect = { showCalendar = it },
+                    modifier = Modifier.padding(horizontal = Space.page, vertical = 6.dp),
+                )
+            }
             if (showCalendar) {
                 CalendarContent(
                     state = calendarState,

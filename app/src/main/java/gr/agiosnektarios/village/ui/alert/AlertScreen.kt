@@ -122,6 +122,7 @@ fun AlertScreen(
 
     AlertRaiseContent(
         state = state,
+        smsEnabled = live.smsEnabled,
         numbersAvailable = live.residentNumbers.isNotEmpty(),
         onPick = viewModel::pick,
         onNote = viewModel::onNote,
@@ -146,6 +147,8 @@ fun AlertScreen(
 @Composable
 fun AlertRaiseContent(
     state: RaiseAlertState,
+    /** Whether the village allows texting everyone at all. */
+    smsEnabled: Boolean = true,
     numbersAvailable: Boolean,
     onPick: (AlertKind) -> Unit,
     onNote: (String) -> Unit,
@@ -222,6 +225,7 @@ fun AlertRaiseContent(
                     onDial = onDial,
                     onSms = onSms,
                     numbersAvailable = numbersAvailable,
+                    smsEnabled = smsEnabled,
                 )
             }
             }
@@ -292,6 +296,7 @@ private fun Chosen(
     onDial: (String) -> Unit,
     onSms: (String) -> Unit,
     numbersAvailable: Boolean,
+    smsEnabled: Boolean,
 ) {
     val kind = state.kind ?: return
     val haptics = rememberHaptics()
@@ -379,19 +384,28 @@ private fun Chosen(
             state.position?.let { "https://maps.google.com/?q=${it.lat},${it.lng}" },
         ).joinToString(" · "),
     )
-    SecondaryButton(
-        text = stringResource(R.string.alert_sms),
-        onClick = { onSms(body) },
-        enabled = numbersAvailable,
-        icon = Icons.Filled.Sms,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    if (!numbersAvailable) {
-        Text(
-            text = stringResource(R.string.alert_no_numbers),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+    // Gone, not greyed out, when the village has switched it off. A disabled
+    // control invites somebody to work out how to enable it; an absent one
+    // says the village decided this, which is what happened.
+    if (smsEnabled) {
+        SecondaryButton(
+            text = stringResource(R.string.alert_sms),
+            onClick = { onSms(body) },
+            enabled = numbersAvailable,
+            icon = Icons.Filled.Sms,
+            modifier = Modifier.fillMaxWidth(),
         )
+        if (!numbersAvailable) {
+            Text(
+                // Not the same sentence as before. "Nobody has filled in a
+                // telephone number" was true when the app read them off the
+                // directory; now a number is only here if its owner said it
+                // could be, and saying so is the thing a reader can act on.
+                text = stringResource(R.string.sms_none_shared),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 
     Text(
@@ -400,7 +414,11 @@ private fun Chosen(
         // telling someone in an emergency to do a thing the app has just
         // greyed out is worse than telling them nothing.
         text = stringResource(
-            if (numbersAvailable) R.string.alert_reach else R.string.alert_reach_no_sms,
+            if (smsEnabled && numbersAvailable) {
+                R.string.alert_reach
+            } else {
+                R.string.alert_reach_no_sms
+            },
         ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

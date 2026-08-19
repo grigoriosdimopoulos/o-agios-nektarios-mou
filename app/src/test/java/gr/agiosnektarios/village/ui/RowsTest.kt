@@ -20,6 +20,8 @@ import gr.agiosnektarios.village.ui.theme.VillageTheme
 import gr.agiosnektarios.village.ui.theme.errorInk
 import org.junit.Rule
 import org.junit.Test
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.ui.admin.FeatureSwitches
 
 /**
  * The rows that make up Settings and the administrator's list.
@@ -118,6 +120,37 @@ class RowsTest {
     @Test fun residents_light() = render { Residents() }
 
     @Test fun residents_dark() = render(dark = true) { Residents() }
+
+    /**
+     * The switches an administrator sees, in Greek.
+     *
+     * Every one of them says what turning it off does, and the one that
+     * publishes telephone numbers says considerably more than the rest — this
+     * golden exists so that stays true, because the sentence is the only thing
+     * standing between a neighbour with a passphrase and forty-six numbers.
+     */
+    @Test
+    fun features_greek() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "features",
+    ) {
+        FeatureSwitches(flags = FeatureFlags(), onChange = { _, _ -> })
+    }
+
+    @Test
+    fun features_greek_large() = render(
+        config = DeviceConfig.PIXEL_5.copy(fontScale = 1.5f, locale = "el"),
+        name = "features_large",
+    ) {
+        FeatureSwitches(
+            flags = FeatureFlags(mapOf("SMS_TO_ALL" to true, "WEATHER" to false)),
+            onChange = { _, _ -> },
+        )
+    }
+
+    @Test fun features_dark() = render(dark = true) {
+        FeatureSwitches(flags = FeatureFlags(), onChange = { _, _ -> })
+    }
 
     @Test
     fun residents_greek_max() = render(

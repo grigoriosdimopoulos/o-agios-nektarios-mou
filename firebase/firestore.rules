@@ -43,6 +43,27 @@ service cloud.firestore {
       return hasProfile() && profile().get('disabled', false) == false;
     }
 
+    /**
+     * Whether the village has a feature switched on.
+     *
+     * The flags live in one document that every phone reads and only an
+     * administrator writes. This is here rather than only in the app because
+     * hiding a button is not switching a feature off: what makes
+     * `emergencyContacts` unreadable while the SMS feature is off is this
+     * function, not the screen that draws the button.
+     *
+     * `fallback` is what applies before anybody has decided — it must match
+     * `Feature.defaultOn` in the app, and does for the one flag enforced here.
+     * A missing document means every default, which is the state every village
+     * starts in.
+     */
+    function featureOn(id, fallback) {
+      return exists(/databases/$(database)/documents/featureFlags/village)
+        ? get(/databases/$(database)/documents/featureFlags/village)
+            .data.get('enabled', {}).get(id, fallback)
+        : fallback;
+    }
+
     function role() {
       return hasProfile() ? profile().get('role', 'USER') : 'USER';
     }
@@ -212,18 +233,98 @@ service cloud.firestore {
        * holds the passphrase".
        */
       match /private/{document} {
-        allow read, delete: if isSignedIn() && uid() == userId;
+        allow read: if isSignedIn() && (
+          uid() == userId
+          // An administrator may read a telephone number — they run the
+          // village and sometimes have to ring somebody — but never a house.
+          // Two documents, two rules, rather than one rule with an exception
+          // nobody reads to the end of.
+          || (document == 'contact' && isAdmin())
+        );
+
+        allow delete: if isSignedIn() && uid() == userId;
 
         allow write: if isSignedIn()
           && uid() == userId
-          && document == 'home'
+          && (
+            (document == 'contact'
+              && request.resource.data.keys().hasOnly(['phone', 'updatedAt'])
+              && request.resource.data.get('phone', '') is string
+              && request.resource.data.get('phone', '').size() <= 20)
+            || isHomePin()
+          );
+
+        function isHomePin() {
+          return document == 'home'
           && request.resource.data.lat is number
           && request.resource.data.lng is number
           && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
           && request.resource.data.lng >= -180 && request.resource.data.lng <= 180
           && request.resource.data.get('place', '').size() <= 80
           && request.resource.data.keys().hasOnly(['lat', 'lng', 'place', 'updatedAt']);
+        }
       }
+    }
+
+    // ------------------------------------------------------------ what is on
+
+    /**
+     * What this village uses, at `featureFlags/village`.
+     *
+     * Every resident reads it — the app cannot draw a screen without knowing
+     * whether that screen exists here — and only an administrator writes it.
+     * The keys are named so a typo cannot invent a feature that then reads as
+     * "off" for something the app has no switch for.
+     */
+    match /featureFlags/{document} {
+      allow read: if isSignedIn();
+
+      allow write: if isAdmin()
+        && document == 'village'
+        && request.resource.data.keys().hasOnly(['enabled', 'updatedAt'])
+        && request.resource.data.get('enabled', {}).keys().hasOnly([
+          'ALERTS', 'SMS_TO_ALL', 'CHAT', 'CALENDAR', 'CONTACTS',
+          'WEATHER', 'FIRE_RISK', 'STREET_NAMES', 'HOME_PIN', 'COUNCIL'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // -------------------------------------------- numbers people have shared
+
+    /**
+     * Telephone numbers whose owners have agreed they may be texted, at
+     * `emergencyContacts/{uid}`.
+     *
+     * Two locks, and the point of the collection is that both are here rather
+     * than in the app.
+     *
+     * The document exists only if its owner created it, so a number nobody
+     * volunteered is a number nobody can read. And reading is refused outright
+     * while the village has the feature switched off, which is the state it
+     * starts in — so a fresh village leaks nothing at all, and turning it on
+     * is a decision somebody makes rather than a default nobody noticed.
+     *
+     * Deleting is the exception: it is allowed whatever the flags say, because
+     * withdrawing consent must never depend on a setting somebody else
+     * controls. An administrator switching the feature off should not be able
+     * to strand a number that its owner is trying to take back.
+     */
+    match /emergencyContacts/{userId} {
+      allow read: if isActiveResident() && featureOn('SMS_TO_ALL', false);
+
+      allow create, update: if isActiveResident()
+        && uid() == userId
+        && featureOn('SMS_TO_ALL', false)
+        && request.resource.data.keys().hasOnly(['name', 'phone', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() <= 20;
+
+      allow delete: if isSignedIn() && (uid() == userId || isAdmin());
     }
 
     // ------------------------------------------------- administrator elevation

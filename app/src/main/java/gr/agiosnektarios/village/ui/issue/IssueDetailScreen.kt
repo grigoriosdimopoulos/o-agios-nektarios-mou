@@ -177,6 +177,7 @@ fun IssueDetailScreen(
                 onToggleAssignment = viewModel::toggleAssignment,
                 onOpenMap = onOpenMap,
                 councilEmail = state.councilEmail,
+                councilEnabled = state.councilEnabled,
                 onRememberCouncilEmail = viewModel::rememberCouncilEmail,
                 onRecordCouncil = viewModel::setCouncilReport,
             )
@@ -237,6 +238,8 @@ internal fun IssueDetailContent(
     onToggleAssignment: () -> Unit = {},
     onOpenMap: () -> Unit = {},
     councilEmail: String = "",
+    /** Whether the village hands reports on to the municipality at all. */
+    councilEnabled: Boolean = true,
     onRememberCouncilEmail: (String) -> Unit = {},
     onRecordCouncil: (String, Boolean) -> Unit = { _, _ -> },
 ) {
@@ -348,7 +351,7 @@ internal fun IssueDetailContent(
                 // their own name. Recording that it *is* with the municipality
                 // is a moderator's act, because the whole village reads it and
                 // then stops sending it again.
-                CouncilRow(
+                if (councilEnabled) CouncilRow(
                     issue = issue,
                     onSend = { showCouncil = true },
                 )

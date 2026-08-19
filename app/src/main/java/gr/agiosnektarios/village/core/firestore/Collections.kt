@@ -21,6 +21,21 @@ object Collections {
     /** Per-resident documents nobody else may read. See [Collections.HOME]. */
     const val PRIVATE = "private"
     const val HOME = "home"
+
+    /** The resident's own telephone number, readable by them and an admin. */
+    const val CONTACT = "contact"
+
+    /** What the village has switched on. One document, [FeatureFlags.DOCUMENT]. */
+    const val FEATURE_FLAGS = "featureFlags"
+
+    /**
+     * Numbers whose owners have agreed they may be texted in an emergency.
+     *
+     * A separate collection precisely so its readability can be governed on
+     * its own: a field on the profile could not be, because Firestore's rules
+     * grant a document at a time and the profile has to be readable.
+     */
+    const val EMERGENCY_CONTACTS = "emergencyContacts"
 }
 
 /** FCM topics every signed-in device subscribes to. */

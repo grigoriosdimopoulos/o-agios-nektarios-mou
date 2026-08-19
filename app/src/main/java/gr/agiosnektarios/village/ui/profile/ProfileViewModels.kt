@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import gr.agiosnektarios.village.core.model.FeatureFlags
+import gr.agiosnektarios.village.data.settings.FeatureRepository
 
 data class ProfileUiState(
     val profile: UserProfile? = null,
@@ -115,6 +117,7 @@ data class EditProfileUiState(
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
+    featureRepository: FeatureRepository,
     private val sessionRepository: SessionRepository,
     private val userRepository: UserRepository,
     private val imageCodec: ImageCodec,
@@ -122,6 +125,8 @@ class EditProfileViewModel @Inject constructor(
     blockRepository: VillageBlockRepository,
     private val messages: UserMessages,
 ) : ViewModel() {
+
+    val features: StateFlow<FeatureFlags> = featureRepository.flags
 
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
