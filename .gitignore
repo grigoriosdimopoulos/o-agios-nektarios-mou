@@ -12,6 +12,9 @@ local.properties
 # build installs as an update and matches one Firebase fingerprint. It signs
 # nothing that ships; a release keystore must never be committed.
 !keystore/debug.keystore
+# The upload key's passwords. The .jks itself is already caught by *.jks
+# above, but this sits beside it and holds the passphrase in plain text.
+keystore/upload.properties
 captures/
 .cxx/
 # The Kotlin daemon writes a liveness marker per build under .kotlin/sessions

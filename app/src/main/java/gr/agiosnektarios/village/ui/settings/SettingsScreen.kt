@@ -260,7 +260,14 @@ fun SettingsScreen(
             // The hidden door. Nothing marks this row as tappable — see
             // rememberTapUnlock for why that is the design and not an oversight.
             Text(
-                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                // Version *and* commit. The store shows a plain "1.0.76", but
+                // the thing a resident compares against dist/BUILD.txt to
+                // answer "is this the build you published?" is the commit, so
+                // it stays here where that question gets asked.
+                text = stringResource(
+                    R.string.settings_version,
+                    "${BuildConfig.VERSION_NAME} (${BuildConfig.GIT_SHA})",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier

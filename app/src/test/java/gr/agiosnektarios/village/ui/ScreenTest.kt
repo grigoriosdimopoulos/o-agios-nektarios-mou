@@ -68,6 +68,34 @@ class ScreenTest {
         }
     }
 
+    /**
+     * The screens as a Greek phone draws them, for the store listing.
+     *
+     * The rest of this file renders in the default locale because that is what
+     * a diff is easiest to read in. These six exist because a store page in
+     * Greek showing an app labelled "Issues" and "Filters" is a store page
+     * advertising a different app.
+     */
+    @Test fun shot_reports() = greek("shot_reports") { IssueList() }
+
+    @Test fun shot_report() = greek("shot_report") { IssueDetail() }
+
+    @Test fun shot_chats() = greek("shot_chats") { Chats() }
+
+    private fun greek(name: String, content: @Composable () -> Unit) {
+        paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(locale = "el"))
+        paparazzi.snapshot(name = name) {
+            CompositionLocalProvider(LocalClock provides { GOLDEN_NOW }) {
+                VillageTheme(themeMode = ThemeMode.LIGHT) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) { content() }
+                }
+            }
+        }
+    }
+
     @Test fun issue_list_light() = render { IssueList() }
 
     @Test fun issue_list_dark() = render(dark = true) { IssueList() }

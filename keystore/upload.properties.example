@@ -1,0 +1,12 @@
+# Copy to keystore/upload.properties and fill in. That file is gitignored and
+# must never be committed: it holds the passphrase for the key that publishes.
+#
+# Create the key first:
+#   keytool -genkeypair -v -keystore keystore/upload.jks \
+#     -alias agiosnektarios-upload -keyalg RSA -keysize 4096 -validity 10000
+#
+# A build server can set these as environment variables instead.
+UPLOAD_STORE_FILE=keystore/upload.jks
+UPLOAD_STORE_PASSWORD=
+UPLOAD_KEY_ALIAS=agiosnektarios-upload
+UPLOAD_KEY_PASSWORD=

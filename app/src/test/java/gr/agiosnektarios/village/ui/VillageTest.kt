@@ -84,6 +84,24 @@ class VillageTest {
         }
     }
 
+    /** For the store listing: the calendar and the alarm as a Greek phone draws them. */
+    @Test fun shot_calendar() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_calendar",
+    ) { Calendar() }
+
+    @Test fun shot_alarm() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_alarm",
+    ) {
+        AlertRaiseContent(
+            state = RaiseAlertState(),
+            numbersAvailable = true,
+            onPick = {}, onNote = {}, onPlace = {},
+            onBack = {}, onSend = {}, onDial = {}, onSms = {},
+        )
+    }
+
     @Test fun calendar_light() = render { Calendar() }
 
     @Test fun calendar_dark() = render(dark = true) { Calendar() }

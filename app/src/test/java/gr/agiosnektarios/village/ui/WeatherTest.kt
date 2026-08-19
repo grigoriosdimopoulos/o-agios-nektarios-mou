@@ -86,6 +86,12 @@ class WeatherTest {
         }
     }
 
+    /** For the store listing, in Greek. */
+    @Test fun shot_weather() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_weather",
+    ) { Sheet(august) }
+
     @Test fun weather_sheet_light() = render { Sheet(august) }
 
     @Test fun weather_sheet_dark() = render(dark = true) { Sheet(august) }

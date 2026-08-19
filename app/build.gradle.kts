@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -49,6 +51,21 @@ fun git(vararg args: String): String? = runCatching {
 val gitCount = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 1
 val gitSha = git("rev-parse", "--short=7", "HEAD") ?: "nogit"
 
+/**
+ * A build secret, from an untracked properties file or from the environment.
+ *
+ * The file is for a person publishing from their own machine; the environment
+ * is for a build server. Neither is in the repository and the build works
+ * without both.
+ */
+val uploadProperties = Properties().apply {
+    val file = rootProject.file("keystore/upload.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun secret(name: String): String? =
+    uploadProperties.getProperty(name) ?: System.getenv(name)
+
 android {
     namespace = "gr.agiosnektarios.village"
     compileSdk = 35
@@ -58,13 +75,43 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = gitCount
-        versionName = "1.0.$gitCount ($gitSha)"
+        // The store shows this. The commit is still stamped into the app —
+        // see BuildConfig.GIT_SHA and Settings > About — but a version name
+        // with a hex string in it reads as a mistake on a store page.
+        versionName = "1.0.$gitCount"
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += setOf("en", "el")
     }
 
     signingConfigs {
+        /**
+         * The key that signs what goes to Google Play.
+         *
+         * Never in this repository, and the build must not require it: anyone
+         * cloning this can build, test and sideload without holding the key
+         * that publishes. So it is read from `keystore/upload.properties`, or
+         * from the environment for a build server, and when neither is present
+         * the release build simply comes out unsigned — which is a perfectly
+         * good state for everything except uploading.
+         *
+         * Play re-signs with its own key when the bundle arrives (Play App
+         * Signing), so this is the *upload* key: it proves the bundle came
+         * from you. Losing it is recoverable by asking Google to reset it;
+         * losing the app signing key would not be, which is why letting Play
+         * hold that one is worth doing.
+         */
+        val uploadStore = secret("UPLOAD_STORE_FILE")
+        if (uploadStore != null) {
+            create("upload") {
+                storeFile = rootProject.file(uploadStore)
+                storePassword = secret("UPLOAD_STORE_PASSWORD")
+                keyAlias = secret("UPLOAD_KEY_ALIAS")
+                keyPassword = secret("UPLOAD_KEY_PASSWORD")
+            }
+        }
+
         /**
          * A debug key committed to the repository on purpose.
          *
@@ -134,6 +181,10 @@ android {
         }
 
         release {
+            // Signed only if the upload key is present; see signingConfigs.
+            // An unsigned release bundle still builds, which is what keeps a
+            // fresh clone able to run `bundleRelease` without a secret.
+            signingConfig = signingConfigs.findByName("upload")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
