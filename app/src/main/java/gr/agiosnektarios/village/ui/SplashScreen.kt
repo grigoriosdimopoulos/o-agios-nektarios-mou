@@ -48,11 +48,22 @@ const val SPLASH_DURATION_MS = 2150L
 /**
  * What the village sees for the couple of seconds before its map arrives.
  *
- * The line is Euripides, *Bacchae* 1045 — `λέπας Κιθαιρώνειον`, "the rocky
- * heights of Kithairon" — the mountain this settlement is built on the skirts
- * of. It is a real line from a real play, checked against Perseus rather than
- * recalled from memory: a fabricated classical quotation on a Greek village's
- * own app would be a small act of vandalism.
+ * The line is Hesiod, *Theogony* 129 — `οὔρεα μακρά, θεῶν χαρίεντας ἐναύλους`,
+ * "the tall mountains, the gracious haunts of the gods". It is Earth herself
+ * bearing the mountains, and the couplet finishes at 130 with `οὔρεα
+ * βησσήεντα`, the wooded mountains where the Nymphs live — which is what this
+ * settlement sits in the middle of.
+ *
+ * It replaced a line from Euripides that named Kithairon directly. Naming the
+ * mountain was the obvious choice and the weaker one: the Bacchae line is
+ * about a place of madness and dismemberment, and it said nothing about the
+ * forest, the land, or why anyone would look after either.
+ *
+ * Verified against the canonical Perseus text (tlg0020.tlg001), not recalled
+ * from memory: a fabricated classical quotation on a Greek village's own app
+ * would be a small act of vandalism. The full line begins `γείνατο δ'` — "and
+ * she bore" — which is dropped here so the fragment stands as a phrase rather
+ * than as a sentence missing its subject.
  *
  * The animation is deliberately slow and single-purpose. The Greek fades up and
  * rises a few pixels, a hairline draws itself outward, then the translation and

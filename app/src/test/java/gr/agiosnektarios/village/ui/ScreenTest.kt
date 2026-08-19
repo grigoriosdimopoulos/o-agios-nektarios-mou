@@ -156,7 +156,7 @@ private fun QuickReport() = QuickReportSheet(
     onRetryLocation = {},
     onPickOnMap = {},
     onSubmit = {},
-    onOpenFullForm = {},
+    onCategoryChange = {},
 )
 
 @Composable
@@ -167,7 +167,7 @@ private fun QuickReportEmpty() = QuickReportSheet(
     onRetryLocation = {},
     onPickOnMap = {},
     onSubmit = {},
-    onOpenFullForm = {},
+    onCategoryChange = {},
 )
 
 @Composable
@@ -183,8 +183,7 @@ private fun QuickReportStuck() = QuickReportSheet(
     onRetryLocation = {},
     onPickOnMap = {},
     onSubmit = {},
-    onOpenFullForm = {},
-    offerFullForm = false,
+    onCategoryChange = {},
 )
 
 @Composable

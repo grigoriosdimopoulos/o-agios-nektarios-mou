@@ -43,6 +43,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 /** Where the sheet can rest. Only three, because a drag should always land somewhere. */
 enum class SheetStop { PEEK, HALF, FULL }
@@ -65,6 +67,15 @@ fun MapSheet(
     issues: List<Issue>,
     onOpenIssue: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Called with the report sitting under the middle of the drawer as it
+     * scrolls, so the map can light up where that one is.
+     *
+     * A list of reports beside a map of reports is two things; a list that
+     * points at the map while you scroll it is one. Null when the drawer is
+     * closed or the list is empty.
+     */
+    onFocusedIssue: (String?) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -141,7 +152,25 @@ fun MapSheet(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = Space.page, vertical = 4.dp),
                 )
+                val listState = rememberLazyListState()
+
+                // Which card is under the middle of the visible strip. Derived
+                // rather than computed on every frame: recomposing the map's
+                // highlight on each scroll pixel would cost a geometry upload
+                // per frame.
+                val focused by remember(listState) {
+                    derivedStateOf {
+                        val info = listState.layoutInfo
+                        val middle = (info.viewportStartOffset + info.viewportEndOffset) / 2
+                        info.visibleItemsInfo
+                            .minByOrNull { kotlin.math.abs((it.offset + it.size / 2) - middle) }
+                            ?.key as? String
+                    }
+                }
+                LaunchedEffect(focused) { onFocusedIssue(focused) }
+
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(
                         start = Space.page,
                         end = Space.page,

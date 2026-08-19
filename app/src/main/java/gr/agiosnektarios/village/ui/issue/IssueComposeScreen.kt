@@ -218,6 +218,7 @@ fun IssueComposeScreen(
                         // tap is the pin: roads are drawn, but not tappable, and
                         // their names are not fetched for a thumbnail map.
                         streetNames = emptyMap(),
+                        focusedIssueId = null,
                         allowRoadTaps = false,
                         focusBounds = state.position?.let {
                             GeoBounds(it.lat, it.lng, it.lat, it.lng)

@@ -86,8 +86,7 @@ class AccessibilityTest {
                         onRetryLocation = {},
                         onPickOnMap = {},
                         onSubmit = {},
-                        onOpenFullForm = {},
-                        offerFullForm = false,
+                        onCategoryChange = {},
                     )
                 }
             }
@@ -130,8 +129,7 @@ class AccessibilityTest {
             onRetryLocation = {},
             onPickOnMap = {},
             onSubmit = {},
-            onOpenFullForm = {},
-            offerFullForm = false,
+            onCategoryChange = {},
         )
     }
 

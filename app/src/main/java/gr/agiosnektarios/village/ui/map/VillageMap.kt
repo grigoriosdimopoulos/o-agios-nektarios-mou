@@ -30,6 +30,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
@@ -47,6 +48,8 @@ private const val LAYER_BLOCK_FILL = "village-block-fill"
 private const val LAYER_BLOCK_LINE = "village-block-line"
 private const val LAYER_BLOCK_LABEL = "village-block-label"
 private const val LAYER_PINS = "village-pin-symbols"
+private const val SOURCE_FOCUS = "village-focus"
+private const val LAYER_FOCUS = "village-focus-halo"
 private const val ROADS_ASSET = "village_roads.json"
 private const val SOURCE_ROADS = "village-roads"
 private const val LAYER_ROAD_CASING = "village-road-casing"
@@ -140,6 +143,13 @@ fun VillageMap(
     basemap: MapBasemap,
     greekLabels: Boolean,
     streetNames: Map<String, String>,
+    /**
+     * The report the drawer is currently centred on, lit on the map.
+     *
+     * Scrolling the list and watching the map answer is what makes the two
+     * read as one screen rather than as a list next to a picture.
+     */
+    focusedIssueId: String?,
     /** False while a pin is being placed, when every tap belongs to the pin. */
     allowRoadTaps: Boolean,
     onMapTap: (GeoPoint) -> Unit,
@@ -279,6 +289,7 @@ fun VillageMap(
                 pendingPin = pendingPin,
                 greekLabels = greekLabels,
                 streetNames = streetNames,
+                focusedIssueId = focusedIssueId,
             )
             // Guarded: without this, every recomposition restarts the fly-to
             // and the camera never settles while a neighbourhood is open.
@@ -352,6 +363,7 @@ private class VillageMapState {
 
             loaded.addSource(GeoJsonSource(SOURCE_BLOCKS))
             loaded.addSource(GeoJsonSource(SOURCE_PINS))
+            loaded.addSource(GeoJsonSource(SOURCE_FOCUS))
 
             // Neighbourhood shading goes *under* the street network rather than
             // over it. Painted on top it washed the roads out — which is the
@@ -457,6 +469,26 @@ private class VillageMapState {
                 ),
             )
 
+            // The halo goes under the pins, so it reads as light falling on
+            // the map rather than as a badge stuck on top of the marker.
+            loaded.addLayer(
+                CircleLayer(LAYER_FOCUS, SOURCE_FOCUS).withProperties(
+                    PropertyFactory.circleColor(if (dark) "#7FD4B8" else "#1F6F5C"),
+                    PropertyFactory.circleOpacity(0.22f),
+                    PropertyFactory.circleStrokeColor(if (dark) "#7FD4B8" else "#1F6F5C"),
+                    PropertyFactory.circleStrokeWidth(2f),
+                    PropertyFactory.circleStrokeOpacity(0.85f),
+                    PropertyFactory.circleRadius(
+                        Expression.interpolate(
+                            Expression.linear(), Expression.zoom(),
+                            Expression.stop(14f, 16f),
+                            Expression.stop(17f, 30f),
+                            Expression.stop(20f, 54f),
+                        ),
+                    ),
+                ),
+            )
+
             // Pins last so they sit above the neighbourhood shading.
             loaded.addLayer(
                 SymbolLayer(LAYER_PINS, SOURCE_PINS).withProperties(
@@ -498,6 +530,7 @@ private class VillageMapState {
         pendingPin: GeoPoint?,
         greekLabels: Boolean,
         streetNames: Map<String, String>,
+        focusedIssueId: String?,
     ) {
         // Cheap identity of the inputs. Clusters and summaries are rebuilt as
         // new instances each time the view model emits, so their contents —
@@ -505,7 +538,7 @@ private class VillageMapState {
         val signature = listOf(
             clusters.map { it.id to it.size },
             blocks.map { it.block.id to it.openCount },
-            showBlocks, pendingPin, greekLabels, streetNames,
+            showBlocks, pendingPin, greekLabels, streetNames, focusedIssueId,
         ).hashCode()
         if (signature == lastRender && style != null) return
         lastRender = signature
@@ -516,6 +549,7 @@ private class VillageMapState {
                 renderBlocks(loaded, blocks, showBlocks, greekLabels)
                 renderRoadNames(loaded, streetNames)
                 renderPins(loaded, clusters, pendingPin)
+                renderFocus(loaded, clusters, focusedIssueId)
             }
         }
         if (style != null) work() else pending = work
@@ -623,6 +657,23 @@ private class VillageMapState {
         source.setGeoJson(FeatureCollection.fromFeatures(features))
     }
 
+    /** One circle under the report the drawer is centred on, or nothing. */
+    private fun renderFocus(style: Style, clusters: List<IssueCluster>, issueId: String?) {
+        val source = style.getSourceAs<GeoJsonSource>(SOURCE_FOCUS) ?: return
+        val issue = issueId?.let { id ->
+            clusters.asSequence().flatMap { it.issues.asSequence() }.firstOrNull { it.id == id }
+        }
+        source.setGeoJson(
+            if (issue == null) {
+                FeatureCollection.fromFeatures(emptyList())
+            } else {
+                FeatureCollection.fromFeatures(
+                    listOf(Feature.fromGeometry(Point.fromLngLat(issue.lng, issue.lat))),
+                )
+            },
+        )
+    }
+
     fun focus(bounds: GeoBounds) {
         val map = map ?: return
         runCatching {
@@ -651,10 +702,17 @@ private class VillageMapState {
                 Expression.stop("main", main + pad),
                 Expression.stop("track", track + pad),
             )
+        // Widened at the bottom of the range.
+        //
+        // A street was 1.1dp at zoom 14 and about 2.3 at the zoom the map
+        // opens on, which on a phone is a hairline you have to hunt for — the
+        // network only became legible if you pinched in, and the whole point
+        // of drawing it is to see where the village's roads run at a glance.
+        // The top of the range is unchanged; it was never the problem.
         return Expression.interpolate(
             Expression.linear(), Expression.zoom(),
-            Expression.stop(14f, byClass(2.0f, 1.1f, 0.7f)),
-            Expression.stop(17f, byClass(6.0f, 3.6f, 1.8f)),
+            Expression.stop(14f, byClass(3.4f, 2.4f, 1.5f)),
+            Expression.stop(17f, byClass(7.0f, 4.6f, 2.4f)),
             Expression.stop(20f, byClass(15f, 9f, 4f)),
         )
     }

@@ -240,7 +240,7 @@
     <string name="map_basemap_streets">Οδικός</string>
     <string name="map_basemap_satellite">Δορυφόρος</string>
     <string name="map_basemap_terrain">Ανάγλυφο</string>
-    <string name="splash_quote_translation">τα βράχια του Κιθαιρώνα</string>
+    <string name="splash_quote_translation">τα ψηλά βουνά, χαριτωμένες κατοικίες των θεών</string>
 
     <!-- Ονόματα οδών: κανένας δημόσιος χάρτης δεν έχει τα ονόματα του οικισμού,
          οπότε τα βάζουν οι κάτοικοι. Βλ. assets/village_roads.json. -->
@@ -271,7 +271,6 @@
     <string name="quick_report_no_fix">Δεν βρέθηκε τοποθεσία</string>
     <string name="quick_report_change">Στον χάρτη</string>
     <string name="quick_report_pick">Ξαναδοκίμασε</string>
-    <string name="quick_report_full_form">Πρόσθεσε κατηγορία και λεπτομέρειες</string>
     <string name="issue_take_on">Το αναλαμβάνω</string>
     <string name="issue_release">Το αφήνω</string>
     <string name="issue_taken_by">Το έχει αναλάβει ο/η %1$s</string>

@@ -117,6 +117,8 @@ fun MapScreen(
     // threw the resident straight into the camera again. This only changes
     // when a genuinely new report starts.
     var reportSession by remember { mutableIntStateOf(0) }
+    // The report the drawer is centred on, lit on the map beneath it.
+    var focusedIssueId by remember { mutableStateOf<String?>(null) }
 
     // The camera is only pushed at the map when a neighbourhood is opened;
     // otherwise the map owns its own position and nothing here fights it.
@@ -133,6 +135,7 @@ fun MapScreen(
             basemap = state.basemap,
             greekLabels = greek,
             streetNames = state.streetNames,
+            focusedIssueId = focusedIssueId.takeUnless { state.placingPin },
             allowRoadTaps = !state.placingPin,
             focusBounds = focusBounds,
             onZoomChanged = viewModel::onZoomChanged,
@@ -159,6 +162,7 @@ fun MapScreen(
                     .distinctBy { it.id }
                     .sortedByDescending { it.createdAt?.time ?: 0L },
                 onOpenIssue = onOpenIssue,
+                onFocusedIssue = { focusedIssueId = it },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -233,13 +237,20 @@ fun MapScreen(
     LaunchedEffect(reportSession) {
         if (reportSession > launchedForSession) {
             launchedForSession = reportSession
+            // Location is asked for; the camera is NOT opened.
+            //
+            // It used to launch straight into the camera app, on the theory
+            // that the photo is the fastest way in. In practice the resident
+            // taps "new report" and is thrown into a viewfinder with no
+            // explanation — they have not been told what the app wants, and
+            // there is no way back that is not a cancel. The sheet opens
+            // first, with the photo frame as an obvious thing to tap.
             locationPermission.launch(
                 arrayOf(
                     android.Manifest.permission.ACCESS_FINE_LOCATION,
                     android.Manifest.permission.ACCESS_COARSE_LOCATION,
                 ),
             )
-            openCamera()
         }
     }
 
@@ -273,16 +284,7 @@ fun MapScreen(
                     viewModel.startPlacingPin()
                 },
                 onSubmit = quickReport::submit,
-                onOpenFullForm = {
-                    showQuickReport = false
-                    quick.position?.let { onCreateIssueAt(it.lat, it.lng) }
-                        ?: viewModel.startPlacingPin()
-                },
-                // The full composer is reached by navigation, and a photo's
-                // bytes cannot ride a navigation argument. Rather than lose it
-                // quietly, the way through is only offered while there is
-                // nothing to lose.
-                offerFullForm = quick.photo == null,
+                onCategoryChange = quickReport::onCategoryChange,
             )
         }
     }
@@ -545,10 +547,21 @@ private fun MapOverlay(
             visible = state.showStreetHint,
             enter = fadeIn() + slideInVertically { it / 2 },
             exit = fadeOut() + slideOutVertically { it / 2 },
+            // Above the drawer, not underneath it.
+            //
+            // This used to clear only the navigation bar, which put it inside
+            // the sheet's peek strip and directly on top of the first report —
+            // the first thing a new resident sees is a tip covering the
+            // content it is a tip about. It also sits above the FAB's column
+            // rather than beside it, so the two cannot collide at any text
+            // size.
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 16.dp, end = 88.dp)
-                .padding(bottom = BottomBarDefaults.contentPadding() + 16.dp),
+                .padding(start = Space.page, end = Space.page)
+                .padding(
+                    bottom = BottomBarDefaults.contentPadding() +
+                        MapSheetDefaults.peekHeight + 88.dp,
+                ),
         ) {
             StreetNamingHint(onDismiss = onDismissStreetHint)
         }

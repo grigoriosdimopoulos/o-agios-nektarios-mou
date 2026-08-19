@@ -44,6 +44,12 @@ import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.theme.Space
 import gr.agiosnektarios.village.ui.theme.raisedContainer
 import gr.agiosnektarios.village.ui.theme.raisedOutline
+import gr.agiosnektarios.village.ui.components.fadingEdges
+import gr.agiosnektarios.village.ui.components.CategoryChip
+import gr.agiosnektarios.village.core.model.IssueCategory
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
 
 /**
  * The ten-second report.
@@ -67,9 +73,8 @@ fun QuickReportSheet(
     onRetryLocation: () -> Unit,
     onPickOnMap: () -> Unit,
     onSubmit: () -> Unit,
-    onOpenFullForm: () -> Unit,
+    onCategoryChange: (IssueCategory) -> Unit,
     modifier: Modifier = Modifier,
-    offerFullForm: Boolean = true,
 ) {
     Column(
         modifier = modifier
@@ -106,6 +111,8 @@ fun QuickReportSheet(
             ),
         )
 
+        CategoryStrip(selected = state.category, onSelect = onCategoryChange)
+
         LocationLine(
             state = state,
             onRetryLocation = onRetryLocation,
@@ -119,19 +126,6 @@ fun QuickReportSheet(
             loading = state.submitting,
             modifier = Modifier.fillMaxWidth(),
         )
-
-        if (offerFullForm) {
-            Text(
-                text = stringResource(R.string.quick_report_full_form),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clip(MaterialTheme.shapes.small)
-                    .clickable(onClick = onOpenFullForm)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-            )
-        }
     }
 }
 
@@ -302,3 +296,36 @@ private fun LocationAction(text: String, onClick: () -> Unit) {
 /** Border helper: BorderStroke needs a shape, and repeating that reads badly inline. */
 private fun Modifier.androidBorder(stroke: BorderStroke): Modifier =
     border(stroke, RoundedCornerShape(18.dp))
+
+/**
+ * The category, on the sheet rather than behind a link to a bigger form.
+ *
+ * It used to live only in the full composer, reached by a link that was hidden
+ * the moment a photo existed — so adding a picture made the category
+ * disappear, which is exactly as strange as it sounds. A horizontal strip
+ * costs one line of the sheet and removes the only reason to leave it.
+ *
+ * Nothing is required: the default is OTHER and anyone can correct it later.
+ * The strip exists so that someone who *knows* it is a fallen tree can say so
+ * in one tap, not so that everyone must classify their own emergency.
+ */
+@Composable
+private fun CategoryStrip(
+    selected: IssueCategory,
+    onSelect: (IssueCategory) -> Unit,
+) {
+    val row = rememberLazyListState()
+    LazyRow(
+        state = row,
+        modifier = Modifier.fillMaxWidth().fadingEdges(row),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(IssueCategory.entries.toList()) { category ->
+            CategoryChip(
+                category = category,
+                selected = category == selected,
+                onClick = { onSelect(category) },
+            )
+        }
+    }
+}
