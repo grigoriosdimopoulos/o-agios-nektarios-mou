@@ -64,6 +64,32 @@ jobs:
           name: test-reports
           path: app/build/reports/tests/
 
+  # The security rules are the only authorization layer on this plan, and CI
+  # was not running their tests — so a rule that opened a hole would have been
+  # caught by the release job, after somebody had already tagged it.
+  rules:
+    name: Firestore rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Rules tests
+        working-directory: firebase
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save firebase-tools
+          npx firebase emulators:exec --only firestore \
+            --project demo-rules-check 'node rules.test.mjs'
+
   functions:
     name: Cloud Functions typecheck
     runs-on: ubuntu-latest

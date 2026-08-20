@@ -1,0 +1,239 @@
+name: Release
+
+# Two ways in.
+#
+# A tag is the record: `git tag v1.0.77 && git push --tags` builds that exact
+# commit, publishes it, and leaves a GitHub Release naming what went out.
+# The manual run is for rehearsing — it builds and signs everything and
+# uploads it as an artifact without touching dist/ or the store.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish_to_play:
+        description: "Upload the bundle to Play (internal track)"
+        type: boolean
+        default: false
+      update_dist:
+        description: "Update dist/ so the village download link gets this build"
+        type: boolean
+        default: false
+
+# One release at a time. Two builds racing to push dist/ would each see the
+# other's commit as a conflict, and the loser would leave a BUILD.txt naming a
+# file that is no longer there.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 is not optional here.
+      #
+      # versionCode is the commit count, and Play refuses a bundle whose
+      # versionCode is not higher than the last one it accepted. A shallow
+      # checkout — the default — makes `git rev-list --count HEAD` return 1, so
+      # every release would build as versionCode 1 and the second upload would
+      # be rejected with a message that does not mention git at all.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ---------------------------------------------------------------- config
+
+      # The real Firebase config, not the template.
+      #
+      # CI's normal build uses google-services.json.example, which compiles but
+      # points at nothing. A *release* built that way installs, opens, and fails
+      # every sign-in — a build that looks fine until it is in somebody's hands.
+      - name: Provide Firebase config
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON secret is not set. A release built" \
+                 "from the example config cannot reach Firebase and cannot sign in."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          python3 -c "import json,sys; json.load(open('app/google-services.json'))" \
+            || { echo "::error::GOOGLE_SERVICES_JSON is not valid JSON"; exit 1; }
+
+      # The upload key, decoded to a path outside the working tree so that no
+      # step can commit it by accident and no artifact upload can sweep it up.
+      - name: Decode upload key
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_BASE64" ]; then
+            echo "::error::UPLOAD_KEYSTORE_BASE64 secret is not set."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/signing"
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/signing/upload.jks"
+          # A truncated or mis-pasted secret decodes to something, so check it
+          # is a keystore before spending six minutes discovering it is not.
+          keytool -list -keystore "$RUNNER_TEMP/signing/upload.jks" \
+            -storepass "${{ secrets.UPLOAD_STORE_PASSWORD }}" > /dev/null \
+            || { echo "::error::The keystore did not open. Check UPLOAD_KEYSTORE_BASE64 and UPLOAD_STORE_PASSWORD."; exit 1; }
+
+      # ----------------------------------------------------------------- gates
+
+      # Nothing signed goes out unverified. These are the same three suites the
+      # ordinary CI runs, plus the rules — which CI does not run and which are
+      # the only thing standing between a modified client and everyone's data.
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Verify UI snapshots
+        run: ./gradlew verifyPaparazziDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: paparazzi-failures
+          path: app/build/paparazzi/failures/
+          if-no-files-found: ignore
+
+      - name: Firestore rules tests
+        working-directory: firebase
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save firebase-tools
+          npx firebase emulators:exec --only firestore \
+            --project demo-rules-check 'node rules.test.mjs'
+
+      # ----------------------------------------------------------------- build
+
+      - name: Build signed bundle and APK
+        env:
+          UPLOAD_STORE_FILE: ${{ runner.temp }}/signing/upload.jks
+          UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          # The bundle is what Play takes. The APK is what the village takes:
+          # it is handed over as a file at a fixed URL and sideloaded, and that
+          # is still how these phones get updates.
+          ./gradlew bundleRelease assemblePreview --no-daemon
+
+      - name: Describe the build
+        id: describe
+        run: |
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          APK=app/build/outputs/apk/preview/app-preview.apk
+          CODE=$(git rev-list --count HEAD)
+          SHA=$(git rev-parse --short=7 HEAD)
+          echo "version_code=$CODE"          >> "$GITHUB_OUTPUT"
+          echo "version_name=1.0.$CODE"      >> "$GITHUB_OUTPUT"
+          echo "git_sha=$SHA"                >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=$(sha256sum $APK | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "apk_bytes=$(stat -c%s $APK)" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Build 1.0.$CODE ($SHA)"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| versionCode | \`$CODE\` |"
+            echo "| bundle | \`$(stat -c%s $AAB)\` bytes |"
+            echo "| apk | \`$(stat -c%s $APK)\` bytes |"
+            echo "| apk sha256 | \`$(sha256sum $APK | cut -d' ' -f1)\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Signed artefacts are retained briefly and not forever: they are
+      # reproducible from the tag, and a signed bundle sitting in an artefact
+      # store is one more copy of something worth stealing.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.describe.outputs.version_name }}
+          retention-days: 14
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/preview/app-preview.apk
+            app/build/outputs/mapping/release/mapping.txt
+
+      # --------------------------------------------------------------- publish
+
+      # The village's copy. Same flow that was being done by hand: the APK at a
+      # fixed path, and a BUILD.txt saying which build it is and what it hashes
+      # to, so "is this the one you published?" has an answer.
+      - name: Update dist/
+        if: github.event_name == 'push' || inputs.update_dist
+        run: |
+          cp app/build/outputs/apk/preview/app-preview.apk dist/agios-nektarios.apk
+          python3 - <<'PY'
+          import os, pathlib, re, datetime
+          p = pathlib.Path("dist/BUILD.txt"); s = p.read_text()
+          code = os.environ["CODE"]; sha = os.environ["SHA"]
+          s = re.sub(r"^1\.0\.\d+ \([0-9a-f]+\)", f"1.0.{code} ({sha})", s, count=1, flags=re.M)
+          s = re.sub(r"^sha256  [0-9a-f]+", f"sha256  {os.environ['APKSHA']}", s, count=1, flags=re.M)
+          s = re.sub(r"^bytes   \d+", f"bytes   {os.environ['APKBYTES']}", s, count=1, flags=re.M)
+          s = re.sub(r"^built   .*$",
+                     "built   " + datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M UTC"),
+                     s, count=1, flags=re.M)
+          p.write_text(s)
+          PY
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git diff --staged --quiet && echo "dist/ unchanged" && exit 0
+          git commit -m "Publish build ${{ steps.describe.outputs.version_name }} (${{ steps.describe.outputs.git_sha }})"
+          # Tag builds check out a detached HEAD, so the commit needs a branch
+          # to land on rather than being left dangling.
+          git push origin HEAD:${{ github.event.repository.default_branch }}
+        env:
+          CODE: ${{ steps.describe.outputs.version_code }}
+          SHA: ${{ steps.describe.outputs.git_sha }}
+          APKSHA: ${{ steps.describe.outputs.apk_sha256 }}
+          APKBYTES: ${{ steps.describe.outputs.apk_bytes }}
+
+      - name: GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.describe.outputs.version_name }}
+          body: |
+            versionCode `${{ steps.describe.outputs.version_code }}` · commit `${{ steps.describe.outputs.git_sha }}`
+
+            APK sha256 `${{ steps.describe.outputs.apk_sha256 }}`
+
+            The `.aab` here is the one uploaded to Play. The `.apk` is the
+            sideload copy, identical to the one at `dist/agios-nektarios.apk`.
+          files: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/preview/app-preview.apk
+
+      # Optional, and off until a service account exists. Everything above
+      # works without it; this only saves the last upload by hand.
+      #
+      # `internal` on purpose: it reaches the testers immediately and needs no
+      # review, and promoting to production stays a decision somebody makes in
+      # the console rather than something a git tag does.
+      - name: Upload to Play (internal)
+        if: inputs.publish_to_play && github.event_name == 'workflow_dispatch'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: gr.agiosnektarios.village
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
