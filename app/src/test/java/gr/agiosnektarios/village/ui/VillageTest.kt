@@ -275,6 +275,12 @@ class VillageTest {
         ) }
     }
 
+    /** For the store and the residents' presentation, in Greek. */
+    @Test fun shot_contacts() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_contacts",
+    ) { Contacts() }
+
     @Test fun contacts_light() = render { Contacts() }
 
     @Test fun contacts_dark() = render(dark = true) { Contacts() }
