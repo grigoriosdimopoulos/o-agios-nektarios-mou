@@ -33,6 +33,10 @@ CREAM = (0xFB, 0xF7, 0xF2)
 OLIVE = (0xF2, 0xB4, 0x41)
 TERRACOTTA = (0xE2, 0x72, 0x4B)
 
+# How many houses there are. Drawn, and written in the line above them, from
+# one place so the picture cannot disagree with the caption.
+HOUSES = 200
+
 
 def lerp(a, b, t):
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
@@ -124,13 +128,15 @@ def main():
     base = Image.alpha_composite(base.convert("RGBA"), layer).convert("RGB")
 
     # ---------------------------------------------------------------- houses
-    # Forty-six, because that is how many there are, and the words say so.
+    # Two hundred, because that is how many there are, and the words say so.
     #
-    # The first version sampled every Nth road point and then dropped whatever
-    # fell off the canvas, which drew thirty-five under a line reading "46
-    # σπίτια". So the candidates are filtered to what is actually visible
-    # *before* anything is chosen, and spaced apart so two do not land on top
-    # of each other and read as one.
+    # It said forty-six for a while, which is the number of people who live
+    # here all year rather than the number of houses — a different fact wearing
+    # the same number. An earlier version also drew thirty-five of them under a
+    # caption reading "46 σπίτια", because it sampled road points and then
+    # dropped whatever fell off the canvas. So: candidates are filtered to what
+    # is actually visible *before* anything is chosen, and spaced apart so two
+    # do not land on top of each other and read as one.
     marks = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
     pen = ImageDraw.Draw(marks)
 
@@ -156,12 +162,12 @@ def main():
     # coming back for a second, spreads them over the network the way houses
     # are spread over it.
     chosen = []
-    min_gap = 19.0
-    for round_index in range(60):
-        if len(chosen) >= 46:
+    min_gap = 9.5
+    for round_index in range(160):
+        if len(chosen) >= HOUSES:
             break
         for pts in per_way:
-            if len(chosen) >= 46:
+            if len(chosen) >= HOUSES:
                 break
             # A different point each pass, biased away from the ends where two
             # ways meet and would put two houses on one junction.
@@ -171,17 +177,17 @@ def main():
             x, y = pts[idx]
             if all((x - px) ** 2 + (y - py) ** 2 > min_gap ** 2 for px, py in chosen):
                 chosen.append((x, y))
-    if len(chosen) < 46:
+    if len(chosen) < HOUSES:
         for pts in per_way:
             for x, y in pts:
-                if len(chosen) >= 46:
+                if len(chosen) >= HOUSES:
                     break
-                if all((x - px) ** 2 + (y - py) ** 2 > 11 ** 2 for px, py in chosen):
+                if all((x - px) ** 2 + (y - py) ** 2 > 5.5 ** 2 for px, py in chosen):
                     chosen.append((x, y))
 
     for x, y in chosen:
         x, y = x * S, y * S
-        r = 3.4 * S
+        r = 2.6 * S
         pen.ellipse([x - r * 2.6, y - r * 2.6, x + r * 2.6, y + r * 2.6],
                     fill=OLIVE + (26,))
         pen.ellipse([x - r, y - r, x + r, y + r], fill=OLIVE + (255,))
@@ -217,7 +223,7 @@ def main():
     draw.text((left, rule_y + 60), "και τα νέα του χωριού μας", font=sans,
               fill=CREAM)
 
-    draw.text((left, 96), "46 ΣΠΙΤΙΑ · 640 ΜΕΤΡΑ · ΚΙΘΑΙΡΩΝΑΣ", font=small,
+    draw.text((left, 96), f"{HOUSES} ΣΠΙΤΙΑ · 640 ΜΕΤΡΑ · ΚΙΘΑΙΡΩΝΑΣ", font=small,
               fill=lerp(CREAM, PINE, 0.42))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

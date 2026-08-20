@@ -142,7 +142,7 @@ service cloud.firestore {
        * document is readable by every signed-in resident, so a field that
        * nobody thought about is a field the whole village can read. The house
        * pin used to live here and was exactly that: added for the ambulance,
-       * legible to all forty-six phones, and permitted by a rule that only
+       * legible to every phone in the village, and permitted by a rule that only
        * knew how to say no to `role` and `disabled`. It now lives in
        * `private/home`, and this list is what stops the next such field from
        * being added without anyone noticing.
@@ -752,13 +752,21 @@ service cloud.firestore {
         return touchesOnly(['confirmedBy', 'updatedAt'])
           && request.resource.data.kind == resource.data.kind
           && request.resource.data.raisedById == resource.data.raisedById
-          // Forty-six residents; sixty is room to spare and a ceiling either
-          // way. There used to be a parallel list of display names here to
-          // police as well, and two rounds of review caught this function out
-          // over it — first for not bounding it, then for refusing the
-          // duplicate-name case its own comment said was allowed. The list is
-          // gone (see VillageAlert), which is most of why this is now short.
-          && request.resource.data.get('confirmedBy', []).size() <= 60
+          // Two hundred houses, so two hundred and fifty.
+          //
+          // This was sixty, sized against a resident count that turned out to
+          // be the number of *people who live here all year*, not the number
+          // of households the app serves. A water main going down the hill in
+          // August could easily be confirmed by more than sixty of them, and
+          // the sixty-first would have been refused — on the count that is the
+          // entire content of an outage report.
+          //
+          // There used to be a parallel list of display names here to police
+          // as well, and two rounds of review caught this function out over it
+          // — first for not bounding it, then for refusing the duplicate-name
+          // case its own comment said was allowed. The list is gone (see
+          // VillageAlert), which is most of why this is now short.
+          && request.resource.data.get('confirmedBy', []).size() <= 250
           && request.resource.data.get('confirmedBy', []).toSet()
               .difference(resource.data.get('confirmedBy', []).toSet())
               in [[].toSet(), [uid()].toSet()]
@@ -874,7 +882,9 @@ service cloud.firestore {
         return touchesOnly(['confirmedBy', 'updatedAt'])
           && request.resource.data.name == resource.data.name
           && request.resource.data.proposedById == resource.data.proposedById
-          && request.resource.data.confirmedBy.size() <= 60
+          // Same ceiling as the alerts, and for the same reason: a street
+          // everybody agrees on can be confirmed by everybody.
+          && request.resource.data.confirmedBy.size() <= 250
           && (
             // Adding themselves, or removing themselves. Nothing else moves.
             request.resource.data.confirmedBy.toSet()

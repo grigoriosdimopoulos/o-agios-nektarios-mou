@@ -31,7 +31,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * Until now those numbers came off the resident directory, which meant every
  * phone in the village could read every number, permanently, whether or not
- * anybody ever pressed the button — a directory of forty-six mobile numbers,
+ * anybody ever pressed the button — a directory of every mobile number in the
+ * village,
  * harvestable by anyone who could sign in, for a feature most days nobody
  * uses. Firestore's rules grant a document at a time and the profile has to be
  * readable, so no rule could have narrowed that while the number lived there.

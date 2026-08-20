@@ -1,0 +1,342 @@
+"""
+Η επίσημη παρουσίαση της εφαρμογής για τους οικιστές, σε PDF.
+
+Γράφεται σε HTML και τυπώνεται από τον Chromium, ώστε να χρησιμοποιεί τις
+πραγματικές γραμματοσειρές και την παλέτα της εφαρμογής — και ξαναφτιάχνεται
+με μία εντολή όταν αλλάξει κάτι, αντί να είναι ένα αρχείο που κανείς δεν
+θυμάται πώς έγινε.
+
+    python3 tools/presentation.py
+"""
+
+import base64
+import pathlib
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / "store" / "Agios-Nektarios-parousiasi.pdf"
+HTML = ROOT / "store" / ".presentation.html"
+CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+
+
+def data_uri(path: pathlib.Path, mime: str) -> str:
+    return f"data:{mime};base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+def font(name: str) -> str:
+    return data_uri(ROOT / "app/src/main/res/font" / name, "font/ttf")
+
+
+def shot(name: str) -> str:
+    return data_uri(ROOT / "store/screenshots" / name, "image/png")
+
+
+def build_html() -> str:
+    alegreya = font("alegreya_variable.ttf")
+    inter = font("inter_variable.ttf")
+    banner = data_uri(ROOT / "store/feature-graphic.png", "image/png")
+
+    def feature(img, kicker, title, body, points, page):
+        lis = "".join(f"<li>{p}</li>" for p in points)
+        return f"""
+        <section class="feature">
+          <div class="shot"><img src="{shot(img)}" alt=""></div>
+          <div class="copy">
+            <div class="kicker">{kicker}</div>
+            <h2>{title}</h2>
+            <p>{body}</p>
+            <ul>{lis}</ul>
+          </div>
+          <div class="foot"><span>Άγιος Νεκτάριος</span><span>{page}</span></div>
+        </section>"""
+
+    features = "".join([
+        feature(
+            "2-anafores.png",
+            "Καθημερινά",
+            "Ο χάρτης και οι αναφορές",
+            "Κάθε πρόβλημα μπαίνει στο σημείο του πάνω στον χάρτη του χωριού, "
+            "με φωτογραφία αν χρειάζεται. Δεν χάνεται σε ένα group και δεν "
+            "ξεχνιέται.",
+            [
+                "Πεσμένο δέντρο, σπασμένος στύλος, σκουπίδια, ξερά χόρτα δίπλα σε σπίτι.",
+                "Οι γείτονες το στηρίζουν· φαίνεται πόσοι το θεωρούν σοβαρό.",
+                "Κάποιος το αναλαμβάνει, και φαίνεται ποιος.",
+                "Φαίνεται πότε στάλθηκε στον δήμο και πόσες μέρες εκκρεμεί.",
+            ],
+            3,
+        ),
+        feature(
+            "4-ektakto.png",
+            "Όταν βιάζεσαι",
+            "Έκτακτα",
+            "Φωτιά, ασθενοφόρο, κάποιος που λείπει — με τα τηλέφωνα της "
+            "Πυροσβεστικής και του ΕΚΑΒ ένα πάτημα μακριά.",
+            [
+                "Πρώτα το τηλέφωνο: η εφαρμογή ειδοποιεί τους γείτονες, δεν καλεί για σένα.",
+                "Το σημείο μπαίνει αυτόματα, ή από το σπίτι σου αν το έχεις σημειώσει.",
+                "Διακοπές ρεύματος και νερού, όπου μετράει το πόσα σπίτια το έχουν.",
+                "Λέει καθαρά ποιος θα το δει αμέσως και ποιος όχι.",
+            ],
+            4,
+        ),
+        feature(
+            "5-kairos.png",
+            "Το καλοκαίρι",
+            "Καιρός και κίνδυνος πυρκαγιάς",
+            "Πρόγνωση για το σημείο του χωριού, και ένδειξη κινδύνου πυρκαγιάς "
+            "βαθμονομημένη στα δικά μας δεδομένα.",
+            [
+                "Δείχνει πότε απαγορεύεται η καύση, με τον λόγο δίπλα.",
+                "Η κλίμακα φτιάχτηκε από τρία χρόνια πραγματικών μετρήσεων εδώ.",
+                "Ο αέρας και η βροχή φαίνονται πάνω στον χάρτη.",
+            ],
+            5,
+        ),
+        feature(
+            "6-anakoinoseis.png",
+            "Το χωριό μαζί",
+            "Ανακοινώσεις και ημερολόγιο",
+            "Ό,τι πρέπει να ξέρει το χωριό, σε ένα μέρος — και τι έρχεται.",
+            [
+                "Ανακοινώσεις από τον διαχειριστή, με καρφίτσωμα των σημαντικών.",
+                "Εκδηλώσεις, καθαρισμοί, συνελεύσεις· δηλώνεις αν θα πας.",
+                "Υπενθύμιση το βράδυ πριν.",
+            ],
+            6,
+        ),
+        feature(
+            "3-anafora.png",
+            "Επικοινωνία",
+            "Χρήσιμα τηλέφωνα και μηνύματα",
+            "Τα τηλέφωνα που χρειάζεσαι σε ώρα ανάγκης, και προσωπικές "
+            "συνομιλίες μεταξύ κατοίκων.",
+            [
+                "Αγροτικό ιατρείο, ΔΕΔΔΗΕ, δήμος, δασαρχείο — με ένα πάτημα για κλήση.",
+                "Προσωπικά μηνύματα και ομάδες.",
+                "Ονόματα δρόμων που γράφουν οι ίδιοι οι κάτοικοι.",
+            ],
+            7,
+        ),
+    ])
+
+    return f"""<!doctype html>
+<html lang="el"><head><meta charset="utf-8">
+<style>
+  @font-face {{ font-family: Alegreya; src: url({alegreya}) format('truetype');
+               font-weight: 400 700; }}
+  @font-face {{ font-family: Inter; src: url({inter}) format('truetype');
+               font-weight: 300 700; }}
+
+  @page {{ size: A4; margin: 0; }}
+  * {{ box-sizing: border-box; }}
+  body {{ margin: 0; font-family: Inter, sans-serif; color: #17211E;
+          background: #FBF7F2; -webkit-print-color-adjust: exact;
+          print-color-adjust: exact; }}
+
+  .page {{ width: 210mm; height: 297mm; padding: 18mm 20mm; position: relative;
+           page-break-after: always; overflow: hidden; }}
+  .page:last-child {{ page-break-after: auto; }}
+
+  /* ------------------------------------------------------------ εξώφυλλο */
+  .cover {{ padding: 0; background: #0E2E27; color: #FBF7F2; }}
+  .cover img.banner {{ width: 100%; display: block; }}
+  .cover .inner {{ padding: 22mm 20mm 0; }}
+  .cover h1 {{ font-family: Alegreya, serif; font-size: 46pt; font-weight: 700;
+               margin: 0 0 6mm; line-height: 1.02; }}
+  .cover .lead {{ font-size: 13.5pt; line-height: 1.6; color: #CFE0DA;
+                  max-width: 140mm; }}
+  .cover .rule {{ width: 26mm; height: 1mm; background: #E2724B;
+                  margin: 0 0 8mm; border-radius: 1mm; }}
+  .cover .meta {{ position: absolute; bottom: 16mm; left: 20mm; right: 20mm;
+                  font-size: 9.5pt; color: #8FB0A6; border-top: 1px solid #24564A;
+                  padding-top: 4mm; display: flex; justify-content: space-between; }}
+
+  h2 {{ font-family: Alegreya, serif; font-size: 22pt; font-weight: 700;
+        margin: 0 0 3mm; color: #1F6F5C; }}
+  h3 {{ font-family: Alegreya, serif; font-size: 15pt; margin: 0 0 2mm; }}
+  p {{ font-size: 10.5pt; line-height: 1.55; margin: 0 0 3mm; }}
+  ul {{ font-size: 10pt; line-height: 1.55; margin: 0; padding-left: 5mm; }}
+  li {{ margin-bottom: 1.6mm; }}
+
+  .kicker {{ font-size: 8.5pt; letter-spacing: .12em; text-transform: uppercase;
+             color: #7C8B84; margin-bottom: 3mm; }}
+
+  /* ---------------------------------------------------- σελίδα λειτουργίας */
+  .feature {{ display: flex; gap: 13mm; align-items: center; position: relative;
+              page-break-after: always; padding: 22mm 20mm; height: 297mm; }}
+  .feature:last-of-type {{ page-break-after: auto; }}
+  .feature .shot {{ flex: 0 0 88mm; }}
+  .feature .shot img {{ width: 88mm; border-radius: 4mm; border: 1px solid #E4DCD1;
+                        box-shadow: 0 2mm 6mm rgba(23,33,30,.10); }}
+  .feature .copy {{ flex: 1; }}
+  .feature p {{ font-size: 11pt; }}
+  .feature ul {{ font-size: 10.5pt; margin-top: 5mm; }}
+  .feature li {{ margin-bottom: 3mm; }}
+
+  .box {{ background: #FFFFFF; border: 1px solid #E4DCD1; border-radius: 3mm;
+          padding: 6mm 7mm; margin-bottom: 5mm; }}
+  .box.warn {{ border-color: #E7C9C9; background: #FDF5F4; }}
+  .box h3 {{ color: #1F6F5C; }}
+  .box.warn h3 {{ color: #B53434; }}
+
+  table {{ width: 100%; border-collapse: collapse; font-size: 9.5pt; }}
+  th, td {{ text-align: left; padding: 2.4mm 3mm; border-bottom: 1px solid #EDE6DC; }}
+  th {{ color: #7C8B84; font-weight: 600; font-size: 8.5pt;
+        text-transform: uppercase; letter-spacing: .06em; }}
+  td:first-child, th:first-child {{ font-weight: 600; }}
+  td:last-child, th:last-child {{ text-align: right; }}
+  .yes {{ color: #1F6F5C; font-weight: 600; }}
+  .no  {{ color: #B53434; font-weight: 600; }}
+
+  .steps {{ counter-reset: s; padding: 0; list-style: none; }}
+  .steps li {{ counter-increment: s; position: relative; padding-left: 11mm;
+               margin-bottom: 4mm; font-size: 10.5pt; line-height: 1.5; }}
+  .steps li::before {{ content: counter(s); position: absolute; left: 0; top: -0.5mm;
+      width: 7mm; height: 7mm; border-radius: 50%; background: #1F6F5C;
+      color: #FBF7F2; font-size: 9pt; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; }}
+
+  .foot {{ position: absolute; bottom: 12mm; left: 20mm; right: 20mm;
+           font-size: 8pt; color: #9AA6A0; border-top: 1px solid #EDE6DC;
+           padding-top: 3mm; display: flex; justify-content: space-between; }}
+</style></head><body>
+
+<div class="page cover">
+  <img class="banner" src="{banner}" alt="">
+  <div class="inner">
+    <div class="rule"></div>
+    <h1>Η εφαρμογή<br>του χωριού μας</h1>
+    <p class="lead">Ένας χάρτης για τα προβλήματα του οικισμού, ένας τρόπος να
+    σημάνει κανείς συναγερμό, ο καιρός και ο κίνδυνος πυρκαγιάς για το δικό μας
+    σημείο, το ημερολόγιο και οι ανακοινώσεις — σε μία εφαρμογή, μόνο για τους
+    κατοίκους.</p>
+  </div>
+  <div class="meta"><span>Άγιος Νεκτάριος Αττικής · 200 σπίτια · 640 μ.</span>
+    <span>Παρουσίαση για τους οικιστές</span></div>
+</div>
+
+<div class="page">
+  <div class="kicker">Γιατί</div>
+  <h2>Τι λύνει</h2>
+  <p>Τα προβλήματα του οικισμού συζητιούνται σε group μηνυμάτων, όπου χάνονται:
+  μια φωτογραφία από ένα πεσμένο δέντρο κατεβαίνει μέσα σε μια μέρα και κανείς
+  δεν ξέρει, τρεις μήνες μετά, αν ειπώθηκε σε κάποιον, αν το ανέλαβε κάποιος,
+  ή αν έγινε ποτέ τίποτα.</p>
+  <p>Η εφαρμογή κρατάει τρία πράγματα που το group δεν κρατάει: <b>πού</b> είναι
+  το πρόβλημα, <b>ποιος</b> το ανέλαβε, και <b>τι απέγινε</b>.</p>
+
+  <div class="box">
+    <h3>Και κάτι που κανένα group δεν κάνει</h3>
+    <p style="margin:0">Σε έκτακτο — φωτιά, ασθενοφόρο, κάποιος που λείπει — η
+    εφαρμογή βάζει μπροστά σου το τηλέφωνο της Πυροσβεστικής ή του ΕΚΑΒ, βάζει
+    το σημείο στον χάρτη μόνη της, και ειδοποιεί όσους έχουν την εφαρμογή. Λέει
+    επίσης καθαρά τι <i>δεν</i> μπορεί να κάνει, που είναι εξίσου σημαντικό.</p>
+  </div>
+
+  <div class="kicker" style="margin-top:8mm">Τι χρειάζεται</div>
+  <h2>Για να τη χρησιμοποιήσεις</h2>
+  <ul>
+    <li>Κινητό με Android (έκδοση 8 και πάνω — δηλαδή σχεδόν κάθε κινητό από το 2017).</li>
+    <li>Έναν λογαριασμό: όνομα, email, και η γειτονιά σου.</li>
+    <li>Σύνδεση στο διαδίκτυο — αλλά η εφαρμογή δουλεύει και χωρίς: ό,τι γράψεις
+        αποθηκεύεται και φεύγει μόλις υπάρξει σήμα.</li>
+  </ul>
+  <div class="foot"><span>Άγιος Νεκτάριος</span><span>2</span></div>
+</div>
+
+{features}
+
+<div class="page">
+  <div class="kicker">Ιδιωτικότητα</div>
+  <h2>Ποιος βλέπει τι</h2>
+  <p>Αυτό είναι το κομμάτι που αξίζει να διαβαστεί προσεκτικά. Δεν είναι
+  υπόσχεση της εφαρμογής· είναι κανόνες στον διακομιστή, που ισχύουν ακόμα κι
+  αν κάποιος πειράξει την εφαρμογή στο κινητό του.</p>
+
+  <table>
+    <tr><th>Στοιχείο</th><th>Ποιος το βλέπει</th></tr>
+    <tr><td>Όνομα και γειτονιά</td><td>Οι συνδεδεμένοι κάτοικοι</td></tr>
+    <tr><td>Email</td><td><span class="yes">Μόνο εσύ</span> και ο διαχειριστής</td></tr>
+    <tr><td>Τηλέφωνο</td><td><span class="yes">Μόνο εσύ</span> και ο διαχειριστής</td></tr>
+    <tr><td>Το σπίτι σου στον χάρτη</td><td><span class="yes">Μόνο εσύ</span> — ούτε ο διαχειριστής</td></tr>
+    <tr><td>Θέση αναφοράς ή συναγερμού</td><td>Οι συνδεδεμένοι κάτοικοι</td></tr>
+    <tr><td>Προσωπικά μηνύματα</td><td>Όσοι είναι στη συνομιλία</td></tr>
+    <tr><td>Πού βρίσκεσαι, γενικά</td><td><span class="no">Κανείς</span> — δεν καταγράφεται ποτέ</td></tr>
+  </table>
+
+  <div class="box warn" style="margin-top:6mm">
+    <h3>Το τηλέφωνό σου, και η μία εξαίρεση</h3>
+    <p>Το τηλέφωνό σου δεν το διαβάζει κανένας άλλος κάτοικος. Υπάρχει μία
+    εξαίρεση και τη διαλέγεις εσύ: αν ενεργοποιήσεις το «Να μπορούν οι γείτονες
+    να μου στείλουν SMS σε έκτακτο», γίνεται αναγνώσιμο από τα κινητά των
+    υπολοίπων, ώστε η οθόνη του συναγερμού να στέλνει μήνυμα σε όλους μαζί.</p>
+    <p style="margin:0">Ξεκινάει <b>κλειστό</b>. Το παίρνεις πίσω όποτε θέλεις,
+    και σβήνεται αμέσως. Τα SMS φεύγουν από το δικό σου κινητό, με τη δική σου
+    εφαρμογή μηνυμάτων — όχι από την εφαρμογή.</p>
+  </div>
+
+  <ul>
+    <li>Δεν υπάρχουν διαφημίσεις και δεν πουλάει τίποτα.</li>
+    <li>Δεν διαβάζει τις επαφές σου, το ημερολόγιό σου ή τα μηνύματά σου.</li>
+    <li>Η τοποθεσία ζητείται μόνο όταν πατήσεις κάτι που τη χρειάζεται.</li>
+    <li>Μπορείς να διαγράψεις τον λογαριασμό σου μέσα από την εφαρμογή.</li>
+  </ul>
+  <div class="foot"><span>Άγιος Νεκτάριος</span><span>8</span></div>
+</div>
+
+<div class="page">
+  <div class="kicker">Ξεκίνημα</div>
+  <h2>Πώς μπαίνεις</h2>
+  <ol class="steps">
+    <li>Θα λάβεις έναν σύνδεσμο για να κατεβάσεις την εφαρμογή.</li>
+    <li>Άνοιξέ την και φτιάξε λογαριασμό με το email σου — ή με τον λογαριασμό
+        Google που ήδη έχεις στο κινητό.</li>
+    <li>Συμπλήρωσε όνομα και γειτονιά. Το τηλέφωνο είναι προαιρετικό.</li>
+    <li>Σημείωσε πού είναι το σπίτι σου στον χάρτη. Το βλέπεις μόνο εσύ, και
+        είναι αυτό που θα διαβάσεις στο ασθενοφόρο.</li>
+    <li>Επίτρεψε τις ειδοποιήσεις, αλλιώς δεν θα μάθεις για ένα έκτακτο.</li>
+  </ol>
+
+  <div class="box" style="margin-top:6mm">
+    <h3>Αν κάτι δεν δουλεύει</h3>
+    <p style="margin:0">Μίλα στον διαχειριστή της εφαρμογής του χωριού. Μπορεί
+    να διορθώσει λογαριασμούς, να σβήσει κάτι που δεν έπρεπε να γραφτεί, και να
+    κλείσει λειτουργίες που το χωριό αποφασίσει ότι δεν θέλει.</p>
+  </div>
+
+  <div class="box">
+    <h3>Τι αποφασίζει το χωριό</h3>
+    <p style="margin:0">Κάθε λειτουργία — έκτακτα, μηνύματα, ημερολόγιο,
+    τηλέφωνα, καιρός, ονόματα δρόμων — ανοίγει και κλείνει από τον διαχειριστή
+    για όλους. Ό,τι κλείσει δεν διαγράφεται· απλώς παύει να χρησιμοποιείται.</p>
+  </div>
+
+  <div class="meta" style="position:absolute;bottom:16mm;left:20mm;right:20mm;
+      border-top:1px solid #EDE6DC;padding-top:4mm;font-size:9pt;color:#7C8B84;
+      display:flex;justify-content:space-between">
+    <span>Ερωτήσεις: ο διαχειριστής της εφαρμογής</span>
+    <span>Άγιος Νεκτάριος Αττικής</span>
+  </div>
+</div>
+
+</body></html>"""
+
+
+def main():
+    HTML.write_text(build_html(), encoding="utf-8")
+    result = subprocess.run(
+        [CHROME, "--headless", "--disable-gpu", "--no-sandbox",
+         "--no-pdf-header-footer", f"--print-to-pdf={OUT}", HTML.as_uri()],
+        capture_output=True, text=True,
+    )
+    if not OUT.exists():
+        print(result.stderr[-2000:], file=sys.stderr)
+        sys.exit("Ο Chromium δεν έβγαλε PDF.")
+    HTML.unlink()
+    print(f"{OUT}  {OUT.stat().st_size} bytes")
+
+
+if __name__ == "__main__":
+    main()

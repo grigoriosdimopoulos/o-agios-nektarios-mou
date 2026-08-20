@@ -8,7 +8,7 @@ import java.util.Date
  * Something happening in the village, at `events/{id}`.
  *
  * The calendar exists for a reason the reports list cannot serve: most of what
- * a village of forty-six people needs to coordinate is not a fault. It is the
+ * a village of two hundred houses needs to coordinate is not a fault. It is the
  * liturgy, the πανηγύρι, the Saturday somebody has decided to clear the forest
  * track, the day the μπλε κάδοι are actually emptied. Today that information
  * travels by telephone and by whoever happens to be at the καφενείο, which

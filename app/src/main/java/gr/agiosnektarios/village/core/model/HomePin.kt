@@ -17,7 +17,7 @@ import gr.agiosnektarios.village.core.geo.GeoPoint
  * the app never draws anybody's house but your own. Keeping it on the profile
  * would have meant every resident's phone could read every other resident's
  * exact coordinates — quietly, and for a purpose nobody had agreed to. In a
- * village of forty-six people where everyone knows every house that is a small
+ * village where most people know most houses that is a small
  * thing right up until one household wishes another did not know, and the cost
  * of getting it right was one document.
  */

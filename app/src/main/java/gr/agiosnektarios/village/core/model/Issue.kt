@@ -80,7 +80,7 @@ data class Issue(
      * Who said they would deal with this, if anyone.
      *
      * The status field tracks what has happened to a report; this tracks who
-     * is doing it, and in a village of forty-six people that is the part that
+     * is doing it, and in a village this size that is the part that
      * actually moves things. "Someone should clear that" is how a problem sits
      * for a year. "Ο Δημήτρης το ανέλαβε" is how it gets cleared, and the app
      * was recording the first and not the second.

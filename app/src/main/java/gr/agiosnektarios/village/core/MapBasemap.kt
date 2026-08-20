@@ -62,7 +62,7 @@ object MapStyles {
 
     /**
      * OpenTopoMap. Community-run and free, under a fair-use expectation that a
-     * village of forty-six people sits comfortably inside.
+     * village sits comfortably inside.
      */
     val TERRAIN: String = rasterStyle(
         tiles = "https://tile.opentopomap.org/{z}/{x}/{y}.png",

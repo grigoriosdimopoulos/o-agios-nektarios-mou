@@ -276,8 +276,8 @@ private fun FeatureSwitch(
             checked = on,
             enabled = enabled,
             onCheckedChange = {
-                // A warning, not a tick: this changes the app for forty-six
-                // people at once.
+                // A warning, not a tick: this changes the app for the whole
+                // village at once.
                 haptics.warning()
                 onChange(it)
             },

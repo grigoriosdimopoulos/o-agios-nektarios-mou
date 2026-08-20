@@ -127,7 +127,8 @@ class RowsTest {
      * Every one of them says what turning it off does, and the one that
      * publishes telephone numbers says considerably more than the rest — this
      * golden exists so that stays true, because the sentence is the only thing
-     * standing between a neighbour with a passphrase and forty-six numbers.
+     * standing between a neighbour with a passphrase and every number in the
+     * village.
      */
     @Test
     fun features_greek() = render(

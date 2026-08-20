@@ -46,7 +46,7 @@ data class ProfileUiState(
     /**
      * How many of the village's problems this resident took on.
      *
-     * Replaces a count of upvotes received. In a settlement of forty-six
+     * Replaces a count of upvotes received. In a settlement of two hundred
      * people, "53 upvotes" is a vanity number borrowed from a social network —
      * it measures how agreeable your reports were, which is not a thing anybody
      * here needs to know about a neighbour. What is worth counting is the work:

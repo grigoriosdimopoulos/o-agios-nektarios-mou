@@ -652,7 +652,7 @@ private fun StatusDialog(
 /**
  * The button that actually moves things.
  *
- * A village of forty-six people does not need a workflow; it needs somebody to
+ * A village of two hundred houses does not need a workflow; it needs somebody
  * say out loud that they will deal with it. "Someone should clear that" is how
  * a fallen branch sits for a year. A name against the job is how it gets
  * cleared, and the app was recording every status change and none of that.

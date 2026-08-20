@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 /**
  * The numbers the village keeps for itself.
  *
- * Deliberately small: a settlement of forty-six people is not going to have
+ * Deliberately small: a settlement this size is not going to have
  * more than a dozen of these, so the whole collection is observed at once with
  * no query and no paging. Sorting is done here rather than in Firestore, which
  * would need a composite index for a list this size.
