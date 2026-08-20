@@ -74,9 +74,12 @@ def build_html() -> str:
         <div class="page">
           <div class="kicker">Η αρχική οθόνη</div>
           <h2>Ο χάρτης του οικισμού</h2>
-          <p>Κάθε αναφορά μπαίνει στο σημείο της. Επάνω αριστερά το κουμπί για
-          τα έκτακτα, επάνω δεξιά ο καιρός και ο κίνδυνος πυρκαγιάς, και από
-          κάτω η λίστα με ό,τι τρέχει αυτή τη στιγμή.</p>
+          <p>Κάθε αναφορά μπαίνει στο σημείο της — εδώ ένα πεσμένο δέντρο και
+          ένας κλειστός δρόμος. Δεξιά τα κουμπιά του χάρτη: φίλτρα, είδος
+          χάρτη, στρώσεις, και ο αέρας. Από κάτω η λίστα με ό,τι τρέχει αυτή τη
+          στιγμή, και το κουμπί για νέα αναφορά.</p>
+          <p style="font-size:9.5pt;color:#5D6B64">Οι διαγώνιες γραμμές είναι η
+          βροχή: ο καιρός φαίνεται πάνω στον ίδιο τον χάρτη.</p>
           {body}
           <div class="foot"><span>Άγιος Νεκτάριος</span><span>{page}</span></div>
         </div>"""
@@ -256,8 +259,8 @@ def build_html() -> str:
   .grid figcaption {{ font-size: 9pt; color: #5D6B64; margin-top: 3.5mm;
                       line-height: 1.4; }}
 
-  .mapwrap {{ margin-top: 6mm; }}
-  .mapwrap img {{ width: 88mm; display: block; margin: 0 auto;
+  .mapwrap {{ margin-top: 7mm; }}
+  .mapwrap img {{ width: 76mm; display: block; margin: 0 auto;
                   border-radius: 4mm; border: 1px solid #E4DCD1;
                   box-shadow: 0 2mm 6mm rgba(23,33,30,.10); }}
   .missing {{ margin-top: 8mm; padding: 14mm 10mm; text-align: center;
