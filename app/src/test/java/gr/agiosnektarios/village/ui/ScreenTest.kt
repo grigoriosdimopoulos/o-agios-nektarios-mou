@@ -82,6 +82,10 @@ class ScreenTest {
 
     @Test fun shot_chats() = greek("shot_chats") { Chats() }
 
+    @Test fun shot_quick_report() = greek("shot_quick_report") { QuickReport() }
+
+    @Test fun shot_profile() = greek("shot_profile") { Profile() }
+
     private fun greek(name: String, content: @Composable () -> Unit) {
         paparazzi.unsafeUpdateConfig(DeviceConfig.PIXEL_5.copy(locale = "el"))
         paparazzi.snapshot(name = name) {

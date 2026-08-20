@@ -37,6 +37,50 @@ def build_html() -> str:
     inter = font("inter_variable.ttf")
     banner = data_uri(ROOT / "store/feature-graphic.png", "image/png")
 
+    def gallery(rows, kicker, title, page, lead=""):
+        """Several screens to a page, for the ones that need showing but not
+        explaining. A presentation that gives every screen its own spread is a
+        presentation nobody reaches the end of."""
+        cells = "".join(
+            f'<figure><img src="{shot(f)}" alt=""><figcaption>{c}</figcaption></figure>'
+            for f, c in rows
+        )
+        return f"""
+        <div class="page">
+          <div class="kicker">{kicker}</div>
+          <h2>{title}</h2>
+          {f'<p>{lead}</p>' if lead else ''}
+          <div class="grid">{cells}</div>
+          <div class="foot"><span>Άγιος Νεκτάριος</span><span>{page}</span></div>
+        </div>"""
+
+    def mapshot(page):
+        """The map, if somebody has put a photograph of it here.
+
+        MapLibre draws into a native view, which cannot be rendered off a
+        device — so this page cannot be produced from the code the way every
+        other page can. Rather than draw something map-shaped and let a reader
+        assume it is a screenshot, the page says what is missing until the file
+        appears, and completes itself when it does."""
+        real = ROOT / "store/screenshots/hartis.png"
+        if real.exists():
+            body = f'<div class="mapwrap"><img src="{shot("hartis.png")}" alt=""></div>'
+        else:
+            body = ('<div class="missing"><b>Λείπει το στιγμιότυπο του χάρτη.</b>'
+                    '<br>Τράβα ένα από το κινητό σου με την αρχική οθόνη, '
+                    'αποθήκευσέ το ως <code>store/screenshots/hartis.png</code>, '
+                    'και ξανατρέξε <code>python3 tools/presentation.py</code>.</div>')
+        return f"""
+        <div class="page">
+          <div class="kicker">Η αρχική οθόνη</div>
+          <h2>Ο χάρτης του οικισμού</h2>
+          <p>Κάθε αναφορά μπαίνει στο σημείο της. Επάνω αριστερά το κουμπί για
+          τα έκτακτα, επάνω δεξιά ο καιρός και ο κίνδυνος πυρκαγιάς, και από
+          κάτω η λίστα με ό,τι τρέχει αυτή τη στιγμή.</p>
+          {body}
+          <div class="foot"><span>Άγιος Νεκτάριος</span><span>{page}</span></div>
+        </div>"""
+
     def feature(img, kicker, title, body, points, page):
         lis = "".join(f"<li>{p}</li>" for p in points)
         return f"""
@@ -51,9 +95,9 @@ def build_html() -> str:
           <div class="foot"><span>Άγιος Νεκτάριος</span><span>{page}</span></div>
         </section>"""
 
-    features = "".join([
+    features = mapshot(3) + "".join([
         feature(
-            "2-anafores.png",
+            "anafores.png",
             "Καθημερινά",
             "Ο χάρτης και οι αναφορές",
             "Κάθε πρόβλημα μπαίνει στο σημείο του πάνω στον χάρτη του χωριού, "
@@ -65,10 +109,10 @@ def build_html() -> str:
                 "Κάποιος το αναλαμβάνει, και φαίνεται ποιος.",
                 "Φαίνεται πότε στάλθηκε στον δήμο και πόσες μέρες εκκρεμεί.",
             ],
-            3,
+            4,
         ),
         feature(
-            "4-ektakto.png",
+            "ektakto.png",
             "Όταν βιάζεσαι",
             "Έκτακτα",
             "Φωτιά, ασθενοφόρο, κάποιος που λείπει — με τα τηλέφωνα της "
@@ -79,10 +123,10 @@ def build_html() -> str:
                 "Διακοπές ρεύματος και νερού, όπου μετράει το πόσα σπίτια το έχουν.",
                 "Λέει καθαρά ποιος θα το δει αμέσως και ποιος όχι.",
             ],
-            4,
+            5,
         ),
         feature(
-            "5-kairos.png",
+            "kairos.png",
             "Το καλοκαίρι",
             "Καιρός και κίνδυνος πυρκαγιάς",
             "Πρόγνωση για το σημείο του χωριού, και ένδειξη κινδύνου πυρκαγιάς "
@@ -92,10 +136,10 @@ def build_html() -> str:
                 "Η κλίμακα φτιάχτηκε από τρία χρόνια πραγματικών μετρήσεων εδώ.",
                 "Ο αέρας και η βροχή φαίνονται πάνω στον χάρτη.",
             ],
-            5,
+            6,
         ),
         feature(
-            "6-anakoinoseis.png",
+            "anakoinoseis.png",
             "Το χωριό μαζί",
             "Ανακοινώσεις και ημερολόγιο",
             "Ό,τι πρέπει να ξέρει το χωριό, σε ένα μέρος — και τι έρχεται.",
@@ -104,10 +148,10 @@ def build_html() -> str:
                 "Εκδηλώσεις, καθαρισμοί, συνελεύσεις· δηλώνεις αν θα πας.",
                 "Υπενθύμιση το βράδυ πριν.",
             ],
-            6,
+            7,
         ),
         feature(
-            "8-minymata.png",
+            "minymata.png",
             "Μεταξύ μας",
             "Μηνύματα",
             "Προσωπικές συνομιλίες και ομάδες μεταξύ κατοίκων, μέσα στην ίδια "
@@ -118,10 +162,10 @@ def build_html() -> str:
                 "Δεν διαβάζει κανείς άλλος τη συνομιλία, ούτε ο διαχειριστής.",
                 "Τα ονόματα των δρόμων τα γράφουν και τα επιβεβαιώνουν οι κάτοικοι.",
             ],
-            7,
+            8,
         ),
         feature(
-            "9-tilefona.png",
+            "tilefona.png",
             "Όταν χρειαστεί",
             "Χρήσιμα τηλέφωνα",
             "Τα νούμερα που ψάχνει κανείς βιαστικά, σε ένα μέρος — και τα "
@@ -131,9 +175,24 @@ def build_html() -> str:
                 "ΔΕΔΔΗΕ, δήμος, δασαρχείο, αγροτικό ιατρείο.",
                 "Ένα πάτημα για κλήση, ένα για αντιγραφή.",
             ],
-            8,
+            9,
         ),
-    ])
+    ]) + gallery(
+        [
+            ("nea-anafora.png", "Νέα αναφορά: φωτογραφία, κατηγορία, και το σημείο μπαίνει μόνο του."),
+            ("fotia.png", "Φωτιά: πρώτα το τηλέφωνο της Πυροσβεστικής, μετά η ειδοποίηση."),
+            ("diakopi.png", "Διακοπή νερού, και πόσα σπίτια την έχουν δηλώσει."),
+        ],
+        "Και μερικές ακόμα", "Πώς φαίνονται στην πράξη", 10,
+        "Οι οθόνες που θα δεις πιο συχνά, χωρίς πολλά λόγια.",
+    ) + gallery(
+        [
+            ("synomilies.png", "Οι συνομιλίες σου, με τα αδιάβαστα."),
+            ("imerologio.png", "Το ημερολόγιο: τι έρχεται και ποιος θα πάει."),
+            ("profil.png", "Το προφίλ σου και οι ρυθμίσεις σου."),
+        ],
+        "Και μερικές ακόμα", "Το υπόλοιπο", 11,
+    )
 
     return f"""<!doctype html>
 <html lang="el"><head><meta charset="utf-8">
@@ -188,6 +247,24 @@ def build_html() -> str:
   .feature p {{ font-size: 11pt; }}
   .feature ul {{ font-size: 10.5pt; margin-top: 5mm; }}
   .feature li {{ margin-bottom: 3mm; }}
+
+  .grid {{ display: flex; gap: 6mm; margin-top: 8mm;
+           align-items: flex-start; }}
+  .grid figure {{ margin: 0; flex: 1; min-width: 0; }}
+  .grid img {{ width: 100%; border-radius: 3mm; border: 1px solid #E4DCD1;
+               box-shadow: 0 1.5mm 4mm rgba(23,33,30,.09); display: block; }}
+  .grid figcaption {{ font-size: 9pt; color: #5D6B64; margin-top: 3.5mm;
+                      line-height: 1.4; }}
+
+  .mapwrap {{ margin-top: 6mm; }}
+  .mapwrap img {{ width: 88mm; display: block; margin: 0 auto;
+                  border-radius: 4mm; border: 1px solid #E4DCD1;
+                  box-shadow: 0 2mm 6mm rgba(23,33,30,.10); }}
+  .missing {{ margin-top: 8mm; padding: 14mm 10mm; text-align: center;
+              border: 1.5px dashed #C9BFB2; border-radius: 4mm;
+              color: #7C6F60; font-size: 10pt; line-height: 1.6;
+              background: #F6F0E8; }}
+  .missing code {{ font-family: ui-monospace, monospace; font-size: 9pt; }}
 
   .box {{ background: #FFFFFF; border: 1px solid #E4DCD1; border-radius: 3mm;
           padding: 6mm 7mm; margin-bottom: 5mm; }}
@@ -308,7 +385,7 @@ def build_html() -> str:
     <li>Η τοποθεσία ζητείται μόνο όταν πατήσεις κάτι που τη χρειάζεται.</li>
     <li>Μπορείς να διαγράψεις τον λογαριασμό σου μέσα από την εφαρμογή.</li>
   </ul>
-  <div class="foot"><span>Άγιος Νεκτάριος</span><span>9</span></div>
+  <div class="foot"><span>Άγιος Νεκτάριος</span><span>12</span></div>
 </div>
 
 <div class="page">

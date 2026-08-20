@@ -90,6 +90,46 @@ class VillageTest {
         name = "shot_calendar",
     ) { Calendar() }
 
+    @Test fun shot_fire() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_fire",
+    ) {
+        AlertRaiseContent(
+            state = RaiseAlertState(
+                kind = AlertKind.FIRE,
+                note = "Καπνός πάνω από το ρέμα, κατεβαίνει με τον αέρα.",
+                placeLabel = "Οδός Ελατιάς, Άνω γειτονιά",
+                position = GeoPoint(38.1646, 23.2902),
+            ),
+            numbersAvailable = true,
+            onPick = {}, onNote = {}, onPlace = {},
+            onBack = {}, onSend = {}, onDial = {}, onSms = {},
+        )
+    }
+
+    @Test fun shot_outage() = render(
+        config = DeviceConfig.PIXEL_5.copy(locale = "el"),
+        name = "shot_outage",
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            OutageCard(
+                alert = VillageAlert(
+                    id = "a",
+                    kind = AlertKind.WATER.name,
+                    note = "Από χθες το βράδυ, σε όλη την πάνω γειτονιά.",
+                    raisedById = "d",
+                    raisedByName = "Δημήτρης Α.",
+                    raisedAt = java.util.Date(GOLDEN_NOW - 3 * 60 * 60 * 1000L),
+                    confirmedBy = listOf("d", "m", "n", "p", "k", "s"),
+                ),
+                userId = "m",
+                canResolve = false,
+                onConfirm = {},
+                onResolve = {},
+            )
+        }
+    }
+
     @Test fun shot_alarm() = render(
         config = DeviceConfig.PIXEL_5.copy(locale = "el"),
         name = "shot_alarm",
