@@ -1,0 +1,59 @@
+name: Ξαναφτιάξε τη σελίδα απορρήτου
+
+# Η πολιτική απορρήτου υπάρχει δύο φορές: ως markdown στο store/, που είναι η
+# πηγή, και ως σελίδα στο docs/, που είναι αυτό που βλέπει ο κόσμος και αυτό
+# που δεσμεύει. Αν αλλάξει το πρώτο και όχι το δεύτερο, η δημοσιευμένη
+# πολιτική λέει ψέματα — και είναι η δημοσιευμένη που μετράει.
+#
+# Οπότε δεν το θυμάται κανείς: αλλάζεις το markdown από τον web editor του
+# GitHub, και η σελίδα ξαναφτιάχνεται μόνη της.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "store/privacy-policy.*.md"
+      - "tools/privacy_page.py"
+      - ".github/workflows/privacy-page.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: privacy-page
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install markdown
+
+      - name: Φτιάξε τις σελίδες
+        run: python3 tools/privacy_page.py | tee gen.log
+
+      # Το Play απορρίπτει πολιτική χωρίς τρόπο επικοινωνίας, και ο μόνος
+      # τρόπος να το ανακαλύψεις αλλιώς είναι η απόρριψη μια βδομάδα μετά.
+      - name: Προειδοποίηση αν λείπει το email
+        run: |
+          if grep -q "ΠΡΟΣΟΧΗ" gen.log; then
+            echo "::warning::Η πολιτική δεν έχει ακόμα email επικοινωνίας." \
+                 "Η σελίδα το δείχνει με κόκκινο. Το Play θα την απορρίψει έτσι."
+          fi
+          rm -f gen.log
+
+      - name: Δημοσίευση
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --staged --quiet && echo "Καμία αλλαγή." && exit 0
+          git commit -m "Ξαναφτιαγμένη σελίδα απορρήτου"
+          git push origin HEAD:${{ github.event.repository.default_branch }}

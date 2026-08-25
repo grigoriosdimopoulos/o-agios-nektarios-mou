@@ -12,9 +12,14 @@ on:
   workflow_dispatch:
     inputs:
       publish_to_play:
-        description: "Upload the bundle to Play (internal track)"
+        description: "Upload the bundle to Play"
         type: boolean
         default: false
+      play_track:
+        description: "Which Play track (alpha = the closed test that counts)"
+        type: choice
+        default: alpha
+        options: [alpha, internal, beta, production]
       update_dist:
         description: "Update dist/ so the village download link gets this build"
         type: boolean
@@ -224,16 +229,23 @@ jobs:
       # Optional, and off until a service account exists. Everything above
       # works without it; this only saves the last upload by hand.
       #
-      # `internal` on purpose: it reaches the testers immediately and needs no
-      # review, and promoting to production stays a decision somebody makes in
-      # the console rather than something a git tag does.
-      - name: Upload to Play (internal)
+      # It also cannot do the *first* upload: Play refuses the API until the
+      # package exists in the console, which happens only when a human uploads
+      # a bundle through the web UI once. After that, this is the whole
+      # release.
+      #
+      # `alpha` is the default because on a personal account the fourteen-day
+      # clock only counts *closed* testing. Internal testing installs fine and
+      # advances nothing, which is an easy fortnight to lose. Production stays
+      # in the list but promoting to it is a decision somebody makes on
+      # purpose, not something a workflow input does by accident.
+      - name: Upload to Play
         if: inputs.publish_to_play && github.event_name == 'workflow_dispatch'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: gr.agiosnektarios.village
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
-          track: internal
+          track: ${{ inputs.play_track }}
           status: completed
           mappingFile: app/build/outputs/mapping/release/mapping.txt

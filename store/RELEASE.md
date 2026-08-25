@@ -1,5 +1,10 @@
 # Το κλειδί, και το αυτόματο release
 
+> **Έχεις μόνο κινητό;** Τότε αυτό το αρχείο δεν είναι για σένα — θέλει
+> τερματικό σχεδόν σε κάθε βήμα. Πήγαινε στο `store/BHMATA.md`: το κλειδί
+> φτιάχνεται εκεί από ένα workflow, μέσα στο GitHub, χωρίς να περάσει από
+> μηχάνημά σου.
+
 ## Πού πάει το κλειδί — και γιατί όχι στο repo
 
 **Μη βάλεις το κλειδί υπογραφής στο repository.** Ούτε για να το βλέπω εγώ.
@@ -55,7 +60,9 @@ find ~ -name "*.jks" -o -name "*.keystore" 2>/dev/null | grep -v "\.android/debu
 | `UPLOAD_KEY_ALIAS` | `agiosnektarios-upload` |
 | `UPLOAD_KEY_PASSWORD` | ο κωδικός του κλειδιού (συνήθως ο ίδιος) |
 | `GOOGLE_SERVICES_JSON` | ολόκληρο το περιεχόμενο του πραγματικού `app/google-services.json` |
+| `FIREBASE_SERVICE_ACCOUNT` | το JSON από Firebase → Project settings → Service accounts — για το workflow που ανεβάζει τους κανόνες |
 | `PLAY_SERVICE_ACCOUNT_JSON` | *προαιρετικό* — μόνο αν θες αυτόματο ανέβασμα στο Play |
+| `ADMIN_TOKEN` | *μόνο για το bootstrap του κλειδιού από κινητό* — βλ. `store/BHMATA.md` |
 
 Στο macOS το `base64 -w0` δεν υπάρχει· χρησιμοποίησε `base64 -i keystore/upload.jks | tr -d '\n'`.
 

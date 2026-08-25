@@ -68,12 +68,31 @@ fun secret(name: String): String? =
 
 android {
     namespace = "gr.agiosnektarios.village"
+    /**
+     * Deliberately one behind [targetSdk], which is not the usual arrangement.
+     *
+     * From 31 August 2026 Play refuses new apps and updates that target below
+     * API 36, so targetSdk has to be 36 to publish at all. compileSdk 36 wants
+     * a layoutlib that matches, and Paparazzi 1.3.5 ships one for API 34:
+     * raising it makes every one of the 118 snapshot tests die inside
+     * `Renderer.configureBuildProperties` before rendering a single pixel.
+     *
+     * Compiling against 35 while targeting 36 costs nothing here, because
+     * nothing in this app calls an API that only exists in 36. What it buys is
+     * the snapshot suite, which is the only thing that notices when a layout
+     * silently changes. Raise this to 36 together with Paparazzi 2.0.0-alpha05
+     * or later — and expect to re-record every golden when you do, because the
+     * newer layoutlib renders text differently.
+     */
     compileSdk = 35
 
     defaultConfig {
         applicationId = "gr.agiosnektarios.village"
         minSdk = 26
-        targetSdk = 35
+        // Android 16. Every behaviour change it turns on was already handled:
+        // the activity calls enableEdgeToEdge, the manifest opts into the
+        // predictive back callback, and no screen locks its orientation.
+        targetSdk = 36
         versionCode = gitCount
         // The store shows this. The commit is still stamped into the app —
         // see BuildConfig.GIT_SHA and Settings > About — but a version name
