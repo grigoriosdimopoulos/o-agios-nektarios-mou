@@ -1,0 +1,127 @@
+name: Φτιάξε το κλειδί υπογραφής
+
+# Μία φορά, από το κινητό.
+#
+# Το κλειδί που υπογράφει ό,τι ανεβαίνει στο Play φτιάχνεται κανονικά με
+# `keytool` σε υπολογιστή. Χωρίς υπολογιστή, το φτιάχνει αυτό: το δημιουργεί
+# μέσα στον runner και το γράφει κατευθείαν στα Secrets του repository — δεν
+# τυπώνεται πουθενά, δεν ανεβαίνει ως artifact, και δεν μένει σε κανένα log.
+#
+# Αυτό έχει σημασία εδώ: το repository είναι δημόσιο, οπότε τα logs των Actions
+# τα διαβάζει ο καθένας. Ένα κλειδί τυπωμένο σε log δημόσιου repo είναι καμένο
+# κλειδί από τη στιγμή που θα τυπωθεί.
+#
+# Τυπώνει μόνο τα δύο αποτυπώματα (SHA-1, SHA-256), που δεν είναι μυστικά —
+# υπάρχουν μέσα σε κάθε υπογεγραμμένο APK — και τα χρειάζεσαι για το Firebase.
+#
+# ΠΡΙΝ ΤΟ ΤΡΕΞΕΙΣ χρειάζεται ένα secret με όνομα ADMIN_TOKEN: ένα GitHub
+# Personal Access Token με δικαίωμα εγγραφής στα secrets αυτού του repository.
+# Είναι το μόνο πράγμα που πρέπει να καταχωρήσεις με το χέρι.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Γράψε ΝΑΙ για να φτιαχτεί νέο κλειδί (σβήνει το προηγούμενο)'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      # Ένα δεύτερο κλειδί σημαίνει ότι το Play δεν δέχεται πια ενημερώσεις
+      # υπογεγραμμένες με το πρώτο, οπότε δεν γίνεται κατά λάθος.
+      - name: Επιβεβαίωση
+        if: inputs.confirm != 'ΝΑΙ'
+        run: |
+          echo "::error::Γράψε ΝΑΙ στο πεδίο επιβεβαίωσης."
+          exit 1
+
+      - name: Έλεγχος ότι υπάρχει ο τρόπος αποθήκευσης
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "::error::Λείπει το secret ADMIN_TOKEN. Χωρίς αυτό το κλειδί" \
+                 "δεν έχει πού να αποθηκευτεί, και δεν πρόκειται να τυπωθεί."
+            exit 1
+          fi
+
+      # Το keytool έρχεται με το JDK. Οι runners έχουν ήδη Java, αλλά αυτό δεν
+      # είναι κάτι που θέλω να ανακαλύψω ότι άλλαξε την ημέρα που φτιάχνεται το
+      # κλειδί.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Όλα σε ένα βήμα, επίτηδες: έτσι ούτε ο κωδικός ούτε το base64 περνάνε
+      # ποτέ από step output ή από αρχείο που επιβιώνει του βήματος.
+      - name: Δημιουργία, αποθήκευση, καθάρισμα
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          WORK="$(mktemp -d)"
+          trap 'rm -rf "$WORK"' EXIT
+          KS="$WORK/upload.jks"
+
+          # Ο κωδικός φτιάχνεται εδώ και δεν τον μαθαίνει ούτε αυτός που τρέχει
+          # το workflow: πάει κατευθείαν στα secrets, και το μόνο πράγμα που
+          # τον χρειάζεται είναι το build. Αν ποτέ χαθεί, το Play δίνει νέο
+          # upload key — γι' αυτό αφήνουμε τη Google να κρατάει το πραγματικό
+          # κλειδί υπογραφής.
+          PASS="$(openssl rand -base64 33 | tr -d '\n/+=' | head -c 32)"
+          echo "::add-mask::$PASS"
+
+          ALIAS="agiosnektarios-upload"
+          keytool -genkeypair -v \
+            -keystore "$KS" \
+            -alias "$ALIAS" \
+            -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=Agios Nektarios, OU=Village app, O=Agios Nektarios, L=Attiki, C=GR" \
+            > /dev/null 2>&1
+          echo "Το κλειδί φτιάχτηκε."
+
+          B64="$(base64 -w0 "$KS")"
+          echo "::add-mask::$B64"
+
+          # Επαλήθευση ότι γυρίζει πίσω, πριν αποθηκευτεί κάπου. Ο συνηθισμένος
+          # τρόπος να χαλάσει αυτό είναι μια κομμένη επικόλληση — εδώ δεν
+          # επικολλά κανείς τίποτα, αλλά ο έλεγχος κοστίζει ένα δευτερόλεπτο.
+          printf '%s' "$B64" | base64 -d > "$WORK/roundtrip.jks"
+          keytool -list -keystore "$WORK/roundtrip.jks" -storepass "$PASS" > /dev/null
+          echo "Το base64 γυρίζει πίσω σε λειτουργικό keystore."
+
+          gh secret set UPLOAD_KEYSTORE_BASE64 --repo "$REPO" --body "$B64"
+          gh secret set UPLOAD_STORE_PASSWORD  --repo "$REPO" --body "$PASS"
+          gh secret set UPLOAD_KEY_PASSWORD    --repo "$REPO" --body "$PASS"
+          gh secret set UPLOAD_KEY_ALIAS       --repo "$REPO" --body "$ALIAS"
+          echo "Αποθηκεύτηκαν τέσσερα secrets."
+
+          # Τα αποτυπώματα είναι δημόσια στοιχεία και τα χρειάζεσαι για το
+          # Firebase, αλλιώς το «Συνέχεια με Google» αποτυγχάνει.
+          {
+            echo "## Το κλειδί είναι έτοιμο"
+            echo
+            echo "Τέσσερα secrets αποθηκεύτηκαν. Το κλειδί δεν τυπώθηκε πουθενά"
+            echo "και δεν υπάρχει πια — μόνο μέσα στα secrets."
+            echo
+            echo "### Βάλε αυτά στο Firebase"
+            echo "Project settings → η εφαρμογή Android → Add fingerprint"
+            echo
+            echo '```'
+            keytool -list -v -keystore "$KS" -storepass "$PASS" -alias "$ALIAS" \
+              | grep -E 'SHA1:|SHA256:'
+            echo '```'
+            echo
+            echo "Χρειάζεσαι και δεύτερο ζευγάρι, από το Play Console →"
+            echo "Test and release → Setup → App signing, αφού ανεβάσεις την"
+            echo "πρώτη έκδοση."
+          } >> "$GITHUB_STEP_SUMMARY"

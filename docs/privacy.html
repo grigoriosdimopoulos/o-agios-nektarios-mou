@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Πολιτική απορρήτου — Άγιος Νεκτάριος</title>
+<meta name="description" content="Τι δεδομένα κρατάει η εφαρμογή του οικισμού Άγιος Νεκτάριος Αττικής και ποιος τα βλέπει.">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#fbfaf7; --ink:#1d2321; --dim:#5a625e; --line:#e0ddd5;
+  --accent:#1f6b52; --card:#ffffff; --warn-bg:#fdece9; --warn-ink:#8f2d20;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#14181a; --ink:#e8eae7; --dim:#a2aaa6; --line:#2c3335;
+    --accent:#3fb18e; --card:#1b2022; --warn-bg:#3a1f1b; --warn-ink:#ff9c8d;
+  }
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+.wrap{max-width:44rem;margin:0 auto;padding:2rem 1.15rem 5rem}
+h1{font-size:1.6rem;line-height:1.25;margin:0 0 .3rem}
+h2{font-size:1.12rem;margin:2.2rem 0 .5rem;color:var(--accent)}
+h2::before{content:"";display:block;height:1px;background:var(--line);margin:0 0 .9rem}
+h1+p em,.date{color:var(--dim);font-size:.9rem;font-style:normal}
+p,li{margin:.7rem 0}
+a{color:var(--accent)}
+strong{font-weight:650}
+code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:.05em .35em;font-size:.9em}
+hr{border:0;border-top:1px solid var(--line);margin:2.4rem 0}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1rem 0}
+table{border-collapse:collapse;width:100%;min-width:30rem;font-size:.93rem}
+th,td{text-align:start;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.03em}
+/* Σε οθόνη κινητού ο πίνακας γίνεται κάρτες. Με οριζόντια κύλιση η τρίτη
+   στήλη — «ποιος το βλέπει», η μόνη που έχει πραγματικά σημασία — έμενε έξω
+   από την οθόνη και κανείς δεν θα μάθαινε ότι υπάρχει. */
+@media (max-width:34rem){
+  .tablewrap{overflow-x:visible}
+  table{min-width:0;display:block}
+  thead{display:none}
+  tbody,tr,td{display:block}
+  tr{border-bottom:1px solid var(--line);padding:.7rem 0}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:.12rem 0}
+  td::before{
+    content:attr(data-label);display:block;
+    color:var(--dim);font-size:.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  td+td{margin-top:.5rem}
+}
+.langs{margin:0 0 1.6rem;font-size:.9rem;color:var(--dim)}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:.85rem 1rem;font-weight:600}
+footer{margin-top:3.5rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--dim);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="langs"><a href="privacy-en.html">English</a></p>
+<h1>Πολιτική απορρήτου — Άγιος Νεκτάριος</h1>
+<p><em>Τελευταία ενημέρωση: 19 Αυγούστου 2026</em></p>
+<p>Η εφαρμογή <strong>Άγιος Νεκτάριος</strong> φτιάχτηκε για τους κατοίκους του οικισμού
+Άγιος Νεκτάριος Αττικής. Δεν είναι εμπορική εφαρμογή, δεν έχει διαφημίσεις και
+δεν πουλάει τίποτα.</p>
+<h2>Ποιος κρατάει τα δεδομένα</h2>
+<p>Τα δεδομένα βρίσκονται στο Firebase (Google Firestore, Google Authentication,
+Google Cloud Messaging) της Google Ireland Limited, σε διακομιστές της Google.
+Υπεύθυνος επεξεργασίας είναι ο διαχειριστής της εφαρμογής του χωριού· στοιχεία
+επικοινωνίας στο τέλος.</p>
+<h2>Τι συλλέγεται και γιατί</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Δεδομένο</th>
+<th>Γιατί</th>
+<th>Ποιος το βλέπει</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Δεδομένο">Όνομα και επώνυμο</td>
+<td data-label="Γιατί">Για να ξέρουν οι γείτονες ποιος έγραψε τι</td>
+<td data-label="Ποιος το βλέπει">Όλοι οι συνδεδεμένοι κάτοικοι</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Email</td>
+<td data-label="Γιατί">Για τη σύνδεση στον λογαριασμό</td>
+<td data-label="Ποιος το βλέπει">Ο ίδιος ο κάτοικος και ο διαχειριστής</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Τηλέφωνο</td>
+<td data-label="Γιατί">Μόνο αν το συμπληρώσεις</td>
+<td data-label="Ποιος το βλέπει"><strong>Μόνο εσύ και ο διαχειριστής</strong> — βλ. παρακάτω</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Γειτονιά (μπλοκ)</td>
+<td data-label="Γιατί">Για να ομαδοποιούνται οι αναφορές</td>
+<td data-label="Ποιος το βλέπει">Όλοι οι συνδεδεμένοι κάτοικοι</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Φωτογραφία προφίλ</td>
+<td data-label="Γιατί">Προαιρετική</td>
+<td data-label="Ποιος το βλέπει">Όλοι οι συνδεδεμένοι κάτοικοι</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Θέση αναφοράς / συναγερμού</td>
+<td data-label="Γιατί">Για να βρεθεί το πρόβλημα στον χάρτη</td>
+<td data-label="Ποιος το βλέπει">Όλοι οι συνδεδεμένοι κάτοικοι</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Θέση του σπιτιού σου</td>
+<td data-label="Γιατί">Για να πεις σε ασθενοφόρο πού να έρθει</td>
+<td data-label="Ποιος το βλέπει"><strong>Μόνο εσύ.</strong> Ούτε ο διαχειριστής</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Φωτογραφίες αναφορών</td>
+<td data-label="Γιατί">Για να φαίνεται το πρόβλημα</td>
+<td data-label="Ποιος το βλέπει">Όλοι οι συνδεδεμένοι κάτοικοι</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Μηνύματα και σχόλια</td>
+<td data-label="Γιατί">Είναι το περιεχόμενο της εφαρμογής</td>
+<td data-label="Ποιος το βλέπει">Οι συμμετέχοντες στη συνομιλία</td>
+</tr>
+<tr>
+<td data-label="Δεδομένο">Τεχνικά αναγνωριστικά συσκευής (push token)</td>
+<td data-label="Γιατί">Για τις ειδοποιήσεις</td>
+<td data-label="Ποιος το βλέπει">Κανένας κάτοικος</td>
+</tr>
+</tbody>
+</table></div>
+<p>Η εφαρμογή <strong>δεν</strong> συλλέγει: διαφημιστικά αναγνωριστικά, ιστορικό περιήγησης,
+επαφές από το τηλέφωνό σου, οικονομικά ή δεδομένα υγείας.</p>
+<h2>Το τηλέφωνό σου</h2>
+<p>Το τηλέφωνό σου φυλάσσεται ιδιωτικά. Κανένας άλλος κάτοικος δεν μπορεί να το
+διαβάσει — αυτό επιβάλλεται από τους κανόνες ασφαλείας του διακομιστή, όχι από
+την εφαρμογή.</p>
+<p>Υπάρχει μία εξαίρεση και τη διαλέγεις εσύ: αν ενεργοποιήσεις το
+«Να μπορούν οι γείτονες να μου στείλουν SMS σε έκτακτο», τότε το τηλέφωνό σου
+γίνεται αναγνώσιμο από τα κινητά των υπόλοιπων κατοίκων, ώστε η οθόνη του
+συναγερμού να μπορεί να στείλει μήνυμα σε όλους μαζί. Μπορείς να το πάρεις
+πίσω όποτε θέλεις, από τις Ρυθμίσεις, και τότε διαγράφεται αμέσως. Ο
+διαχειριστής μπορεί επίσης να απενεργοποιήσει τη λειτουργία για όλο το χωριό.</p>
+<p>Τα SMS στέλνονται από <strong>τη δική σου εφαρμογή μηνυμάτων</strong>, με το δικό σου
+τηλέφωνο. Η εφαρμογή απλώς την ανοίγει με το κείμενο έτοιμο· δεν στέλνει
+μηνύματα μόνη της και δεν βλέπει τι έστειλες.</p>
+<h2>Τοποθεσία</h2>
+<p>Η εφαρμογή ζητάει τοποθεσία μόνο όταν εσύ πατήσεις κάτι που τη χρειάζεται —
+για να μπει μια αναφορά ή ένας συναγερμός στο σωστό σημείο του χάρτη. Δεν
+καταγράφει τη θέση σου στο παρασκήνιο και δεν την παρακολουθεί.</p>
+<h2>Καιρός</h2>
+<p>Για την πρόγνωση και τον κίνδυνο πυρκαγιάς η εφαρμογή ρωτάει το
+<a href="https://open-meteo.com">Open-Meteo</a>. Στέλνει τις σταθερές συντεταγμένες του
+<strong>χωριού</strong>, όχι τη δική σου θέση, και δεν στέλνει κανένα στοιχείο ταυτότητας.</p>
+<h2>Χάρτες</h2>
+<p>Τα πλακίδια του χάρτη έρχονται από το <a href="https://openfreemap.org">OpenFreeMap</a>,
+που δεν απαιτεί λογαριασμό. Η διεύθυνση IP της συσκευής σου φτάνει σε αυτόν
+τον πάροχο, όπως σε κάθε αίτημα στο διαδίκτυο.</p>
+<h2>Πόσο μένουν</h2>
+<p>Όσο υπάρχει ο λογαριασμός σου. Οι συναγερμοί σβήνουν μόνοι τους (6 ώρες για τα
+έκτακτα, 7 μέρες για τις διακοπές). Οι αναφορές και οι ανακοινώσεις μένουν,
+γιατί είναι το αρχείο του χωριού.</p>
+<h2>Τα δικαιώματά σου</h2>
+<p>Μπορείς, μέσα από την εφαρμογή, να δεις και να διορθώσεις τα στοιχεία σου, να
+αφαιρέσεις το σπίτι σου από τον χάρτη, να πάρεις πίσω τη συγκατάθεση για SMS,
+και να <strong>διαγράψεις τον λογαριασμό σου</strong> (Ρυθμίσεις → Λογαριασμός). Η διαγραφή
+αφαιρεί το προφίλ, τα ιδιωτικά σου έγγραφα και το τηλέφωνό σου. Αναφορές και
+σχόλια που έχεις γράψει παραμένουν, γιατί ανήκουν στην κοινή συζήτηση· ζήτησέ
+το από τον διαχειριστή αν θέλεις να αφαιρεθούν και αυτά.</p>
+<p>Έχεις επίσης τα δικαιώματα του GDPR — πρόσβασης, διόρθωσης, διαγραφής,
+φορητότητας και εναντίωσης. Γράψε στη διεύθυνση παρακάτω.</p>
+<h2>Παιδιά</h2>
+<p>Η εφαρμογή απευθύνεται σε ενήλικες κατοίκους. Δεν σχεδιάστηκε για παιδιά και
+δεν συλλέγει εν γνώσει της δεδομένα από παιδιά κάτω των 16 ετών.</p>
+<h2>Αλλαγές</h2>
+<p>Αν αλλάξει κάτι ουσιώδες, η ημερομηνία στην κορυφή αλλάζει και η νέα έκδοση
+δημοσιεύεται εδώ.</p>
+<h2>Επικοινωνία</h2>
+<p class="warn">ΣΥΜΠΛΗΡΩΣΕ ΕΔΩ: email επικοινωνίας</p>
+<footer>Εφαρμογή του οικισμού Άγιος Νεκτάριος Αττικής. <a href="https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou">Ο κώδικας είναι ανοιχτός.</a></footer>
+</div>
+</body>
+</html>

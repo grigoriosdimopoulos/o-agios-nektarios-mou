@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Policy — Agios Nektarios</title>
+<meta name="description" content="What the Agios Nektarios village app stores and who can see it.">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#fbfaf7; --ink:#1d2321; --dim:#5a625e; --line:#e0ddd5;
+  --accent:#1f6b52; --card:#ffffff; --warn-bg:#fdece9; --warn-ink:#8f2d20;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#14181a; --ink:#e8eae7; --dim:#a2aaa6; --line:#2c3335;
+    --accent:#3fb18e; --card:#1b2022; --warn-bg:#3a1f1b; --warn-ink:#ff9c8d;
+  }
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+.wrap{max-width:44rem;margin:0 auto;padding:2rem 1.15rem 5rem}
+h1{font-size:1.6rem;line-height:1.25;margin:0 0 .3rem}
+h2{font-size:1.12rem;margin:2.2rem 0 .5rem;color:var(--accent)}
+h2::before{content:"";display:block;height:1px;background:var(--line);margin:0 0 .9rem}
+h1+p em,.date{color:var(--dim);font-size:.9rem;font-style:normal}
+p,li{margin:.7rem 0}
+a{color:var(--accent)}
+strong{font-weight:650}
+code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:.05em .35em;font-size:.9em}
+hr{border:0;border-top:1px solid var(--line);margin:2.4rem 0}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1rem 0}
+table{border-collapse:collapse;width:100%;min-width:30rem;font-size:.93rem}
+th,td{text-align:start;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:.82rem;text-transform:uppercase;letter-spacing:.03em}
+/* Σε οθόνη κινητού ο πίνακας γίνεται κάρτες. Με οριζόντια κύλιση η τρίτη
+   στήλη — «ποιος το βλέπει», η μόνη που έχει πραγματικά σημασία — έμενε έξω
+   από την οθόνη και κανείς δεν θα μάθαινε ότι υπάρχει. */
+@media (max-width:34rem){
+  .tablewrap{overflow-x:visible}
+  table{min-width:0;display:block}
+  thead{display:none}
+  tbody,tr,td{display:block}
+  tr{border-bottom:1px solid var(--line);padding:.7rem 0}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:.12rem 0}
+  td::before{
+    content:attr(data-label);display:block;
+    color:var(--dim);font-size:.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  td+td{margin-top:.5rem}
+}
+.langs{margin:0 0 1.6rem;font-size:.9rem;color:var(--dim)}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:.85rem 1rem;font-weight:600}
+footer{margin-top:3.5rem;padding-top:1.2rem;border-top:1px solid var(--line);color:var(--dim);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="langs"><a href="privacy.html">Ελληνικά</a></p>
+<h1>Privacy Policy — Agios Nektarios</h1>
+<p><em>Last updated: 19 August 2026</em></p>
+<p><strong>Agios Nektarios</strong> is an app for the residents of the settlement of Agios
+Nektarios, Attica, Greece. It is not a commercial app. It carries no
+advertising and sells nothing.</p>
+<h2>Who holds the data</h2>
+<p>Data is held in Firebase (Google Firestore, Google Authentication, Google Cloud
+Messaging), operated by Google Ireland Limited. The data controller is the
+administrator of the village app; contact details at the end.</p>
+<h2>What is collected, and why</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Why</th>
+<th>Who can see it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td data-label="Data">First and last name</td>
+<td data-label="Why">So neighbours know who wrote what</td>
+<td data-label="Who can see it">All signed-in residents</td>
+</tr>
+<tr>
+<td data-label="Data">Email address</td>
+<td data-label="Why">To sign in</td>
+<td data-label="Who can see it">The resident, and the administrator</td>
+</tr>
+<tr>
+<td data-label="Data">Telephone number</td>
+<td data-label="Why">Only if you enter one</td>
+<td data-label="Who can see it"><strong>You and the administrator only</strong> — see below</td>
+</tr>
+<tr>
+<td data-label="Data">Neighbourhood (block)</td>
+<td data-label="Why">To group reports</td>
+<td data-label="Who can see it">All signed-in residents</td>
+</tr>
+<tr>
+<td data-label="Data">Profile photo</td>
+<td data-label="Why">Optional</td>
+<td data-label="Who can see it">All signed-in residents</td>
+</tr>
+<tr>
+<td data-label="Data">Location of a report or alarm</td>
+<td data-label="Why">To place it on the map</td>
+<td data-label="Who can see it">All signed-in residents</td>
+</tr>
+<tr>
+<td data-label="Data">Location of your own house</td>
+<td data-label="Why">So an ambulance can be told where to come</td>
+<td data-label="Who can see it"><strong>You alone.</strong> Not even the administrator</td>
+</tr>
+<tr>
+<td data-label="Data">Photographs attached to reports</td>
+<td data-label="Why">To show the problem</td>
+<td data-label="Who can see it">All signed-in residents</td>
+</tr>
+<tr>
+<td data-label="Data">Messages and comments</td>
+<td data-label="Why">They are the content of the app</td>
+<td data-label="Who can see it">The people in that conversation</td>
+</tr>
+<tr>
+<td data-label="Data">Device push token</td>
+<td data-label="Why">To deliver notifications</td>
+<td data-label="Who can see it">No resident</td>
+</tr>
+</tbody>
+</table></div>
+<p>The app does <strong>not</strong> collect advertising identifiers, browsing history, your
+phone's contacts, or any financial or health data.</p>
+<h2>Your telephone number</h2>
+<p>Your number is stored privately. No other resident can read it — this is
+enforced by the server's security rules, not by the app.</p>
+<p>There is one exception and it is yours to make: if you turn on "Let neighbours
+text me in an emergency", your number becomes readable by other residents'
+phones so that the alarm screen can text everyone at once. You can withdraw
+that at any time from Settings, and it is deleted immediately. An administrator
+can also switch the feature off for the whole village.</p>
+<p>Text messages are sent by <strong>your own messaging app</strong>, from your own phone. This
+app only opens it with the message written; it does not send anything itself
+and cannot see what you sent.</p>
+<h2>Location</h2>
+<p>Location is requested only when you tap something that needs it — to put a
+report or an alarm at the right place on the map. The app does not record your
+location in the background and does not track you.</p>
+<h2>Weather</h2>
+<p>Forecasts and the fire-risk reading come from <a href="https://open-meteo.com">Open-Meteo</a>.
+The app sends the fixed coordinates of the <strong>village</strong>, never yours, and no
+identifying information.</p>
+<h2>Maps</h2>
+<p>Map tiles come from <a href="https://openfreemap.org">OpenFreeMap</a>, which requires no
+account. Your device's IP address reaches that provider, as it does with any
+internet request.</p>
+<h2>How long it is kept</h2>
+<p>For as long as your account exists. Alarms expire on their own (six hours for
+emergencies, seven days for outages). Reports and announcements remain, because
+they are the village's record.</p>
+<h2>Your rights</h2>
+<p>From inside the app you can view and correct your details, remove your house
+from the map, withdraw consent for texting, and <strong>delete your account</strong>
+(Settings → Account). Deleting removes your profile, your private documents and
+your telephone number. Reports and comments you wrote remain, because they
+belong to a shared conversation; ask the administrator if you want those
+removed too.</p>
+<p>You also have the GDPR rights of access, rectification, erasure, portability
+and objection. Write to the address below.</p>
+<h2>Children</h2>
+<p>The app is for adult residents. It is not designed for children and does not
+knowingly collect data from anyone under 16.</p>
+<h2>Changes</h2>
+<p>If anything material changes, the date at the top changes and the new version
+is published here.</p>
+<h2>Contact</h2>
+<p class="warn">FILL IN: contact email address</p>
+<footer>Village app for Agios Nektarios, Attica. <a href="https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou">Source is public.</a></footer>
+</div>
+</body>
+</html>
