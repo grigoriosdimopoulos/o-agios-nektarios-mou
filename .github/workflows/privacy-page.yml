@@ -10,7 +10,6 @@ name: Ξαναφτιάξε τη σελίδα απορρήτου
 
 on:
   push:
-    branches: [main]
     paths:
       - "store/privacy-policy.*.md"
       - "tools/privacy_page.py"
@@ -26,6 +25,11 @@ permissions:
 
 jobs:
   build:
+    # Μόνο στο προεπιλεγμένο branch, γιατί το τελευταίο βήμα σπρώχνει εκεί.
+    # Γραμμένο έτσι και όχι ως `branches: [main]` επειδή αυτό το repository δεν
+    # έχει branch που να λέγεται main, και ένα φίλτρο που δεν ταιριάζει με
+    # τίποτα δεν αποτυγχάνει — απλώς δεν τρέχει ποτέ, σιωπηλά.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
