@@ -161,9 +161,9 @@ cd firebase && firebase deploy --only firestore:rules,firestore:indexes
 
 | Πεδίο | Απαίτηση | Κατάσταση |
 |---|---|---|
-| **App icon** | 512×512 PNG, 32-bit, χωρίς διαφάνεια | **ΣΥΜΠΛΗΡΩΣΕ** — δες §6 |
+| **App icon** | 512×512 PNG, 32-bit, χωρίς διαφάνεια | Έτοιμο: `store/app-icon-512.png` |
 | **Feature graphic** | 1024×500 PNG/JPG | Έτοιμο: `store/feature-graphic.png` |
-| **Phone screenshots** | 2–8, 16:9 ως 9:16, ≥320px | Ετοιμάστηκαν 6, δες `store/screenshots/` |
+| **Phone screenshots** | 2–8, 16:9 ως 9:16, ≥320px | Ετοιμάστηκαν 14, δες `store/screenshots/` |
 | **Tablet screenshots** | Προαιρετικά | Παράλειψέ τα |
 
 ### 5.5 Categorisation
@@ -192,12 +192,10 @@ cd firebase && firebase deploy --only firestore:rules,firestore:indexes
 κάτω + power) με την αρχική οθόνη και βάλ' το **πρώτο**: είναι η οθόνη που
 κάνει την εφαρμογή να φαίνεται αυτό που είναι.
 
-**App icon 512×512**: υπάρχει ήδη το εικονίδιο της εφαρμογής σε
-`app/src/main/res/mipmap-anydpi-v26/`. Χρειάζεται εξαγωγή σε 512×512 PNG χωρίς
-διαφάνεια — το πιο εύκολο είναι από το Android Studio:
-**Tools → Resource Manager → δεξί κλικ στο ic_launcher → Export**, ή απλώς
-άνοιξε το `ic_launcher_foreground` σε οποιοδήποτε πρόγραμμα και αποθήκευσε σε
-512×512 πάνω σε συμπαγές φόντο.
+**App icon 512×512**: έτοιμο στο `store/app-icon-512.png`, φτιαγμένο από το
+ίδιο vector που χρησιμοποιεί η εφαρμογή — οπότε δεν μπορεί να ξεφύγει από το
+εικονίδιο που βλέπει κανείς στο κινητό του. Ξαναφτιάχνεται με
+`python3 tools/store_icon.py`.
 
 **Feature graphic 1024×500**: έτοιμο στο `store/feature-graphic.png`.
 
