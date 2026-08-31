@@ -195,10 +195,26 @@ Firebase Console → **Project settings** → *Your apps* → διάλεξε
 ✅ **Πέτυχε όταν:** Firebase Console → **Firestore Database** → **Rules**, και η
 ημερομηνία πάνω είναι η σημερινή.
 
-> **Αν σκάσει με «permission denied»:** ο λογαριασμός υπηρεσίας δεν έχει
-> δικαίωμα. Google Cloud Console → **IAM** → βρες τον `firebase-adminsdk…` →
-> μολύβι → *Add another role* → **Firebase Rules Admin** και
-> **Cloud Datastore Index Admin** → Save. Ξανατρέξε το workflow.
+> **Αν σκάσει με 403:** ο λογαριασμός υπηρεσίας που κατέβασες έχει πρόσβαση στα
+> δεδομένα αλλά όχι στις ρυθμίσεις του project. Θέλει **τρεις** ρόλους — και ο
+> πρώτος είναι αυτός που λείπει σχεδόν πάντα:
+>
+> <https://console.cloud.google.com/iam-admin/iam?project=o-agios-nektarios-mou>
+>
+> Βρες τη γραμμή `firebase-adminsdk…` → **μολύβι** → *Add another role*, τρεις
+> φορές:
+>
+> | Ρόλος | Τι κάνει |
+> |---|---|
+> | **Service Usage Consumer** | Το firebase-tools ελέγχει πρώτα ότι το Firestore API είναι ανοιχτό. Ο έλεγχος θέλει δικό του δικαίωμα |
+> | **Firebase Rules Admin** | Δημοσιεύει τους κανόνες |
+> | **Cloud Datastore Index Admin** | Τα ευρετήρια |
+>
+> **Save**, περίμενε ένα λεπτό (τα δικαιώματα δεν ισχύουν ακαριαία) και
+> ξανατρέξε το workflow.
+>
+> Χρειάζεται Desktop site — το Cloud Console είναι δύσχρηστο σε κινητό. Αν
+> βαρεθείς, η επικόλληση από κάτω κάνει την ίδια δουλειά σε δύο λεπτά.
 >
 > **Η εναλλακτική, χωρίς κλειδί:** άνοιξε
 > <https://raw.githubusercontent.com/grigoriosdimopoulos/o-agios-nektarios-mou/HEAD/firebase/firestore.rules>,

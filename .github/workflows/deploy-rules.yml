@@ -115,11 +115,27 @@ jobs:
                  --only firestore:rules,firestore:indexes \
                  --project "$PROJECT_ID" \
                  --non-interactive 2>&1 | tee deploy.log; then
-            if grep -qiE 'permission|PERMISSION_DENIED|403' deploy.log; then
-              echo "::error::Το service account δεν έχει δικαίωμα να ανεβάσει" \
-                   "κανόνες. Google Cloud Console → IAM → βρες τον λογαριασμό" \
-                   "firebase-adminsdk... → Edit → Add another role →" \
-                   "«Firebase Rules Admin» και «Cloud Datastore Index Admin»."
+            # Τρία διαφορετικά 403 με τρεις διαφορετικές λύσεις. Ένα μήνυμα που
+            # τα έλεγε όλα «δικαίωμα» έστελνε τον αναγνώστη να προσθέσει ρόλο
+            # που δεν είχε καμία σχέση με αυτό που πράγματι έλειπε.
+            if grep -qi 'serviceusage' deploy.log; then
+              echo "::error::Λείπει ο ρόλος «Service Usage Consumer»." \
+                   "Το firebase-tools ελέγχει πρώτα ότι το Firestore API είναι" \
+                   "ανοιχτό, και ο έλεγχος χρειάζεται δικό του δικαίωμα —" \
+                   "χωριστό από αυτό που ανεβάζει τους κανόνες."
+            elif grep -qi 'firebaserules\|ruleset' deploy.log; then
+              echo "::error::Λείπει ο ρόλος «Firebase Rules Admin»."
+            elif grep -qi 'index\|datastore' deploy.log; then
+              echo "::error::Λείπει ο ρόλος «Cloud Datastore Index Admin»."
+            elif grep -qiE 'PERMISSION_DENIED|403|permission' deploy.log; then
+              echo "::error::403 από το Google Cloud. Δες παραπάνω ποια" \
+                   "υπηρεσία το επέστρεψε."
+            fi
+            if grep -qiE 'PERMISSION_DENIED|403|permission' deploy.log; then
+              echo "::error::Πού: Google Cloud Console → IAM → ο λογαριασμός" \
+                   "firebase-adminsdk… → μολύβι → Add another role. Χρειάζεται" \
+                   "και τους τρεις: Service Usage Consumer, Firebase Rules" \
+                   "Admin, Cloud Datastore Index Admin."
             fi
             exit 1
           fi
