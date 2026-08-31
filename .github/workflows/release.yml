@@ -51,10 +51,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Java 21, όχι 17.
+      #
+      # Το firebase-tools σταμάτησε να δέχεται JDK κάτω από 21, και ο εξομοιωτής
+      # πέθαινε με «no longer supports Java version before 21» — αφού είχε ήδη
+      # στηθεί όλο το υπόλοιπο job. Το Gradle build τρέχει το ίδιο σε 21, οπότε
+      # όλα τα jobs μένουν στην ίδια έκδοση: CI που δοκιμάζει σε άλλη JDK από
+      # αυτή που χτίζει το release είναι CI που δεν δοκιμάζει το release.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -122,7 +129,7 @@ jobs:
         working-directory: firebase
         run: |
           npm install --no-audit --no-fund
-          npm install --no-save firebase-tools
+          npm install --no-save firebase-tools@15.28.2
           npx firebase emulators:exec --only firestore \
             --project demo-rules-check 'node rules.test.mjs'
 
