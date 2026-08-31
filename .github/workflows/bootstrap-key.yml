@@ -67,6 +67,16 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+
+          # Το token δοκιμάζεται ΠΡΙΝ φτιαχτεί το κλειδί. Αλλιώς η σειρά είναι:
+          # φτιάξε κλειδί, απότυχε να το αποθηκεύσεις, σβήσ' το — δηλαδή όλη η
+          # δουλειά για ένα λάθος που φαινόταν από την αρχή.
+          if ! gh api "repos/$REPO" --silent 2>/dev/null; then
+            echo "::error::Το ADMIN_TOKEN δεν φτάνει σε αυτό το repository." \
+                 "Έληξε, ή δεν του δόθηκε δικαίωμα Secrets: Read and write."
+            exit 1
+          fi
+
           WORK="$(mktemp -d)"
           trap 'rm -rf "$WORK"' EXIT
           KS="$WORK/upload.jks"
@@ -76,8 +86,15 @@ jobs:
           # τον χρειάζεται είναι το build. Αν ποτέ χαθεί, το Play δίνει νέο
           # upload key — γι' αυτό αφήνουμε τη Google να κρατάει το πραγματικό
           # κλειδί υπογραφής.
-          PASS="$(openssl rand -base64 33 | tr -d '\n/+=' | head -c 32)"
+          PASS="$(openssl rand -base64 48 | tr -d '\n/+=' | head -c 32)"
           echo "::add-mask::$PASS"
+          # Το tr πετάει χαρακτήρες, οπότε το μήκος δεν είναι εγγυημένο. Ένας
+          # κοντός κωδικός δεν θα έσκαγε θορυβωδώς — θα γινόταν δεκτός και θα
+          # φύλαγε το κλειδί με το οποίο υπογράφεται ό,τι δημοσιεύεται.
+          if [ "${#PASS}" -ne 32 ]; then
+            echo "::error::Ο κωδικός βγήκε ${#PASS} χαρακτήρες αντί για 32."
+            exit 1
+          fi
 
           ALIAS="agiosnektarios-upload"
           keytool -genkeypair -v \
