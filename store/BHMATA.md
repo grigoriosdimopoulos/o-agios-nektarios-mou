@@ -410,7 +410,7 @@ Play Console → **Test and release** → **Testing** → **Closed testing** →
 
 - **Upload** → επιλογέας αρχείων → **Λήψεις** → `app-release.aab`
 - Το Play θα προτείνει **Play App Signing** → **δέξου το**
-- Release notes: δυο γραμμές στα ελληνικά
+- Release notes: έτοιμο κείμενο στο `store/simeioseis-ekdosis.md`
 - **Save** → **Review release** → **Start rollout to Closed testing**
 
 ✅ **Πέτυχε όταν:** βλέπεις την έκδοση και καμία κόκκινη προειδοποίηση.
