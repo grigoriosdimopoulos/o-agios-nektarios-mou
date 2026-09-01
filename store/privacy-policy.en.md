@@ -93,4 +93,7 @@ is published here.
 
 ## Contact
 
-**FILL IN: contact email address**
+For anything about the app or your data — questions, correction, deletion,
+or exercising any of the rights above:
+
+**legal@urobor.us**

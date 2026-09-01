@@ -302,25 +302,23 @@ tag (`v1.0.1`). Το μέρος Γ ξαναγίνεται σε δέκα λεπτ
 
 # ΜΕΡΟΣ Ε — Απόρρητο και λογαριασμός δοκιμής
 
-## Ε1. Βάλε το email σου στην πολιτική
+## Ε1. Το email επικοινωνίας — έγινε
 
 Το Play θέλει **σύνδεσμο** σε πολιτική απορρήτου, και η πολιτική πρέπει να λέει
-πώς επικοινωνεί κανείς μαζί σου.
+πώς επικοινωνεί κανείς μαζί σου. Είναι ήδη συμπληρωμένο, και στις δύο γλώσσες:
 
-Άνοιξε:
-<https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/blob/HEAD/store/privacy-policy.el.md>
+```
+legal@urobor.us
+```
 
-Πάτα το **μολύβι** (✏️) πάνω δεξιά. Πήγαινε στο τέλος και αντικατέστησε το
-`ΣΥΜΠΛΗΡΩΣΕ ΕΔΩ: email επικοινωνίας` με μια πραγματική διεύθυνση.
-**Commit changes**.
+Το ίδιο βάλε και στο πεδίο **Email** του Play (βήμα Ζ5) — φαίνεται δημόσια στη
+σελίδα της εφαρμογής, και είναι λογικό να είναι η ίδια διεύθυνση με αυτή που
+λέει η πολιτική.
 
-Το ίδιο για την αγγλική, όπου γράφει `FILL IN: contact email address`:
-<https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/blob/HEAD/store/privacy-policy.en.md>
-
-> Αυτή η διεύθυνση γίνεται δημόσια. Αν δεν θέλεις το προσωπικό σου email,
-> φτιάξε ένα καινούριο τώρα — θα ζητήσει και το Play ένα δημόσιο email σε δικό
-> του πεδίο, και είναι λογικό να είναι το ίδιο.
-
+Αν κάποτε θελήσεις να αλλάξει, είναι δύο αρχεία και ένα μολύβι:
+[ελληνικά](https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/blob/HEAD/store/privacy-policy.el.md)
+·
+[αγγλικά](https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/blob/HEAD/store/privacy-policy.en.md).
 Οι σελίδες ξαναφτιάχνονται μόνες τους σε κάθε αλλαγή· δεν κάνεις τίποτα άλλο.
 
 ## Ε2. Άναψε το GitHub Pages
@@ -468,8 +466,8 @@ site.
 π.χ.
 <https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/blob/HEAD/store/feature-graphic.png>
 
-**Store settings:** κατηγορία *Κοινωνικά*· email το δικό σου· τηλέφωνο και
-website κενά.
+**Store settings:** κατηγορία *Κοινωνικά*· email `legal@urobor.us`· τηλέφωνο
+και website κενά.
 
 **Policy → App content** — οι απαντήσεις είναι στο `store/PLAY-STORE.md` §8,
 συμπληρωμένες από τον κώδικα:
@@ -574,7 +572,6 @@ website κενά.
 - [ ] Β2 **Κανόνες ανεβασμένοι**
 - [ ] Γ Tag, build, δύο αρχεία στο release
 - [ ] Δ Δοκιμή σε αληθινό κινητό, έξι σημεία
-- [ ] Ε1 Email στην πολιτική απορρήτου
 - [ ] Ε2 GitHub Pages ανοιχτό, το URL δουλεύει
 - [ ] Ε3 Λογαριασμός δοκιμής για τον ελεγκτή
 - [ ] ΣΤ1 Λογαριασμός Play, ταυτοποιημένος

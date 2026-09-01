@@ -177,10 +177,10 @@ cd firebase && firebase deploy --only firestore:rules,firestore:indexes
 
 | Πεδίο | Τιμή |
 |---|---|
-| **Email** | **ΣΥΜΠΛΗΡΩΣΕ** — υποχρεωτικό, φαίνεται σε όλους |
+| **Email** | `legal@urobor.us` — υποχρεωτικό, φαίνεται σε όλους |
 | **Phone** | Προαιρετικό — μην το βάλεις |
 | **Website** | Προαιρετικό |
-| **Privacy policy URL** | **ΣΥΜΠΛΗΡΩΣΕ** — δες §7 |
+| **Privacy policy URL** | `https://grigoriosdimopoulos.github.io/o-agios-nektarios-mou/privacy.html` — δες §7 |
 
 ---
 
@@ -219,11 +219,12 @@ cd firebase && firebase deploy --only firestore:rules,firestore:indexes
 
 1. Στο GitHub → Settings → Pages → Deploy from branch → `main` / `/docs`,
    βάλε το αρχείο ως `docs/privacy.md`, και το URL γίνεται
-   `https://grigoriosdimopoulos.github.io/o-agios-nektarios-mou/privacy`
+   `https://grigoriosdimopoulos.github.io/o-agios-nektarios-mou/privacy.html`
 2. Ή απλώς άνοιξε το αρχείο στο GitHub και χρησιμοποίησε το raw URL — το Play
    το δέχεται αρκεί να ανοίγει δημόσια.
 
-**ΣΥΜΠΛΗΡΩΣΕ** το email επικοινωνίας μέσα στο κείμενο πριν το δημοσιεύσεις.
+Το email επικοινωνίας μέσα στο κείμενο είναι ήδη συμπληρωμένο:
+`legal@urobor.us`, και στις δύο γλώσσες.
 
 ---
 
