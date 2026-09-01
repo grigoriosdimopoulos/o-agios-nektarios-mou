@@ -220,7 +220,7 @@ def main():
 
     draw.text((left, rule_y + 26), "Ο χάρτης, τα προβλήματα", font=sans,
               fill=CREAM)
-    draw.text((left, rule_y + 60), "και τα νέα του χωριού μας", font=sans,
+    draw.text((left, rule_y + 60), "και τα νέα του οικισμού μας", font=sans,
               fill=CREAM)
 
     draw.text((left, 96), f"{HOUSES} ΣΠΙΤΙΑ · 640 ΜΕΤΡΑ · ΚΙΘΑΙΡΩΝΑΣ", font=small,
