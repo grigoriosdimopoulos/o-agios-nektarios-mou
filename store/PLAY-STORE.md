@@ -163,7 +163,7 @@ cd firebase && firebase deploy --only firestore:rules,firestore:indexes
 |---|---|---|
 | **App icon** | 512×512 PNG, 32-bit, χωρίς διαφάνεια | Έτοιμο: `store/app-icon-512.png` |
 | **Feature graphic** | 1024×500 PNG/JPG | Έτοιμο: `store/feature-graphic.png` |
-| **Phone screenshots** | 2–8, 16:9 ως 9:16, ≥320px | Ετοιμάστηκαν 14, δες `store/screenshots/` |
+| **Phone screenshots** | 2–8, 16:9 ως 9:16, ≥320px | **12 κατάλληλα** από τα 14, δες `store/screenshots/README.md` |
 | **Tablet screenshots** | Προαιρετικά | Παράλειψέ τα |
 
 ### 5.5 Categorisation
