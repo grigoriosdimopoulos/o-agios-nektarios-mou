@@ -11,10 +11,17 @@ Chrome → ⋮ → ✅ **Desktop site**. Με αυτή τη σειρά, ένα-�
 
 **1. Δημοσίευσε την οθόνη συγκατάθεσης** — 2 λεπτά
 
-<https://console.cloud.google.com/apis/credentials/consent?project=o-agios-nektarios-mou>
+<https://console.cloud.google.com/auth/audience?project=o-agios-nektarios-mou>
 
-Αν το *Publishing status* λέει **Testing** → **PUBLISH APP** → Confirm.
-Όσο λέει Testing, συνδέεται μόνο όποιος είναι γραμμένος στους Test users.
+Ψάξε τη γραμμή **Publishing status**. Αν λέει **Testing** → **PUBLISH APP** →
+Confirm. Όσο λέει Testing, συνδέεται μόνο όποιος είναι γραμμένος από κάτω, στους
+*Test users*.
+
+> **Το Cloud Console το μετακίνησε.** Παλιά ήταν *APIs & Services → OAuth
+> consent screen* και το publishing status ήταν πάνω-πάνω. Τώρα η ενότητα
+> λέγεται **Google Auth Platform** και το publishing status ζει στη σελίδα
+> **Audience**. Αν χαθείς, γράψε `Google Auth Platform` στη μπάρα αναζήτησης του
+> Console και μετά διάλεξε **Audience** από την αριστερή στήλη.
 
 **2. Έλεγξε το αποτύπωμα** — 3 λεπτά
 
@@ -154,7 +161,12 @@ Firebase. Αν δεν ταιριάζει, βρέθηκε το πρόβλημα �
 Αν τα αποτυπώματα είναι σωστά και **συνεχίζει**, αυτό είναι το επόμενο, και δεν
 το αναφέρει κανένα μήνυμα λάθους.
 
-**Google Cloud Console → APIs & Services → OAuth consent screen**
+**Google Cloud Console → Google Auth Platform → Audience**
+
+<https://console.cloud.google.com/auth/audience?project=o-agios-nektarios-mou>
+
+(Παλιά: *APIs & Services → OAuth consent screen*. Μετακινήθηκε, και τα
+περισσότερα κείμενα στο διαδίκτυο δείχνουν ακόμα στο παλιό.)
 
 Κοίτα το **Publishing status**:
 
