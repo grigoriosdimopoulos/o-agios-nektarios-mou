@@ -37,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.components.Avatar
 import androidx.compose.material.icons.filled.Home
-import gr.agiosnektarios.village.ui.components.BlockDropdown
 import gr.agiosnektarios.village.ui.components.InlineSpinner
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
@@ -156,12 +155,6 @@ fun EditProfileScreen(
                 label = stringResource(R.string.address),
                 error = state.addressError?.let { stringResource(it) },
                 imeAction = ImeAction.Done,
-            )
-            BlockDropdown(
-                blocks = state.blocks,
-                selectedBlockId = state.blockId,
-                onSelect = viewModel::onBlock,
-                modifier = Modifier.fillMaxWidth(),
             )
 
             // An address in this village is a description, not a street and

@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.UserMessages
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.UserProfile
-import gr.agiosnektarios.village.core.model.VillageBlock
 import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.issue.IssueRepository
@@ -16,7 +15,6 @@ import gr.agiosnektarios.village.data.media.ImageCodec
 import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.user.UserRepository
-import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,8 +35,6 @@ data class ProfileUiState(
     val myIssues: List<Issue> = emptyList(),
     /** Reports this resident is currently dealing with, whoever filed them. */
     val takenOn: List<Issue> = emptyList(),
-    val blockNameEl: String = "",
-    val blockNameEn: String = "",
     val loading: Boolean = true,
 ) {
     /** Counted from the live list rather than the stored counter, which lags. */
@@ -59,15 +55,8 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     sessionRepository: SessionRepository,
     issueRepository: IssueRepository,
-    private val blockRepository: VillageBlockRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
-    private val blocks = MutableStateFlow<List<VillageBlock>>(emptyList())
-
-    init {
-        viewModelScope.launch { blocks.value = blockRepository.blocks() }
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<ProfileUiState> = sessionRepository.profile
@@ -78,15 +67,11 @@ class ProfileViewModel @Inject constructor(
                 combine(
                     issueRepository.observeIssuesByAuthor(profile.id),
                     issueRepository.observeIssuesAssignedTo(profile.id),
-                    blocks,
-                ) { issues, assigned, allBlocks ->
-                    val block = allBlocks.firstOrNull { it.id == profile.blockId }
+                ) { issues, assigned ->
                     ProfileUiState(
                         profile = profile,
                         myIssues = issues,
                         takenOn = assigned,
-                        blockNameEl = block?.nameEl.orEmpty(),
-                        blockNameEn = block?.nameEn.orEmpty(),
                         loading = false,
                     )
                 }
@@ -102,9 +87,7 @@ data class EditProfileUiState(
     val lastName: String = "",
     val phone: String = "",
     val address: String = "",
-    val blockId: String = "",
     val avatar: ByteArray? = null,
-    val blocks: List<VillageBlock> = emptyList(),
     @StringRes val firstNameError: Int? = null,
     @StringRes val lastNameError: Int? = null,
     @StringRes val phoneError: Int? = null,
@@ -122,7 +105,6 @@ class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val imageCodec: ImageCodec,
     private val authRepository: AuthRepository,
-    blockRepository: VillageBlockRepository,
     private val messages: UserMessages,
 ) : ViewModel() {
 
@@ -133,16 +115,13 @@ class EditProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val blocks = blockRepository.blocks()
             val profile = sessionRepository.currentProfile
             _uiState.update {
                 it.copy(
-                    blocks = blocks,
                     firstName = profile?.firstName.orEmpty(),
                     lastName = profile?.lastName.orEmpty(),
                     phone = profile?.phone.orEmpty(),
                     address = profile?.address.orEmpty(),
-                    blockId = profile?.blockId.orEmpty(),
                     avatar = profile?.avatarBytes,
                 )
             }
@@ -153,7 +132,6 @@ class EditProfileViewModel @Inject constructor(
     fun onLastName(value: String) = _uiState.update { it.copy(lastName = value, lastNameError = null) }
     fun onPhone(value: String) = _uiState.update { it.copy(phone = value, phoneError = null) }
     fun onAddress(value: String) = _uiState.update { it.copy(address = value, addressError = null) }
-    fun onBlock(blockId: String) = _uiState.update { it.copy(blockId = blockId) }
 
     fun changePhoto(uri: Uri) {
         val userId = sessionRepository.currentUserId ?: return
@@ -201,7 +179,6 @@ class EditProfileViewModel @Inject constructor(
                 lastName = state.lastName,
                 phone = state.phone,
                 address = state.address,
-                blockId = state.blockId,
             )
             if (result.isSuccess) {
                 authRepository.updateDisplayName(

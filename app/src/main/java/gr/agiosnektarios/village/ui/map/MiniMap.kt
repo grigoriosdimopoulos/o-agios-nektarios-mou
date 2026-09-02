@@ -85,8 +85,6 @@ fun MiniMap(
         VillageMap(
             modifier = Modifier.fillMaxWidth().height(170.dp),
             clusters = listOf(cluster),
-            blocks = emptyList(),
-            showBlocks = false,
             pendingPin = null,
             darkTheme = dark,
             basemap = gr.agiosnektarios.village.core.MapBasemap.STREETS,
@@ -102,7 +100,6 @@ fun MiniMap(
             // map you can pan is a small map you get lost in.
             onMapTap = { onOpenMap() },
             onClusterTap = { onOpenMap() },
-            onBlockTap = {},
             onRoadTap = {},
         )
 

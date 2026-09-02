@@ -38,7 +38,15 @@ const maria = env.authenticatedContext("maria").firestore();
 const giorgos = env.authenticatedContext("giorgos").firestore();
 const anon = env.unauthenticatedContext().firestore();
 
-// The exact payload UserRepository.createProfile writes.
+// The exact payload UserRepository.createProfile writes — plus `blockId`,
+// which it no longer does.
+//
+// Keeping it here is the point. Neighbourhoods are gone from the app, but every
+// profile made before that still carries the key, and an update sends the whole
+// document. Because this seed has it, every profile-editing test below is also
+// a test that those residents can still change their own details. Remove it and
+// the rules could drop `blockId` from the allowlist with all tests green, while
+// the oldest accounts silently lose access to their own profile.
 const profileSeed = (name) => ({
   firstName: name, lastName: "Test", nameLower: `${name} test`.toLowerCase(),
   email: `${name}@example.gr`, phone: "6971234567", address: "Marathonos 12",

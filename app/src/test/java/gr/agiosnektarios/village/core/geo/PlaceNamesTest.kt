@@ -1,6 +1,5 @@
 package gr.agiosnektarios.village.core.geo
 
-import gr.agiosnektarios.village.core.model.VillageBlock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -22,18 +21,6 @@ class PlaceNamesTest {
         points = listOf(
             GeoPoint(38.1640, 23.2889),
             GeoPoint(38.1640, 23.2911),
-        ),
-    )
-
-    private val block = VillageBlock(
-        id = "centre",
-        nameEl = "Κέντρο",
-        nameEn = "Centre",
-        polygon = listOf(
-            GeoPoint(38.1630, 23.2880),
-            GeoPoint(38.1630, 23.2920),
-            GeoPoint(38.1650, 23.2920),
-            GeoPoint(38.1650, 23.2880),
         ),
     )
 
@@ -73,34 +60,35 @@ class PlaceNamesTest {
     }
 
     @Test
-    fun `names the street and the neighbourhood`() {
+    fun `names the street`() {
         val place = PlaceNames.describe(
             point = centre,
             ways = listOf(eastWest),
             namesByWay = mapOf("ew" to "Οδός Ελατιάς"),
-            blocks = listOf(block),
         )
         assertEquals("Οδός Ελατιάς", place.streetName)
-        assertEquals("Κέντρο", place.block?.nameEl)
         assertTrue(place.isKnown)
     }
 
     /**
-     * Eighty-one of this village's eighty-two ways have no name yet, so the
-     * ordinary case is a neighbourhood and nothing else — and that has to be a
-     * useful answer rather than an empty one.
+     * Eighty-one of this village's eighty-two ways have no name yet, so this is
+     * the ordinary case, and the honest answer is nothing.
+     *
+     * It used to be the neighbourhood, which is why the neighbourhoods existed.
+     * With them gone, a place with no named road nearby has no name, and saying
+     * so is better than the vaguer answer that sounded like one. The way to
+     * make this rarer is residents naming streets on the map, not the app
+     * inventing a label.
      */
     @Test
-    fun `an unnamed street still leaves the neighbourhood`() {
+    fun `an unnamed street leaves the place unknown`() {
         val place = PlaceNames.describe(
             point = centre,
             ways = listOf(eastWest),
             namesByWay = emptyMap(),
-            blocks = listOf(block),
         )
         assertNull(place.streetName)
-        assertEquals("Κέντρο", place.block?.nameEl)
-        assertTrue(place.isKnown)
+        assertTrue(!place.isKnown)
     }
 
     /** A named street too far away must not be claimed. */
@@ -111,10 +99,8 @@ class PlaceNamesTest {
             point = far,
             ways = listOf(eastWest),
             namesByWay = mapOf("ew" to "Οδός Ελατιάς"),
-            blocks = listOf(block),
         )
         assertNull(place.streetName)
-        assertEquals("Κέντρο", place.block?.nameEl)
     }
 
     /** Outside every polygon and every street, there is nothing honest to say. */
@@ -124,10 +110,8 @@ class PlaceNamesTest {
             point = GeoPoint(38.2000, 23.4000),
             ways = listOf(eastWest),
             namesByWay = mapOf("ew" to "Οδός Ελατιάς"),
-            blocks = listOf(block),
         )
         assertNull(place.streetName)
-        assertNull(place.block)
         assertTrue(!place.isKnown)
     }
 
@@ -142,7 +126,6 @@ class PlaceNamesTest {
             point = GeoPoint(38.1641, 23.2900),
             ways = listOf(eastWest, nearer),
             namesByWay = mapOf("ew" to "Μακριά", "near" to "Κοντά"),
-            blocks = listOf(block),
         )
         assertEquals("Κοντά", place.streetName)
     }

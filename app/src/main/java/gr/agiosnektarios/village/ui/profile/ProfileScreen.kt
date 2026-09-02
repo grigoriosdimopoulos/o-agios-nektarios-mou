@@ -151,14 +151,10 @@ internal fun ProfileContent(
                         ink = MaterialTheme.colorScheme.secondaryInk,
                     )
                 }
-                val blockName = if (greek) state.blockNameEl else state.blockNameEn
-                val locationLine = listOfNotNull(
-                    profile?.address?.takeIf { it.isNotBlank() },
-                    blockName.takeIf { it.isNotBlank() },
-                ).joinToString(" · ")
-                if (locationLine.isNotBlank()) {
+                val address = profile?.address?.takeIf { it.isNotBlank() }
+                if (address != null) {
                     Text(
-                        text = locationLine,
+                        text = address,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

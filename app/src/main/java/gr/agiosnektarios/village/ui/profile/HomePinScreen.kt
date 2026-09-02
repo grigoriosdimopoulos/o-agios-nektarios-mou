@@ -72,8 +72,6 @@ fun HomePinScreen(
         VillageMap(
             modifier = Modifier.fillMaxSize(),
             clusters = emptyList(),
-            blocks = emptyList(),
-            showBlocks = false,
             pendingPin = state.pin,
             darkTheme = dark,
             basemap = state.basemap,
@@ -88,7 +86,6 @@ fun HomePinScreen(
             onZoomChanged = {},
             onMapTap = viewModel::onTap,
             onClusterTap = {},
-            onBlockTap = {},
             onRoadTap = {},
         )
 

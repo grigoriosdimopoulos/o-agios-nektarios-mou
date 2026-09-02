@@ -20,7 +20,6 @@ import gr.agiosnektarios.village.core.VillageConfig
 import gr.agiosnektarios.village.core.geo.GeoBounds
 import gr.agiosnektarios.village.core.geo.GeoPoint
 import gr.agiosnektarios.village.core.geo.IssueCluster
-import gr.agiosnektarios.village.core.model.BlockSummary
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -42,11 +41,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import org.maplibre.geojson.Polygon
 
-private const val SOURCE_BLOCKS = "village-blocks"
 private const val SOURCE_PINS = "village-pins"
-private const val LAYER_BLOCK_FILL = "village-block-fill"
-private const val LAYER_BLOCK_LINE = "village-block-line"
-private const val LAYER_BLOCK_LABEL = "village-block-label"
 private const val LAYER_PINS = "village-pin-symbols"
 private const val SOURCE_FOCUS = "village-focus"
 private const val LAYER_FOCUS = "village-focus-halo"
@@ -141,8 +136,6 @@ internal fun GeoBounds.toLatLngBounds(): LatLngBounds =
 @Composable
 fun VillageMap(
     clusters: List<IssueCluster>,
-    blocks: List<BlockSummary>,
-    showBlocks: Boolean,
     pendingPin: GeoPoint?,
     darkTheme: Boolean,
     basemap: MapBasemap,
@@ -163,7 +156,6 @@ fun VillageMap(
     allowRoadTaps: Boolean,
     onMapTap: (GeoPoint) -> Unit,
     onClusterTap: (String) -> Unit,
-    onBlockTap: (String) -> Unit,
     onRoadTap: (String) -> Unit,
     onZoomChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -176,7 +168,6 @@ fun VillageMap(
     // without tearing the map down on every recomposition.
     val currentMapTap by rememberUpdatedState(onMapTap)
     val currentClusterTap by rememberUpdatedState(onClusterTap)
-    val currentBlockTap by rememberUpdatedState(onBlockTap)
     val currentRoadTap by rememberUpdatedState(onRoadTap)
     val currentZoomChanged by rememberUpdatedState(onZoomChanged)
     // Read inside the click listener, which is registered once, so it has to
@@ -263,17 +254,14 @@ fun VillageMap(
                         // is the pin going down. Naming a street has to wait.
                         null
                     }
-                    val block = map.queryRenderedFeatures(screen, LAYER_BLOCK_FILL).firstOrNull()
                     when {
                         pin?.getStringProperty("clusterId") != null ->
                             currentClusterTap(pin.getStringProperty("clusterId"))
-                        // Roads are checked before neighbourhoods because the
-                        // shading covers the whole village: a road always sits
-                        // inside a block, so block-first would swallow every
-                        // road tap there is.
                         road != null -> currentRoadTap(road.getStringProperty("wayId"))
-                        block?.getStringProperty("blockId") != null ->
-                            currentBlockTap(block.getStringProperty("blockId"))
+                        // Anything else is the map itself, which is how a
+                        // report gets placed. Nothing may sit in front of this
+                        // branch that covers the whole village — a full-extent
+                        // layer here means the pin can never be dropped.
                         else -> currentMapTap(point.toGeoPoint())
                     }
                     true
@@ -293,8 +281,6 @@ fun VillageMap(
             }
             state.render(
                 clusters = clusters,
-                blocks = blocks,
-                showBlocks = showBlocks,
                 pendingPin = pendingPin,
                 greekLabels = greekLabels,
                 streetNames = streetNames,
@@ -372,42 +358,11 @@ private class VillageMapState {
                 loaded.addImage(id, bitmap)
             }
 
-            loaded.addSource(GeoJsonSource(SOURCE_BLOCKS))
             loaded.addSource(GeoJsonSource(SOURCE_PINS))
             loaded.addSource(GeoJsonSource(SOURCE_FOCUS))
             loaded.addSource(GeoJsonSource(SOURCE_ME))
             loaded.addSource(GeoJsonSource(SOURCE_HOME))
 
-            // Neighbourhood shading goes *under* the street network rather than
-            // over it. Painted on top it washed the roads out — which is the
-            // one thing a village map has to show — so it is inserted beneath
-            // the first road or label layer the basemap defines.
-            val blockFill = FillLayer(LAYER_BLOCK_FILL, SOURCE_BLOCKS).withProperties(
-                PropertyFactory.fillColor(Expression.get("fill")),
-                PropertyFactory.fillOpacity(Expression.get("opacity")),
-            )
-            val anchor = loaded.firstRoadOrLabelLayerId()
-            if (anchor != null) loaded.addLayerBelow(blockFill, anchor) else loaded.addLayer(blockFill)
-            loaded.addLayer(
-                LineLayer(LAYER_BLOCK_LINE, SOURCE_BLOCKS).withProperties(
-                    PropertyFactory.lineColor(Expression.get("fill")),
-                    PropertyFactory.lineWidth(2.4f),
-                    PropertyFactory.lineOpacity(0.9f),
-                ),
-            )
-            loaded.addLayer(
-                SymbolLayer(LAYER_BLOCK_LABEL, SOURCE_BLOCKS).withProperties(
-                    PropertyFactory.iconImage(Expression.get("badge")),
-                    PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.textField(Expression.get("name")),
-                    PropertyFactory.textFont(arrayOf(MapStyles.LABEL_FONT)),
-                    PropertyFactory.textSize(11f),
-                    PropertyFactory.textOffset(arrayOf(0f, 1.4f)),
-                    PropertyFactory.textColor(if (dark) "#E4E6E4" else "#17211E"),
-                    PropertyFactory.textHaloColor(if (dark) "#10151A" else "#FFFFFF"),
-                    PropertyFactory.textHaloWidth(1.4f),
-                ),
-            )
             // The village's own copy of the street network, drawn over whatever
             // basemap is showing. On satellite and terrain there are no road
             // lines at all underneath, and finding a pothole on aerial imagery
@@ -586,8 +541,6 @@ private class VillageMapState {
 
     fun render(
         clusters: List<IssueCluster>,
-        blocks: List<BlockSummary>,
-        showBlocks: Boolean,
         pendingPin: GeoPoint?,
         greekLabels: Boolean,
         streetNames: Map<String, String>,
@@ -595,13 +548,12 @@ private class VillageMapState {
         myPosition: GeoPoint?,
         homePosition: GeoPoint?,
     ) {
-        // Cheap identity of the inputs. Clusters and summaries are rebuilt as
-        // new instances each time the view model emits, so their contents —
-        // not their references — decide whether anything actually moved.
+        // Cheap identity of the inputs. Clusters are rebuilt as new instances
+        // each time the view model emits, so their contents — not their
+        // references — decide whether anything actually moved.
         val signature = listOf(
             clusters.map { it.id to it.size },
-            blocks.map { it.block.id to it.openCount },
-            showBlocks, pendingPin, greekLabels, streetNames, focusedIssueId,
+            pendingPin, greekLabels, streetNames, focusedIssueId,
             myPosition, homePosition,
         ).hashCode()
         if (signature == lastRender && style != null) return
@@ -610,7 +562,6 @@ private class VillageMapState {
         val work = {
             val loaded = style
             if (loaded != null) {
-                renderBlocks(loaded, blocks, showBlocks, greekLabels)
                 renderRoadNames(loaded, streetNames)
                 renderPins(loaded, clusters, pendingPin)
                 renderFocus(loaded, clusters, focusedIssueId)
@@ -638,55 +589,6 @@ private class VillageMapState {
     /** Reloading a style discards its sources, so the last upload is void too. */
     fun invalidateRender() {
         lastRender = null
-    }
-
-    private fun renderBlocks(
-        style: Style,
-        blocks: List<BlockSummary>,
-        show: Boolean,
-        greekLabels: Boolean,
-    ) {
-        val source = style.getSourceAs<GeoJsonSource>(SOURCE_BLOCKS) ?: return
-        if (!show) {
-            source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
-            return
-        }
-
-        val features = blocks.map { summary ->
-            val tint = (summary.dominantCategory?.tint?.toArgb()) ?: 0xFF1F6F5C.toInt()
-            val badgeId = MapPins.blockBadgeId(summary.block.id, summary.openCount)
-            val density = metrics
-            if (density != null && registeredBadges.add(badgeId)) {
-                style.addImage(
-                    badgeId,
-                    MapPins.blockBadge(
-                        density,
-                        summary.openCount,
-                        if (summary.openCount > 0) tint else 0xFF77808B.toInt(),
-                    ),
-                )
-            }
-            val ring = listOf(
-                summary.block.polygon.map { Point.fromLngLat(it.lng, it.lat) } +
-                    listOfNotNull(
-                        summary.block.polygon.firstOrNull()
-                            ?.let { Point.fromLngLat(it.lng, it.lat) },
-                    ),
-            )
-            Feature.fromGeometry(Polygon.fromLngLats(ring)).apply {
-                addStringProperty("blockId", summary.block.id)
-                addStringProperty("name", summary.block.localizedName(greekLabels))
-                addStringProperty("badge", badgeId)
-                addStringProperty("fill", colorToHex(tint))
-                // Fill opacity scales with activity, so a busy neighbourhood is
-                // visible before you read any number — but a quiet one still has
-                // to be visible at all. At 4% it was not, which made turning the
-                // layer on and off look like a dead button in a village that has
-                // not been reported in yet.
-                addNumberProperty("opacity", if (summary.openCount > 0) 0.22 else 0.10)
-            }
-        }
-        source.setGeoJson(FeatureCollection.fromFeatures(features))
     }
 
     private fun renderPins(style: Style, clusters: List<IssueCluster>, pendingPin: GeoPoint?) {

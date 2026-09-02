@@ -19,7 +19,6 @@ administrator of the village app; contact details at the end.
 | First and last name | So neighbours know who wrote what | All signed-in residents |
 | Email address | To sign in | The resident, and the administrator |
 | Telephone number | Only if you enter one | **You and the administrator only** — see below |
-| Neighbourhood (block) | To group reports | All signed-in residents |
 | Profile photo | Optional | All signed-in residents |
 | Location of a report or alarm | To place it on the map | All signed-in residents |
 | Location of your own house | So an ambulance can be told where to come | **You alone.** Not even the administrator |

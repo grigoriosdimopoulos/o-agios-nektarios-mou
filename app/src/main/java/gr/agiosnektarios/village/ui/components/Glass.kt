@@ -1,6 +1,5 @@
 package gr.agiosnektarios.village.ui.components
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -12,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -105,14 +103,6 @@ fun ColorScheme.glassTint(): Color =
 private fun separatorColor(dark: Boolean): Color =
     if (dark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.12f)
 
-/**
- * A blur applied only where the platform can actually do it.
- *
- * `Modifier.blur` is a no-op below API 31 rather than an error, but calling it
- * unconditionally still costs a layer, so it is gated.
- */
-fun Modifier.glassBlur(radius: Dp = 24.dp): Modifier =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) blur(radius) else this
 
 /**
  * A scrim that fades content out under chrome instead of cutting it off.

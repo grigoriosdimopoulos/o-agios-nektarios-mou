@@ -170,8 +170,6 @@ class UnlookedTest {
         state = ProfileUiState(
             profile = admin,
             myIssues = emptyList(),
-            blockNameEl = "Κέντρο",
-            blockNameEn = "Centre",
             loading = false,
         ),
         onOpenIssue = {},
@@ -227,7 +225,6 @@ private val admin = UserProfile(
     lastName = "Αναγνωστόπουλος",
     email = "d@example.gr",
     address = "Μαραθώνος 12",
-    blockId = "block-01",
     role = Role.ADMIN.id,
 )
 

@@ -46,8 +46,6 @@
     <string name="last_name">Last name</string>
     <string name="phone">Phone number</string>
     <string name="address">Address in Agios Nektarios</string>
-    <string name="block">Neighbourhood</string>
-    <string name="block_select">Select your neighbourhood</string>
     <string name="continue_with_google">Continue with Google</string>
     <string name="or">or</string>
     <string name="forgot_password">Forgot password?</string>
@@ -82,10 +80,8 @@
     <string name="map_filter_statuses">Status</string>
     <string name="map_filter_clear">Clear all</string>
     <string name="map_legend">Legend</string>
-    <string name="map_blocks_layer">Show neighbourhoods</string>
     <string name="map_location_permission_rationale">Location access lets the app centre the map where you are. You can still report issues without it.</string>
     <string name="map_grouped_issues">%1$d similar reports here</string>
-    <string name="block_issue_count">%1$d open</string>
 
     <!-- Issue categories -->
     <string name="category_vegetation">Uncleaned vegetation</string>

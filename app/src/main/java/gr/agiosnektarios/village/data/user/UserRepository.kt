@@ -58,7 +58,6 @@ class UserRepository @Inject constructor(
         email: String,
         phone: String,
         address: String,
-        blockId: String,
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             val payload = mapOf(
@@ -68,7 +67,6 @@ class UserRepository @Inject constructor(
                 "email" to email.trim(),
                 "phone" to phone.trim(),
                 "address" to address.trim(),
-                "blockId" to blockId,
                 "role" to Role.USER.id,
                 "disabled" to false,
                 "notificationPrefs" to NotificationPrefs().toMap(),
@@ -95,7 +93,6 @@ class UserRepository @Inject constructor(
         lastName: String,
         phone: String,
         address: String,
-        blockId: String,
     ): Result<Unit> = withContext(io) {
         runCatchingUnit {
             users.document(userId).update(
@@ -105,7 +102,6 @@ class UserRepository @Inject constructor(
                     "nameLower" to "${firstName.trim()} ${lastName.trim()}".lowercase(),
                     "phone" to phone.trim(),
                     "address" to address.trim(),
-                    "blockId" to blockId,
                     "updatedAt" to FieldValue.serverTimestamp(),
                 ),
             ).let { task -> withTimeoutOrNull(SERVER_ACK_MS) { task.await() } }

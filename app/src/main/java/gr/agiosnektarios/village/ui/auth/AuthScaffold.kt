@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.ui.theme.primaryInk
 import gr.agiosnektarios.village.ui.theme.reducedMotion
-import gr.agiosnektarios.village.ui.components.glassBlur
 
 /**
  * Shared chrome for the authentication screens: a slow-drifting pair of colour
@@ -145,17 +144,28 @@ private fun AmbientBlob(
                 start = (alignmentBias * 40).dp,
                 bottom = (alignmentBias * 60).dp,
             )
-            .size(260.dp)
-            // A heavy blur turns a flat circle into soft light; cheaper and far
-            // more forgiving across densities than a hand-tuned radial gradient.
-            // Gated like every other blur in the app — below API 31 it is a
-            // no-op that still costs a layer, and the gradient underneath is
-            // what those devices see.
-            .glassBlur(90.dp)
+            .size(340.dp)
+            // No blur here, deliberately.
+            //
+            // It used to run the circle through a 90dp `blur`, whose default
+            // edge treatment clips the result to the composable's rectangle.
+            // A 260dp circle blurred by 90dp spills well past that box, so the
+            // spill was cut off square and the sign-in screen — the first thing
+            // anyone sees — carried a hard-edged grey slab across its lower
+            // half. It drifted, so the slab drifted with it.
+            //
+            // Paparazzi renders `blur` as a no-op, so no golden could ever have
+            // shown this. The radial gradient alone was already what every
+            // device below API 31 saw; it is soft by construction, identical on
+            // every device, and a snapshot test can actually see it.
             .clip(CircleShape)
             .background(
                 Brush.radialGradient(
-                    listOf(color.copy(alpha = 0.28f), color.copy(alpha = 0f)),
+                    listOf(
+                        color.copy(alpha = 0.26f),
+                        color.copy(alpha = 0.10f),
+                        color.copy(alpha = 0f),
+                    ),
                 ),
             ),
     )

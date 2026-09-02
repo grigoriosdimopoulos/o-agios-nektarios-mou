@@ -7,7 +7,6 @@ import gr.agiosnektarios.village.core.geo.GeoPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.core.geo.IssueCluster
 import gr.agiosnektarios.village.core.geo.IssueClustering
-import gr.agiosnektarios.village.core.model.BlockSummary
 import gr.agiosnektarios.village.core.model.Issue
 import gr.agiosnektarios.village.core.model.IssueCategory
 import gr.agiosnektarios.village.core.model.IssueStatus
@@ -19,7 +18,6 @@ import gr.agiosnektarios.village.data.session.SessionRepository
 import gr.agiosnektarios.village.data.settings.AppSettings
 import gr.agiosnektarios.village.data.settings.SettingsRepository
 import gr.agiosnektarios.village.data.village.StreetNameRepository
-import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,15 +44,12 @@ data class MapFilters(
 
 data class MapUiState(
     val clusters: List<IssueCluster> = emptyList(),
-    val blocks: List<BlockSummary> = emptyList(),
     val filters: MapFilters = MapFilters(),
-    val showBlocks: Boolean = true,
     val basemap: MapBasemap = MapBasemap.STREETS,
     val loading: Boolean = true,
     val placingPin: Boolean = false,
     val pendingPin: GeoPoint? = null,
     val selectedCluster: IssueCluster? = null,
-    val selectedBlock: BlockSummary? = null,
     /** Way id to street name, for the map's labels. */
     val streetNames: Map<String, String> = emptyMap(),
     /** The street whose naming sheet is open, if any. */
@@ -91,7 +86,6 @@ data class SelectedStreet(
 class MapViewModel @Inject constructor(
     private val featureRepository: FeatureRepository,
     private val issueRepository: IssueRepository,
-    private val blockRepository: VillageBlockRepository,
     private val settingsRepository: SettingsRepository,
     private val streetNameRepository: StreetNameRepository,
     private val sessionRepository: SessionRepository,
@@ -108,15 +102,6 @@ class MapViewModel @Inject constructor(
     private val errors = MutableStateFlow<String?>(null)
 
     private val issues: StateFlow<List<Issue>> = issueRepository.observeIssues()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    /**
-     * Neighbourhood tallies are computed off the *unfiltered* set on purpose: a
-     * block badge should say how many open reports the neighbourhood really
-     * has, not how many survive the current filter.
-     */
-    private val blockSummaries: StateFlow<List<BlockSummary>> = issues
-        .map { blockRepository.summarize(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val streets: StateFlow<List<StreetName>> =
@@ -159,7 +144,6 @@ class MapViewModel @Inject constructor(
 
     val uiState: StateFlow<MapUiState> = combine(
         issues,
-        blockSummaries,
         filters,
         zoom,
         combine(
@@ -170,16 +154,14 @@ class MapViewModel @Inject constructor(
             errors,
             ::MapContext,
         ),
-    ) { allIssues, blocks, activeFilters, currentZoom, context ->
+    ) { allIssues, activeFilters, currentZoom, context ->
         val visible = allIssues.filter(activeFilters::matches)
         val clusters = IssueClustering.cluster(visible, currentZoom)
         val interactionState = context.interaction
         val byWay = context.streets.associateBy { it.wayId }
         MapUiState(
             clusters = clusters,
-            blocks = blocks,
             filters = activeFilters,
-            showBlocks = context.settings.showBlocksLayer,
             basemap = context.settings.basemap,
             loading = false,
             placingPin = interactionState.placingPin,
@@ -190,9 +172,6 @@ class MapViewModel @Inject constructor(
             // report inside it changes, instead of showing a frozen snapshot.
             selectedCluster = interactionState.selectedClusterId?.let { id ->
                 clusters.firstOrNull { it.id == id }
-            },
-            selectedBlock = interactionState.selectedBlockId?.let { id ->
-                blocks.firstOrNull { it.block.id == id }
             },
             streetNames = byWay.values
                 .filter { it.name.isNotBlank() }
@@ -265,15 +244,8 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setBasemap(basemap) }
     }
 
-    fun toggleBlocksLayer() {
-        viewModelScope.launch {
-            val current = uiState.value.showBlocks
-            settingsRepository.setShowBlocksLayer(!current)
-        }
-    }
-
     fun startPlacingPin() = interaction.update {
-        it.copy(placingPin = true, selectedClusterId = null, selectedBlockId = null)
+        it.copy(placingPin = true, selectedClusterId = null)
     }
 
     fun cancelPlacingPin() = interaction.update { it.copy(placingPin = false, pendingPin = null) }
@@ -284,13 +256,10 @@ class MapViewModel @Inject constructor(
     }
 
     fun selectCluster(cluster: IssueCluster) =
-        interaction.update { it.copy(selectedClusterId = cluster.id, selectedBlockId = null) }
-
-    fun selectBlock(blockId: String) =
-        interaction.update { it.copy(selectedBlockId = blockId, selectedClusterId = null) }
+        interaction.update { it.copy(selectedClusterId = cluster.id) }
 
     fun dismissSheets() = interaction.update {
-        it.copy(selectedClusterId = null, selectedBlockId = null, selectedWayId = null)
+        it.copy(selectedClusterId = null, selectedWayId = null)
     }
 
     // ------------------------------------------------------------ street names
@@ -302,7 +271,7 @@ class MapViewModel @Inject constructor(
      * one way in the whole settlement — so this is where the names come from.
      */
     fun selectStreet(wayId: String) = interaction.update {
-        it.copy(selectedWayId = wayId, selectedClusterId = null, selectedBlockId = null)
+        it.copy(selectedWayId = wayId, selectedClusterId = null)
     }
 
     fun dismissStreetSheet() = interaction.update { it.copy(selectedWayId = null) }
@@ -346,7 +315,6 @@ class MapViewModel @Inject constructor(
         val placingPin: Boolean = false,
         val pendingPin: GeoPoint? = null,
         val selectedClusterId: String? = null,
-        val selectedBlockId: String? = null,
         val selectedWayId: String? = null,
         /**
          * Where the phone last said it was.

@@ -240,8 +240,6 @@ private fun Profile() = ProfileContent(
     state = ProfileUiState(
         profile = me,
         myIssues = sampleIssues.take(3),
-        blockNameEl = "Κέντρο",
-        blockNameEn = "Centre",
         loading = false,
     ),
     onOpenIssue = {},
@@ -256,7 +254,6 @@ private val me = UserProfile(
     firstName = "Γρηγόρης",
     lastName = "Δημόπουλος",
     email = "g@example.gr",
-    blockId = "block-01",
     role = Role.USER.id,
 )
 

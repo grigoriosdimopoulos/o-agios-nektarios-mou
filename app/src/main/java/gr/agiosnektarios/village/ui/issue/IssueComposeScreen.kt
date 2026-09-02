@@ -182,23 +182,10 @@ fun IssueComposeScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.issue_location_label),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    val blockName = if (greek) state.blockNameEl else state.blockNameEn
-                    if (blockName.isNotBlank()) {
-                        Text(
-                            text = blockName,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primaryInk,
-                        )
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.issue_location_label),
+                    style = MaterialTheme.typography.titleSmall,
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -206,12 +193,10 @@ fun IssueComposeScreen(
                         .clip(MaterialTheme.shapes.medium),
                 ) {
                     // The same map component as the main screen, with no
-                    // neighbourhoods or clusters — just the one pin being placed.
+                    // clusters — just the one pin being placed.
                     VillageMap(
                         modifier = Modifier.fillMaxSize(),
                         clusters = emptyList(),
-                        blocks = emptyList(),
-                        showBlocks = false,
                         pendingPin = state.position,
                         darkTheme = LocalIsDarkTheme.current,
                         basemap = MapBasemap.STREETS,
@@ -232,7 +217,6 @@ fun IssueComposeScreen(
                         },
                         onMapTap = viewModel::setPosition,
                         onClusterTap = {},
-                        onBlockTap = {},
                         onRoadTap = {},
                         onZoomChanged = {},
                     )

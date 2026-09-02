@@ -55,7 +55,6 @@ data class AppSettings(
     val notifyVotes: Boolean = true,
     val notifyAnnouncements: Boolean = true,
     val notifyChat: Boolean = true,
-    val showBlocksLayer: Boolean = true,
     val basemap: MapBasemap = MapBasemap.STREETS,
     val hasSeenOnboarding: Boolean = false,
     /**
@@ -101,7 +100,6 @@ class SettingsRepository @Inject constructor(
         val NOTIFY_VOTES = booleanPreferencesKey("notify_votes")
         val NOTIFY_ANNOUNCEMENTS = booleanPreferencesKey("notify_announcements")
         val NOTIFY_CHAT = booleanPreferencesKey("notify_chat")
-        val BLOCKS_LAYER = booleanPreferencesKey("blocks_layer")
         val BASEMAP = stringPreferencesKey("basemap")
         val ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
         val STREET_HINT = booleanPreferencesKey("has_seen_street_hint")
@@ -121,7 +119,6 @@ class SettingsRepository @Inject constructor(
                 notifyVotes = prefs[Keys.NOTIFY_VOTES] ?: true,
                 notifyAnnouncements = prefs[Keys.NOTIFY_ANNOUNCEMENTS] ?: true,
                 notifyChat = prefs[Keys.NOTIFY_CHAT] ?: true,
-                showBlocksLayer = prefs[Keys.BLOCKS_LAYER] ?: true,
                 basemap = MapBasemap.fromId(prefs[Keys.BASEMAP]),
                 hasSeenOnboarding = prefs[Keys.ONBOARDING] ?: false,
                 hasSeenStreetHint = prefs[Keys.STREET_HINT] ?: false,
@@ -134,7 +131,6 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setLanguage(language: AppLanguage) = edit { it[Keys.LANGUAGE] = language.id }
 
-    suspend fun setShowBlocksLayer(show: Boolean) = edit { it[Keys.BLOCKS_LAYER] = show }
 
     suspend fun setBasemap(basemap: MapBasemap) = edit { it[Keys.BASEMAP] = basemap.id }
 

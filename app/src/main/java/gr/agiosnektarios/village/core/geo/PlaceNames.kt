@@ -1,6 +1,5 @@
 package gr.agiosnektarios.village.core.geo
 
-import gr.agiosnektarios.village.core.model.VillageBlock
 import kotlin.math.max
 import kotlin.math.min
 
@@ -14,11 +13,10 @@ import kotlin.math.min
  * idea at all.
  *
  * There is no public dataset to ask. OpenStreetMap names exactly one of this
- * settlement's eighty-two ways, so the answer is assembled from what the
- * village itself has: the neighbourhood polygons that ship with the app, and
- * whatever street names the residents have supplied through the map. When the
- * nearest street has no name yet, the neighbourhood alone is still a great deal
- * more than nothing.
+ * settlement's eighty-two ways, so the answer comes from the only source that
+ * knows: the street names the residents supply through the map. A point with no
+ * named road within [ON_STREET_METRES] has no name yet, and says so, rather
+ * than being given a vaguer one that sounds like an answer.
  */
 object PlaceNames {
 
@@ -26,8 +24,8 @@ object PlaceNames {
      * How close a point has to be to a way before it counts as "on" it.
      *
      * Wide enough that a report pinned on a house is still attributed to the
-     * road it faces, narrow enough that it does not reach across a block. The
-     * built-up area is about 1.2 km across with roads roughly every 60 m.
+     * road it faces, narrow enough that it does not reach the next street over.
+     * The built-up area is about 1.2 km across with roads roughly every 60 m.
      */
     const val ON_STREET_METRES = 35.0
 
@@ -35,28 +33,24 @@ object PlaceNames {
     data class Way(val wayId: String, val points: List<GeoPoint>)
 
     /**
-     * The nearest named way and the containing neighbourhood.
+     * The nearest named way, if a named one is close enough.
      *
-     * Both halves are optional and the caller decides how to phrase what came
-     * back, because the phrasing is different in Greek and English and belongs
-     * in resources rather than here.
+     * Optional, and the caller decides how to phrase what came back, because
+     * the phrasing differs between Greek and English and belongs in resources
+     * rather than here.
      */
     data class Place(
         val streetName: String?,
-        val block: VillageBlock?,
         val metresToStreet: Double?,
     ) {
-        val isKnown: Boolean get() = streetName != null || block != null
+        val isKnown: Boolean get() = streetName != null
     }
 
     fun describe(
         point: GeoPoint,
         ways: List<Way>,
         namesByWay: Map<String, String>,
-        blocks: List<VillageBlock>,
     ): Place {
-        val block = blocks.firstOrNull { isPointInPolygon(point, it.polygon) }
-
         var bestName: String? = null
         var bestDistance = Double.MAX_VALUE
         for (way in ways) {
@@ -69,9 +63,9 @@ object PlaceNames {
         }
 
         return if (bestName != null && bestDistance <= ON_STREET_METRES) {
-            Place(bestName, block, bestDistance)
+            Place(bestName, bestDistance)
         } else {
-            Place(null, block, null)
+            Place(null, null)
         }
     }
 
@@ -125,13 +119,11 @@ object PlaceNames {
 }
 
 /**
- * "Οδός Ελατιάς, Κέντρο", or the neighbourhood alone, or nothing at all.
+ * "Οδός Ελατιάς", or nothing at all.
  *
  * Greek only, and deliberately. This string is written onto the document and
  * read by whoever opens it, so it has to be one text rather than something each
- * phone renders in its own language — and the village's streets and
- * neighbourhoods have Greek names. An English "Centre" would be a translation
- * of a proper noun.
+ * phone renders in its own language — and the village's streets have Greek
+ * names. An English rendering would be a translation of a proper noun.
  */
-fun PlaceNames.Place?.label(): String =
-    listOfNotNull(this?.streetName, this?.block?.nameEl).joinToString(", ")
+fun PlaceNames.Place?.label(): String = this?.streetName.orEmpty()

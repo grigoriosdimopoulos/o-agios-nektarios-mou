@@ -215,7 +215,7 @@ class AlertViewModel @Inject constructor(
 
     private suspend fun describe(point: GeoPoint): String {
         val place = runCatching { placeNamer.describe(point) }.getOrNull() ?: return ""
-        return listOfNotNull(place.streetName, place.block?.nameEl).joinToString(", ")
+        return place.streetName.orEmpty()
     }
 
     fun send() {

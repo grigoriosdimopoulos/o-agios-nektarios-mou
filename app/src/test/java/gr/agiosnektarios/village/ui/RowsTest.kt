@@ -96,21 +96,21 @@ class RowsTest {
             ResidentRow(
                 profile = UserProfile(
                     id = "a", firstName = "Δημήτρης", lastName = "Αναγνωστόπουλος",
-                    email = "d@example.gr", blockId = "block-01", role = Role.ADMIN.id,
+                    email = "d@example.gr", role = Role.ADMIN.id,
                 ),
                 onClick = {},
             )
             ResidentRow(
                 profile = UserProfile(
                     id = "b", firstName = "Μαρία", lastName = "Καραγιάννη",
-                    email = "m@example.gr", blockId = "block-02", role = Role.MODERATOR.id,
+                    email = "m@example.gr", role = Role.MODERATOR.id,
                 ),
                 onClick = {},
             )
             ResidentRow(
                 profile = UserProfile(
                     id = "c", firstName = "Νίκος", lastName = "Παπαδόπουλος",
-                    email = "n@example.gr", blockId = "block-02", disabled = true,
+                    email = "n@example.gr", disabled = true,
                 ),
                 onClick = {},
             )

@@ -8,43 +8,75 @@ import org.junit.Test
 
 /**
  * Guards the one thing that made the app open on the wrong village: the map
- * configuration and the neighbourhood asset are two files that describe the
- * same place, and nothing stopped them describing different ones.
+ * configuration and the geometry asset are two files that describe the same
+ * place, and nothing stopped them describing different ones.
  *
- * The asset is read off the filesystem rather than through
- * `VillageBlockRepository`, which needs an Android `Context` for `assets`. The
- * point here is not the parsing — it is that the shipped numbers agree.
+ * It used to check the neighbourhood polygons. Those are gone, so it checks the
+ * road network instead — the same guard over the only geometry left, rather
+ * than a deleted test and an asset nobody is checking any more.
+ *
+ * The asset is read off the filesystem rather than through `RoadRepository`,
+ * which needs an Android `Context` for `assets`. The point here is not the
+ * parsing — it is that the shipped numbers agree.
  */
 class VillageGeographyTest {
 
-    private val asset = File("src/main/assets/village_blocks.json")
+    private val asset = File("src/main/assets/village_roads.json")
 
+    /**
+     * Every vertex in the road network, as GeoJSON [lng, lat] pairs.
+     *
+     * GeoJSON puts longitude first. Reading them the other way round would put
+     * this village in the Indian Ocean and every assertion below would pass or
+     * fail for the wrong reason, so the order is spelled out here rather than
+     * assumed.
+     */
     private val coordinates: List<GeoPoint> by lazy {
         val text = asset.readText()
-        // The file is a fixed shape this project generates, so a pair of
-        // regexes is honest here — a JSON parser would only be ceremony, and
-        // org.json is not on the JVM test classpath anyway.
-        val lats = Regex("\"lat\"\\s*:\\s*(-?[0-9.]+)").findAll(text)
-            .map { it.groupValues[1].toDouble() }.toList()
-        val lngs = Regex("\"lng\"\\s*:\\s*(-?[0-9.]+)").findAll(text)
-            .map { it.groupValues[1].toDouble() }.toList()
-        assertEquals("every lat should be paired with an lng", lats.size, lngs.size)
-        lats.zip(lngs) { lat, lng -> GeoPoint(lat, lng) }
+        // The file is a fixed shape this project generates, so a regex is
+        // honest here — org.json is not on the JVM test classpath.
+        val pairs = Regex("\\[\\s*(-?[0-9.]+)\\s*,\\s*(-?[0-9.]+)\\s*]")
+            .findAll(text)
+            .map { GeoPoint(it.groupValues[2].toDouble(), it.groupValues[1].toDouble()) }
+            .toList()
+        assertTrue("no coordinate pairs parsed from ${asset.path}", pairs.isNotEmpty())
+        pairs
     }
 
     @Test
-    fun `neighbourhood asset exists and has vertices`() {
+    fun `road asset exists and has vertices`() {
         assertTrue("missing ${asset.path}", asset.isFile)
         assertTrue("no coordinates parsed", coordinates.isNotEmpty())
     }
 
+    /**
+     * The road network has to *be* this village — not every metre of it inside
+     * the camera fence.
+     *
+     * Demanding that was the first thing I wrote and it failed honestly: the
+     * road in from Vilia runs east out of the settlement, and 200-odd of its
+     * vertices are legitimately outside BOUNDS because BOUNDS is where the
+     * camera may travel, not where tarmac stops. What actually needs guarding
+     * is the thing that once shipped broken — an asset describing somewhere
+     * else — so this checks the network is centred on the village and that most
+     * of it is inside the fence.
+     */
     @Test
-    fun `every neighbourhood vertex lies inside the camera bounds`() {
-        val stray = coordinates.filterNot { it in VillageConfig.BOUNDS }
+    fun `the road network is this village`() {
+        val inside = coordinates.count { it in VillageConfig.BOUNDS }
         assertTrue(
-            "these vertices fall outside VillageConfig.BOUNDS, so the blocks would " +
-                "draw somewhere the camera cannot go: $stray",
-            stray.isEmpty(),
+            "only $inside of ${coordinates.size} road vertices are inside " +
+                "VillageConfig.BOUNDS — this asset is probably another place",
+            inside > coordinates.size / 2,
+        )
+        val centre = GeoPoint(
+            coordinates.sumOf { it.lat } / coordinates.size,
+            coordinates.sumOf { it.lng } / coordinates.size,
+        )
+        assertTrue(
+            "the road network is centred on $centre, outside " +
+                "VillageConfig.BUILT_UP ${VillageConfig.BUILT_UP}",
+            centre in VillageConfig.BUILT_UP,
         )
     }
 
@@ -69,10 +101,11 @@ class VillageGeographyTest {
     }
 
     @Test
-    fun `block ids are unique`() {
-        val ids = Regex("\"id\"\\s*:\\s*\"([^\"]+)\"").findAll(asset.readText())
+    fun `way ids are unique`() {
+        val ids = Regex("\"wayId\"\\s*:\\s*\"([^\"]+)\"").findAll(asset.readText())
             .map { it.groupValues[1] }.toList()
-        assertEquals("duplicate block ids", ids.size, ids.distinct().size)
+        assertTrue("no wayId found in ${asset.path}", ids.isNotEmpty())
+        assertEquals("duplicate way ids", ids.size, ids.distinct().size)
     }
 
     /**

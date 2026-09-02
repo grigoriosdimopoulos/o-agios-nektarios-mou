@@ -19,7 +19,6 @@ import gr.agiosnektarios.village.data.media.ImageCodec
 import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.core.geo.label
 import gr.agiosnektarios.village.data.session.SessionRepository
-import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,9 +32,6 @@ data class IssueComposeUiState(
     val description: String = "",
     val category: IssueCategory? = null,
     val position: GeoPoint? = null,
-    /** Both languages, since the view model has no business knowing the locale. */
-    val blockNameEl: String = "",
-    val blockNameEn: String = "",
     /** Photos already saved with the report, shown so they can be removed. */
     val existingPhotos: List<IssuePhoto> = emptyList(),
     /** Newly picked photos, already encoded and waiting to be written. */
@@ -63,7 +59,6 @@ class IssueComposeViewModel @Inject constructor(
     private val issueRepository: IssueRepository,
     private val imageCodec: ImageCodec,
     private val placeNamer: gr.agiosnektarios.village.data.village.PlaceNamer,
-    private val blockRepository: VillageBlockRepository,
     private val sessionRepository: SessionRepository,
     private val messages: UserMessages,
 ) : ViewModel() {
@@ -108,7 +103,6 @@ class IssueComposeViewModel @Inject constructor(
                     thumbnail = issue.thumbnail?.toBytes(),
                 )
             }
-            refreshBlockName(GeoPoint(issue.lat, issue.lng))
         }
     }
 
@@ -124,20 +118,7 @@ class IssueComposeViewModel @Inject constructor(
 
     fun setPosition(position: GeoPoint) {
         _uiState.update { it.copy(position = position, locationError = null) }
-        refreshBlockName(position)
         refreshSimilarNearby()
-    }
-
-    private fun refreshBlockName(position: GeoPoint) {
-        viewModelScope.launch {
-            val block = blockRepository.blockAt(position)
-            _uiState.update {
-                it.copy(
-                    blockNameEl = block?.nameEl.orEmpty(),
-                    blockNameEn = block?.nameEn.orEmpty(),
-                )
-            }
-        }
     }
 
     /**
@@ -230,14 +211,12 @@ class IssueComposeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(saving = true, errorMessage = null) }
             val position = state.position!!
-            val block = blockRepository.blockAt(position)
             val place = runCatching { placeNamer.describe(position) }.getOrNull()
             val draft = IssueDraft(
                 title = state.title,
                 description = state.description,
                 category = state.category!!,
                 position = position,
-                blockId = block?.id.orEmpty(),
                 placeLabel = place.label(),
                 photos = state.newPhotos,
                 thumbnail = state.thumbnail,

@@ -13,7 +13,6 @@ import gr.agiosnektarios.village.data.media.ImageCodec
 import gr.agiosnektarios.village.data.media.ImageSpec
 import gr.agiosnektarios.village.core.geo.label
 import gr.agiosnektarios.village.data.session.SessionRepository
-import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -92,7 +91,6 @@ private fun ByteArray?.contentEqualsOrNull(other: ByteArray?): Boolean =
 class QuickReportViewModel @Inject constructor(
     private val issueRepository: IssueRepository,
     private val placeNamer: gr.agiosnektarios.village.data.village.PlaceNamer,
-    private val blockRepository: VillageBlockRepository,
     private val sessionRepository: SessionRepository,
     private val locationProvider: LocationProvider,
     private val imageCodec: ImageCodec,
@@ -173,7 +171,6 @@ class QuickReportViewModel @Inject constructor(
 
         _uiState.update { it.copy(submitting = true, errorMessage = null) }
         viewModelScope.launch {
-            val block = blockRepository.blockAt(position)
             val place = runCatching { placeNamer.describe(position) }.getOrNull()
             val trimmed = state.text.trim()
             issueRepository.createIssue(
@@ -186,7 +183,6 @@ class QuickReportViewModel @Inject constructor(
                     description = trimmed.substringAfter('\n', "").trim(),
                     category = state.category,
                     position = position,
-                    blockId = block?.id.orEmpty(),
                     placeLabel = place.label(),
                     photos = listOfNotNull(state.photo),
                     thumbnail = state.thumbnail,

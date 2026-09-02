@@ -25,7 +25,6 @@ data class Issue(
     val lng: Double = 0.0,
     /** Geohash prefix used for the cheap "same area" query before precise filtering. */
     val geohash: String = "",
-    val blockId: String = "",
     /**
      * Where this is, in the village's own words: "Οδός Ελατιάς, Κέντρο".
      *

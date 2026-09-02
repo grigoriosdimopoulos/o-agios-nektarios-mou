@@ -40,8 +40,6 @@
     <string name="last_name">Επώνυμο</string>
     <string name="phone">Τηλέφωνο</string>
     <string name="address">Διεύθυνση στον Άγιο Νεκτάριο</string>
-    <string name="block">Γειτονιά</string>
-    <string name="block_select">Επιλέξτε γειτονιά</string>
     <string name="continue_with_google">Συνέχεια με Google</string>
     <string name="or">ή</string>
     <string name="forgot_password">Ξεχάσατε τον κωδικό;</string>
@@ -74,10 +72,8 @@
     <string name="map_filter_statuses">Κατάσταση</string>
     <string name="map_filter_clear">Καθαρισμός</string>
     <string name="map_legend">Υπόμνημα</string>
-    <string name="map_blocks_layer">Εμφάνιση γειτονιών</string>
     <string name="map_location_permission_rationale">Η πρόσβαση στην τοποθεσία κεντράρει τον χάρτη εκεί που βρίσκεστε. Μπορείτε να αναφέρετε και χωρίς αυτήν.</string>
     <string name="map_grouped_issues">%1$d παρόμοιες αναφορές εδώ</string>
-    <string name="block_issue_count">%1$d ανοιχτές</string>
 
     <string name="category_vegetation">Ακαθάριστη βλάστηση</string>
     <string name="category_road">Χαλασμένος δρόμος</string>

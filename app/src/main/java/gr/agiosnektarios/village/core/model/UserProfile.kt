@@ -18,7 +18,6 @@ data class UserProfile(
     val email: String = "",
     val phone: String = "",
     val address: String = "",
-    val blockId: String = "",
     /**
      * The resident's own picture, as JPEG bytes.
      *

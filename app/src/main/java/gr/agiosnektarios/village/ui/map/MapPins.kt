@@ -92,48 +92,4 @@ object MapPins {
 
         return bitmap
     }
-
-    /**
-     * The badge floating over a neighbourhood.
-     *
-     * Drawn per block because the number is baked in — there are a dozen of
-     * them and they change only when a report is filed, so the cost is
-     * irrelevant and the result is crisper than layered text.
-     */
-    fun blockBadge(metrics: DisplayMetrics, openCount: Int, tint: Int): Bitmap {
-        val density = metrics.density
-        val diameter = ((if (openCount > 9) 30 else 26) * density).toInt().coerceAtLeast(1)
-        val bitmap = Bitmap.createBitmap(diameter, diameter, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val center = diameter / 2f
-
-        canvas.drawCircle(
-            center,
-            center,
-            center - density,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tint },
-        )
-        canvas.drawCircle(
-            center,
-            center,
-            center - density,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = 1.5f * density
-                color = 0xFFFFFFFF.toInt()
-            },
-        )
-
-        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFFFFFFFF.toInt()
-            textSize = 13f * density
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        val label = if (openCount > 99) "99+" else openCount.toString()
-        canvas.drawText(label, center, center - (text.descent() + text.ascent()) / 2f, text)
-        return bitmap
-    }
-
-    fun blockBadgeId(blockId: String, openCount: Int): String = "block-$blockId-$openCount"
 }

@@ -169,16 +169,13 @@ fun MapScreen(
     // for about a second first.
     LaunchedEffect(Unit) { alertViewModel.cardErrors.collect(showSnackbar) }
 
-    // The camera is only pushed at the map when a neighbourhood is opened;
-    // otherwise the map owns its own position and nothing here fights it.
-    val focusBounds = state.selectedBlock?.block?.bounds
+    // Nothing pushes the camera any more: the map owns its own position.
+    val focusBounds = null
 
     Box(modifier = Modifier.fillMaxSize()) {
         VillageMap(
             modifier = Modifier.fillMaxSize(),
             clusters = state.clusters,
-            blocks = state.blocks,
-            showBlocks = state.showBlocks,
             pendingPin = state.pendingPin,
             darkTheme = darkTheme,
             basemap = state.basemap,
@@ -201,7 +198,6 @@ fun MapScreen(
                     else -> viewModel.selectCluster(cluster)
                 }
             },
-            onBlockTap = viewModel::selectBlock,
             onRoadTap = viewModel::selectStreet,
         )
 
@@ -285,7 +281,6 @@ fun MapScreen(
         MapOverlay(
             state = state,
             onToggleFilters = { showFilters = true },
-            onToggleBlocks = viewModel::toggleBlocksLayer,
             onSelectBasemap = viewModel::setBasemap,
             onCancelPlacing = {
                 viewModel.cancelPlacingPin()
@@ -480,52 +475,6 @@ fun MapScreen(
         }
     }
 
-    state.selectedBlock?.let { summary ->
-        // Framing the neighbourhood is driven by focusBounds above, so the
-        // numbers in this sheet and the area on the map always agree.
-        val sheetState = rememberModalBottomSheetState()
-        ModalBottomSheet(onDismissRequest = viewModel::dismissSheets, sheetState = sheetState) {
-            Column(modifier = Modifier.padding(horizontal = Space.page).padding(bottom = 24.dp)) {
-                Text(
-                    text = summary.block.localizedName(greek),
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Text(
-                    text = stringResource(R.string.block_issue_count, summary.openCount),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-                )
-                val blockIssues = state.clusters
-                    .flatMap { it.issues }
-                    .filter { issue ->
-                        gr.agiosnektarios.village.core.geo.isPointInPolygon(
-                            GeoPoint(issue.lat, issue.lng),
-                            summary.block.polygon,
-                        )
-                    }
-                if (blockIssues.isEmpty()) {
-                    EmptyState(emoji = "🌤️", title = stringResource(R.string.issues_empty))
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 420.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(blockIssues, key = { it.id }) { issue ->
-                            IssueRow(
-                                issue = issue,
-                                onClick = {
-                                    viewModel.dismissSheets()
-                                    onOpenIssue(issue.id)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     // Tapping a road opens nothing when the village has switched naming off.
     // The names already agreed stay on the map: switching a feature off stops
     // it being used, it does not delete what the village has already decided.
@@ -650,7 +599,6 @@ private fun MapOverlay(
     weatherOnMap: Boolean,
     onToggleWeather: () -> Unit,
     onToggleFilters: () -> Unit,
-    onToggleBlocks: () -> Unit,
     onSelectBasemap: (MapBasemap) -> Unit,
     onCancelPlacing: () -> Unit,
     onConfirmPlacement: (GeoPoint) -> Unit,
@@ -686,20 +634,12 @@ private fun MapOverlay(
                 ControlDivider()
                 BasemapButton(current = state.basemap, onSelect = onSelectBasemap)
                 ControlDivider()
-                MapControl(
-                    icon = Icons.Filled.Layers,
-                    contentDescription = stringResource(R.string.map_blocks_layer),
-                    active = state.showBlocks,
-                    onClick = onToggleBlocks,
-                )
-                ControlDivider()
                 // The weather layer, beside the other layer switches.
                 //
                 // It used to live only at the bottom of the weather sheet,
                 // behind the chip in the drawer — three deliberate steps from
                 // the map, which is three too many for something whose whole
-                // point is to be looked at. This is where a resident already
-                // goes to turn the neighbourhoods on and off.
+                // point is to be looked at.
                 MapControl(
                     icon = Icons.Filled.Air,
                     contentDescription = stringResource(R.string.weather_animate),

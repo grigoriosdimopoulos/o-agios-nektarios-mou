@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
-import gr.agiosnektarios.village.ui.components.BlockDropdown
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.VillageTextField
 
@@ -64,12 +63,6 @@ fun CompleteProfileScreen(
                 label = stringResource(R.string.address),
                 error = state.addressError?.let { stringResource(it) },
                 imeAction = ImeAction.Done,
-            )
-            BlockDropdown(
-                blocks = state.blocks,
-                selectedBlockId = state.blockId,
-                onSelect = viewModel::onBlock,
-                modifier = Modifier.fillMaxWidth(),
             )
 
             AuthErrorText(message = state.errorMessage)

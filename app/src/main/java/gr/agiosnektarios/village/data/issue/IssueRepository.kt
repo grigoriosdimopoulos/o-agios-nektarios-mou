@@ -50,7 +50,6 @@ data class IssueDraft(
     val description: String,
     val category: IssueCategory,
     val position: GeoPoint,
-    val blockId: String,
     /** Where it is in words, worked out by PlaceNamer before the draft is sent. */
     val placeLabel: String = "",
     val photos: List<ByteArray> = emptyList(),
@@ -237,7 +236,6 @@ class IssueRepository @Inject constructor(
                         "lat" to draft.position.lat,
                         "lng" to draft.position.lng,
                         "geohash" to geohash(draft.position.lat, draft.position.lng),
-                        "blockId" to draft.blockId,
                         "placeLabel" to draft.placeLabel,
                         "photoCount" to draft.photos.size,
                         "thumbnail" to draft.thumbnail?.let(Blob::fromBytes),
@@ -321,7 +319,6 @@ class IssueRepository @Inject constructor(
                     "lat" to draft.position.lat,
                     "lng" to draft.position.lng,
                     "geohash" to geohash(draft.position.lat, draft.position.lng),
-                    "blockId" to draft.blockId,
                     "photoCount" to keptPhotoCount + draft.photos.size,
                     "thumbnail" to draft.thumbnail?.let(Blob::fromBytes),
                     "updatedAt" to FieldValue.serverTimestamp(),

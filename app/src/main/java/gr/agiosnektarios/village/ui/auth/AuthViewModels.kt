@@ -6,14 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import gr.agiosnektarios.village.R
-import gr.agiosnektarios.village.core.model.VillageBlock
 import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.auth.GoogleCredentialClient
 import gr.agiosnektarios.village.data.auth.GoogleSignInCancelled
 import gr.agiosnektarios.village.data.auth.GoogleSignInUnavailable
 import gr.agiosnektarios.village.data.user.UserRepository
-import gr.agiosnektarios.village.data.village.VillageBlockRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -111,11 +109,9 @@ data class SignUpUiState(
     val email: String = "",
     val phone: String = "",
     val address: String = "",
-    val blockId: String = "",
     val password: String = "",
     val passwordConfirmation: String = "",
     val acceptedTerms: Boolean = false,
-    val blocks: List<VillageBlock> = emptyList(),
     @StringRes val firstNameError: Int? = null,
     @StringRes val lastNameError: Int? = null,
     @StringRes val emailError: Int? = null,
@@ -132,24 +128,16 @@ data class SignUpUiState(
 class SignUpViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val blockRepository: VillageBlockRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState: StateFlow<SignUpUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            _uiState.update { it.copy(blocks = blockRepository.blocks()) }
-        }
-    }
 
     fun onFirstName(value: String) = _uiState.update { it.copy(firstName = value, firstNameError = null) }
     fun onLastName(value: String) = _uiState.update { it.copy(lastName = value, lastNameError = null) }
     fun onEmail(value: String) = _uiState.update { it.copy(email = value, emailError = null) }
     fun onPhone(value: String) = _uiState.update { it.copy(phone = value, phoneError = null) }
     fun onAddress(value: String) = _uiState.update { it.copy(address = value, addressError = null) }
-    fun onBlock(blockId: String) = _uiState.update { it.copy(blockId = blockId) }
     fun onPassword(value: String) = _uiState.update { it.copy(password = value, passwordError = null) }
     fun onPasswordConfirmation(value: String) =
         _uiState.update { it.copy(passwordConfirmation = value, confirmationError = null) }
@@ -194,7 +182,6 @@ class SignUpViewModel @Inject constructor(
                         email = state.email,
                         phone = state.phone,
                         address = state.address,
-                        blockId = state.blockId,
                     ).exceptionOrNull()
                 },
                 onFailure = { it },
@@ -272,8 +259,6 @@ data class CompleteProfileUiState(
     val lastName: String = "",
     val phone: String = "",
     val address: String = "",
-    val blockId: String = "",
-    val blocks: List<VillageBlock> = emptyList(),
     @StringRes val firstNameError: Int? = null,
     @StringRes val lastNameError: Int? = null,
     @StringRes val phoneError: Int? = null,
@@ -293,7 +278,6 @@ data class CompleteProfileUiState(
 class CompleteProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val blockRepository: VillageBlockRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CompleteProfileUiState())
@@ -305,7 +289,6 @@ class CompleteProfileViewModel @Inject constructor(
             val parts = user?.displayName.orEmpty().trim().split(" ", limit = 2)
             _uiState.update {
                 it.copy(
-                    blocks = blockRepository.blocks(),
                     firstName = parts.getOrElse(0) { "" },
                     lastName = parts.getOrElse(1) { "" },
                 )
@@ -317,7 +300,6 @@ class CompleteProfileViewModel @Inject constructor(
     fun onLastName(value: String) = _uiState.update { it.copy(lastName = value, lastNameError = null) }
     fun onPhone(value: String) = _uiState.update { it.copy(phone = value, phoneError = null) }
     fun onAddress(value: String) = _uiState.update { it.copy(address = value, addressError = null) }
-    fun onBlock(blockId: String) = _uiState.update { it.copy(blockId = blockId) }
 
     fun submit() {
         val state = _uiState.value
@@ -348,7 +330,6 @@ class CompleteProfileViewModel @Inject constructor(
                 email = user.email.orEmpty(),
                 phone = state.phone,
                 address = state.address,
-                blockId = state.blockId,
             )
             _uiState.update {
                 it.copy(

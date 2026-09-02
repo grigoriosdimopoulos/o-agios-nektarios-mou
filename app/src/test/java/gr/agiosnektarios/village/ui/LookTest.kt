@@ -324,7 +324,7 @@ internal fun MapChrome() {
                 ControlDivider()
                 MapControl(
                     icon = Icons.Filled.Layers,
-                    contentDescription = "blocks",
+                    contentDescription = "layers",
                     active = false,
                     onClick = {},
                 )

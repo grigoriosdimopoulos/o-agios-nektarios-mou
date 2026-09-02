@@ -147,7 +147,7 @@ service cloud.firestore {
        * `private/home`, and this list is what stops the next such field from
        * being added without anyone noticing.
        *
-       * The last seven are not written by any current version. They are kept
+       * The last eight are not written by any current version. They are kept
        * because documents created by earlier ones still carry them, and an
        * update sends the whole document — drop a legacy key from this list and
        * every resident who signed up before it was removed stops being able to
@@ -157,14 +157,20 @@ service cloud.firestore {
        * project has them, and permanently locking that account out of its own
        * profile is not a trade worth making for a field the app no longer
        * writes.
+       *
+       * `blockId` is the newest of these. Neighbourhoods were removed from the
+       * app entirely, so nothing writes it any more — but every profile created
+       * before that still carries one, and deleting the key here would lock
+       * exactly the people who have been using the app the longest out of their
+       * own details.
        */
       function profileFieldsOnly() {
         return request.resource.data.keys().hasOnly([
           'firstName', 'lastName', 'nameLower', 'email', 'phone', 'address',
-          'blockId', 'avatar', 'role', 'disabled', 'fcmTokens',
+          'avatar', 'role', 'disabled', 'fcmTokens',
           'notificationPrefs', 'createdAt', 'updatedAt',
           'photoUrl', 'issueCount', 'resolvedCount', 'upvotesReceived',
-          'homeLat', 'homeLng', 'homePlace',
+          'homeLat', 'homeLng', 'homePlace', 'blockId',
         ]);
       }
 
