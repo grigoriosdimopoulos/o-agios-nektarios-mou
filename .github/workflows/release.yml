@@ -86,8 +86,63 @@ jobs:
             exit 1
           fi
           printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
-          python3 -c "import json,sys; json.load(open('app/google-services.json'))" \
-            || { echo "::error::GOOGLE_SERVICES_JSON is not valid JSON"; exit 1; }
+          python3 - <<'PY'
+          import json, sys
+
+          # Valid JSON was the only thing checked here, and that let a config
+          # through that builds, installs, opens — and cannot sign in with
+          # Google, which is a failure nobody sees until it is on a phone.
+          try:
+              cfg = json.load(open("app/google-services.json"))
+          except Exception as e:
+              print(f"::error::GOOGLE_SERVICES_JSON is not valid JSON: {e}")
+              sys.exit(1)
+
+          PKG = "gr.agiosnektarios.village"
+          clients = {
+              c["client_info"]["android_client_info"]["package_name"]: c
+              for c in cfg.get("client", [])
+          }
+          print("packages in config:", ", ".join(sorted(clients)) or "(none)")
+
+          missing = [p for p in (PKG, f"{PKG}.debug") if p not in clients]
+          if PKG not in clients:
+              print(f"::error::No client for {PKG}. This config is for another"
+                    " project, or the app was never registered.")
+              sys.exit(1)
+          if missing:
+              print(f"::warning::No client for {', '.join(missing)} — the"
+                    " sideload build will not reach Firebase.")
+
+          oauth = clients[PKG].get("oauth_client", [])
+          kinds = {o.get("client_type") for o in oauth}
+
+          # 3 is the web client. R.string.default_web_client_id is generated
+          # from it, so without one the build fails at compile time anyway —
+          # this just says why.
+          if 3 not in kinds:
+              print(f"::error::No web OAuth client (client_type 3) for {PKG}.")
+              sys.exit(1)
+
+          # 1 is an Android client, created when a SHA fingerprint is registered
+          # in Firebase. Nothing at runtime reads it — but its absence means
+          # this config was downloaded while no certificate was registered, and
+          # "Continue with Google" will fail on every device.
+          if 1 not in kinds:
+              print("::warning::No Android OAuth client (client_type 1) for"
+                    f" {PKG}. Either no SHA fingerprint is registered in"
+                    " Firebase for it, or GOOGLE_SERVICES_JSON was copied"
+                    " before one was added. Google sign-in will fail in this"
+                    " build. Add the app signing key SHA-1 from Play Console →"
+                    " App integrity, then download google-services.json again"
+                    " and update the secret.")
+          else:
+              hashes = [
+                  o.get("android_info", {}).get("certificate_hash", "")
+                  for o in oauth if o.get("client_type") == 1
+              ]
+              print("registered certificate hashes:", ", ".join(h for h in hashes if h))
+          PY
 
       # The upload key, decoded to a path outside the working tree so that no
       # step can commit it by accident and no artifact upload can sweep it up.
