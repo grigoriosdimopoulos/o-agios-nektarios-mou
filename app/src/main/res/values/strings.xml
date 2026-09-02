@@ -51,7 +51,7 @@
     <string name="forgot_password">Forgot password?</string>
     <string name="reset_password">Reset password</string>
     <string name="reset_password_subtitle">We will email you a link to set a new password.</string>
-    <string name="reset_password_sent">Reset link sent. Check your inbox.</string>
+    <string name="reset_password_sent">If an account exists for that address, the link has been sent. Check your spam folder too.\n\nIf you signed in with Google you have no password — sign in that way instead.</string>
     <string name="have_account">Already have an account? Sign in</string>
     <string name="no_account">New here? Create an account</string>
     <string name="accept_terms">I agree that my reports are visible to other residents.</string>

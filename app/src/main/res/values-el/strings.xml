@@ -45,7 +45,7 @@
     <string name="forgot_password">Ξεχάσατε τον κωδικό;</string>
     <string name="reset_password">Επαναφορά κωδικού</string>
     <string name="reset_password_subtitle">Θα σας στείλουμε email με σύνδεσμο για νέο κωδικό.</string>
-    <string name="reset_password_sent">Ο σύνδεσμος στάλθηκε. Ελέγξτε το email σας.</string>
+    <string name="reset_password_sent">Αν υπάρχει λογαριασμός με αυτή τη διεύθυνση, ο σύνδεσμος στάλθηκε. Κοιτάξτε και στα ανεπιθύμητα.\n\nΑν μπήκατε με «Συνέχεια με Google», δεν έχετε κωδικό — μπείτε ξανά από εκεί.</string>
     <string name="have_account">Έχετε ήδη λογαριασμό; Συνδεθείτε</string>
     <string name="no_account">Πρώτη φορά εδώ; Δημιουργήστε λογαριασμό</string>
     <string name="accept_terms">Συμφωνώ ότι οι αναφορές μου είναι ορατές στους άλλους κατοίκους.</string>
