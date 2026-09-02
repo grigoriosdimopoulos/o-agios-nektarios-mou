@@ -5,6 +5,49 @@
 
 ---
 
+# Η σειρά, χωρίς σκέψη
+
+Chrome → ⋮ → ✅ **Desktop site**. Με αυτή τη σειρά, ένα-ένα.
+
+**1. Δημοσίευσε την οθόνη συγκατάθεσης** — 2 λεπτά
+
+<https://console.cloud.google.com/apis/credentials/consent?project=o-agios-nektarios-mou>
+
+Αν το *Publishing status* λέει **Testing** → **PUBLISH APP** → Confirm.
+Όσο λέει Testing, συνδέεται μόνο όποιος είναι γραμμένος στους Test users.
+
+**2. Έλεγξε το αποτύπωμα** — 3 λεπτά
+
+Play Console → **Δοκιμή και κυκλοφορία** → **Ακεραιότητα εφαρμογής** →
+**Υπογραφή εφαρμογής** → από την ενότητα **App signing key certificate**
+αντίγραψε το **SHA-1**.
+
+<https://console.firebase.google.com/project/o-agios-nektarios-mou/settings/general>
+
+→ *Your apps* → **`gr.agiosnektarios.village`** (χωρίς `.debug`).
+Υπάρχει αυτό το SHA-1 στη λίστα; Αν όχι: **Add fingerprint** → επικόλληση →
+Save.
+
+**3. Έλεγξε τον πάροχο** — 1 λεπτό
+
+<https://console.firebase.google.com/project/o-agios-nektarios-mou/authentication/providers>
+
+- **Google** → *Enabled*, και μέσα του συμπληρωμένο *project support email*
+- **Email/Password** → *Enabled*
+
+**4. Περίμενε 15 λεπτά.** Η Google φτιάχνει τον OAuth client στο παρασκήνιο.
+
+**5. Δοκίμασε σωστά.** Απεγκατάσταση → εγκατάσταση **ξανά από τον σύνδεσμο της
+κλειστής δοκιμής** → «Συνέχεια με Google».
+
+**6. Αν ακόμα αποτυγχάνει:** βγάλε νέα έκδοση με tag `v1.0.1` από
+<https://github.com/grigoriosdimopoulos/o-agios-nektarios-mou/releases/new>,
+εγκατέστησέ την, δοκίμασε ξανά — και **βγάλε στιγμιότυπο το μικρό κείμενο κάτω
+από το κόκκινο μήνυμα**. Λέει ποιο πακέτο, ποιο SHA-1 και τι ακριβώς απάντησε
+το σύστημα. Με αυτό, η αιτία βρίσκεται σε δέκα δευτερόλεπτα.
+
+---
+
 # 1. Το «Συνέχεια με Google» αποτυγχάνει από το Play
 
 ## Γιατί συμβαίνει
