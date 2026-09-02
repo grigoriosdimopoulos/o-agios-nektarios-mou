@@ -76,8 +76,10 @@ unzip -l app/build/outputs/bundle/release/app-release.aab | grep META-INF
    ```bash
    keytool -list -v -keystore keystore/upload.jks -alias agiosnektarios-upload
    ```
-2. Το app signing key της Google: Play Console → **Test and release** →
-   **Setup** → **App signing** → αντίγραψε το SHA-1 και το SHA-256.
+2. Το app signing key της Google: Play Console → **Δοκιμή και κυκλοφορία** →
+   **Ακεραιότητα εφαρμογής** → καρτέλα **Υπογραφή εφαρμογής** → αντίγραψε το
+   SHA-1 και το SHA-256. Αυτό είναι το αποτύπωμα που ξεμπλοκάρει τη σύνδεση
+   από το Play· το upload key δεν φτάνει ποτέ σε συσκευή.
 
 Και τα δύο μπαίνουν: Firebase Console → Project settings → την εφαρμογή Android
 → **Add fingerprint**. Μετά κατέβασε ξανά το `google-services.json` και

@@ -401,8 +401,10 @@ https://grigoriosdimopoulos.github.io/o-agios-nektarios-mou/privacy.html
 Chrome → μενού (⋮) → ✅ **Desktop site**. Γύρνα το κινητό **οριζόντια**. Θα
 είναι μικρό· ζουμ με δύο δάχτυλα, δουλεύει.
 
-Play Console → **Test and release** → **Testing** → **Closed testing** →
-**Create new release**.
+Play Console → **Δοκιμή και κυκλοφορία** → **Κλειστές δοκιμές** →
+**Δημιουργία νέας κυκλοφορίας**.
+
+(Στα αγγλικά: *Test and release → Closed testing → Create new release*.)
 
 > ⚠️ **Closed**, όχι *Internal*. Μόνο η κλειστή δοκιμή μετράει για τις 14
 > μέρες. Η εσωτερική εγκαθιστά μια χαρά και **δεν προχωράει τίποτα** — είναι
@@ -423,8 +425,8 @@ Play.**
 Με το Play App Signing, η Google ξαναϋπογράφει η ίδια αυτό που φτάνει στα
 κινητά, με **δικό της** κλειδί. Το Firebase δεν το ξέρει ακόμα.
 
-Play Console → **Test and release** → **Setup** → **App signing**. Υπάρχουν
-**δύο** πιστοποιητικά:
+Play Console → **Δοκιμή και κυκλοφορία** → **Ακεραιότητα εφαρμογής** →
+καρτέλα **«Υπογραφή εφαρμογής»**. Υπάρχουν **δύο** πιστοποιητικά:
 
 - *App signing key certificate* — της Google ← **αυτό λείπει**
 - *Upload key certificate* — το δικό σου, μπήκε στο Α4

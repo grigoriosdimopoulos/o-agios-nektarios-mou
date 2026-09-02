@@ -149,6 +149,7 @@ jobs:
             echo '```'
             echo
             echo "Χρειάζεσαι και δεύτερο ζευγάρι, από το Play Console →"
-            echo "Test and release → Setup → App signing, αφού ανεβάσεις την"
-            echo "πρώτη έκδοση."
+            echo "Δοκιμή και κυκλοφορία → Ακεραιότητα εφαρμογής, αφού"
+            echo "ανεβάσεις την πρώτη έκδοση. Εκείνο, όχι αυτό εδώ, είναι που"
+            echo "κάνει τη σύνδεση με Google να δουλεύει από το Play."
           } >> "$GITHUB_STEP_SUMMARY"

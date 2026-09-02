@@ -3,10 +3,19 @@
     <!--
       The whole UI is Compose; this XML theme only covers the window before the
       first frame, so it stays deliberately minimal.
+
+      It used to set android:statusBarColor and android:navigationBarColor to
+      transparent. Both were deprecated in Android 15 and are ignored outright
+      by an app targeting 35 or higher, so on every current device they did
+      nothing — but Play still reads them off the manifest and reported the app
+      as using deprecated full-screen APIs.
+
+      Nothing is lost by dropping them. MainActivity calls enableEdgeToEdge(),
+      which sets the system bar styles itself and does so on every version this
+      app supports, including the API 26-34 devices where the two attributes
+      still had an effect.
     -->
     <style name="Theme.AgiosNektarios" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 </resources>
