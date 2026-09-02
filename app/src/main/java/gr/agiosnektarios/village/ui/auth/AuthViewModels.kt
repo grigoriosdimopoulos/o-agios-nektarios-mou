@@ -10,6 +10,7 @@ import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.auth.GoogleCredentialClient
 import gr.agiosnektarios.village.data.auth.GoogleSignInCancelled
+import gr.agiosnektarios.village.data.auth.SigningFingerprint
 import gr.agiosnektarios.village.data.auth.GoogleSignInUnavailable
 import gr.agiosnektarios.village.data.user.UserRepository
 import javax.inject.Inject
@@ -31,6 +32,16 @@ data class SignInUiState(
     val errorMessage: String? = null,
     /** Preferred over [errorMessage] when set, so the text can be localized. */
     @StringRes val errorRes: Int? = null,
+    /**
+     * What this build actually is, shown under a failed Google sign-in.
+     *
+     * The failure is indistinguishable, from inside the app, between "no
+     * Google account on this phone" and "this certificate is not registered
+     * against the OAuth client" — and the second one is invisible to the person
+     * holding the phone. Printing the package name, the signing fingerprint and
+     * the exception type turns a two-round guessing game into one screenshot.
+     */
+    val googleDiagnostics: String? = null,
 )
 
 @HiltViewModel
@@ -93,12 +104,23 @@ class SignInViewModel @Inject constructor(
                     errorMessage = error
                         ?.takeUnless { e -> e is GoogleSignInCancelled || e is GoogleSignInUnavailable }
                         ?.let(::friendlyMessage),
+                    googleDiagnostics = (error as? GoogleSignInUnavailable)?.let { failure ->
+                        val cause = failure.cause
+                        val kind = cause?.let { c ->
+                            listOfNotNull(
+                                c::class.java.simpleName,
+                                c.message?.takeIf { m -> m.isNotBlank() },
+                            ).joinToString(": ")
+                        } ?: "—"
+                        "${SigningFingerprint.describe(activityContext)}\n$kind"
+                    },
                 )
             }
         }
     }
 
-    fun consumeError() = _uiState.update { it.copy(errorMessage = null, errorRes = null) }
+    fun consumeError() =
+        _uiState.update { it.copy(errorMessage = null, errorRes = null, googleDiagnostics = null) }
 }
 
 // ------------------------------------------------------------------ sign up

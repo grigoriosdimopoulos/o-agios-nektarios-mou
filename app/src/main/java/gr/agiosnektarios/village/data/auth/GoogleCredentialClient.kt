@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -54,6 +55,16 @@ class GoogleCredentialClient @Inject constructor() {
             throw GoogleSignInCancelled()
         } catch (missing: NoCredentialException) {
             throw GoogleSignInUnavailable(missing)
+        } catch (other: GetCredentialException) {
+            // Everything else Credential Manager can raise —
+            // GetCredentialUnknownException, provider configuration failures,
+            // the custom exceptions Play services wraps its own errors in.
+            //
+            // These used to fall through to the generic handler, which shows
+            // `localizedMessage`. Several of them carry a blank one, so a
+            // misconfigured OAuth client produced an empty red line and no
+            // information at all. The type is the part worth reading.
+            throw GoogleSignInUnavailable(other)
         }
 
         val credential = response.credential

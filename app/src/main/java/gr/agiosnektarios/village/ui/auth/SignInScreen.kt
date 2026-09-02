@@ -62,6 +62,23 @@ fun SignInScreen(
 
             AuthErrorText(message = state.errorRes?.let { stringResource(it) } ?: state.errorMessage)
 
+            // Only after a Google failure, and deliberately in small print: it
+            // is addressed to whoever set the project up, not to the resident,
+            // who has already been told what to do in the line above.
+            state.googleDiagnostics?.let { details ->
+                val parts = details.split("\n", limit = 2)
+                Text(
+                    text = stringResource(
+                        R.string.error_google_details,
+                        parts.getOrElse(0) { "" },
+                        parts.getOrElse(1) { "" },
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                 TextButton(onClick = onNavigateToForgotPassword) {
                     Text(stringResource(R.string.forgot_password))
