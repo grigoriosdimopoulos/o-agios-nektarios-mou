@@ -97,7 +97,7 @@ fun SignInScreen(
             SecondaryButton(
                 text = stringResource(R.string.continue_with_google),
                 onClick = { viewModel.signInWithGoogle(context) },
-                enabled = !state.googleLoading,
+                loading = state.googleLoading,
                 modifier = Modifier.fillMaxWidth(),
             )
 

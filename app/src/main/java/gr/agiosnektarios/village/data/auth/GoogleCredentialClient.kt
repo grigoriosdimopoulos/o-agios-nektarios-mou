@@ -1,6 +1,8 @@
 package gr.agiosnektarios.village.data.auth
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -11,6 +13,8 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import gr.agiosnektarios.village.R
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 
 /** Raised when the resident dismissed the Google sheet — not an error worth showing. */
 class GoogleSignInCancelled : Exception("Google sign-in cancelled")
@@ -43,14 +47,35 @@ class GoogleCredentialClient @Inject constructor() {
         // whose applicationId carries a .debug suffix the resource table does
         // not use. A missing OAuth client now fails the build, not the user.
         val serverClientId = activityContext.getString(R.string.default_web_client_id)
-        val credentialManager = CredentialManager.create(activityContext)
+
+        // Credential Manager hosts a bottom sheet, so it needs the Activity —
+        // not whatever `LocalContext.current` happens to hand back, which in a
+        // themed Compose tree is a ContextWrapper around it. Given the wrong
+        // one it cannot show its UI, and the symptom is the worst kind: the
+        // call neither returns nor throws, the button sits disabled, and
+        // nothing is ever reported.
+        val activity = activityContext.findActivity()
+            ?: throw GoogleSignInUnavailable(
+                IllegalStateException("no Activity behind ${activityContext.javaClass.simpleName}")
+            )
+        val credentialManager = CredentialManager.create(activity)
 
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(GetSignInWithGoogleOption.Builder(serverClientId).build())
             .build()
 
         val response = try {
-            credentialManager.getCredential(activityContext, request)
+            // A backstop, not a deadline. Choosing an account is a human
+            // action and three minutes is far longer than anyone needs; what
+            // this rules out is the case above, where the call never comes
+            // back at all and the screen stays dead with nothing to report.
+            withTimeout(SHEET_TIMEOUT_MS) {
+                credentialManager.getCredential(activity, request)
+            }
+        } catch (timeout: TimeoutCancellationException) {
+            throw GoogleSignInUnavailable(
+                IllegalStateException("Credential Manager did not answer in 3 minutes")
+            )
         } catch (cancelled: GetCredentialCancellationException) {
             throw GoogleSignInCancelled()
         } catch (missing: NoCredentialException) {
@@ -73,4 +98,15 @@ class GoogleCredentialClient @Inject constructor() {
         }
         GoogleIdTokenCredential.createFrom(credential.data).idToken
     }
+
+    private companion object {
+        const val SHEET_TIMEOUT_MS = 180_000L
+    }
+}
+
+/** Walks out of the ContextWrapper chain Compose hands back, to the Activity. */
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

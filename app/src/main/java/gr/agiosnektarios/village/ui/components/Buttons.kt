@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import gr.agiosnektarios.village.ui.theme.Motion
+import gr.agiosnektarios.village.ui.theme.primaryInk
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -181,6 +182,17 @@ fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    /**
+     * Shows a spinner in place of the label, like [PrimaryButton].
+     *
+     * It did not have this, and "Continue with Google" was the one place that
+     * needed it: tapping it starts a request that can take seconds before the
+     * account sheet appears, and all the caller could do was pass
+     * `enabled = false`. The button went quietly inert with no spinner and no
+     * message — indistinguishable from a button that does nothing at all,
+     * which is exactly what it was reported as.
+     */
+    loading: Boolean = false,
     icon: ImageVector? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -194,18 +206,20 @@ fun SecondaryButton(
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = 54.dp).scale(scale),
-        enabled = enabled,
+        enabled = enabled && !loading,
         interactionSource = interactionSource,
         shape = MaterialTheme.shapes.large,
+        // Same reasoning as PrimaryButton: a loading button is inert to the
+        // touch but must not read as disabled, or the spinner disappears into
+        // grey-on-grey.
+        colors = if (loading) {
+            ButtonDefaults.outlinedButtonColors(
+                disabledContentColor = MaterialTheme.colorScheme.primaryInk,
+            )
+        } else {
+            ButtonDefaults.outlinedButtonColors()
+        },
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (icon != null) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            }
-            Text(text, style = MaterialTheme.typography.labelLarge)
-        }
+        PrimaryButtonContent(text = text, loading = loading, icon = icon)
     }
 }
