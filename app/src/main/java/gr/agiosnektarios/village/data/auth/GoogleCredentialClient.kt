@@ -3,6 +3,7 @@ package gr.agiosnektarios.village.data.auth
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.SystemClock
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -18,6 +19,20 @@ import kotlinx.coroutines.withTimeout
 
 /** Raised when the resident dismissed the Google sheet — not an error worth showing. */
 class GoogleSignInCancelled : Exception("Google sign-in cancelled")
+
+/**
+ * Below this, a "cancellation" was not a person.
+ *
+ * Play services reports the same [GetCredentialCancellationException] whether
+ * somebody swiped the sheet away or it closed the flow itself because this
+ * app's certificate is not authorised for the OAuth client. The app treated
+ * both as a deliberate dismissal and stayed silent — which is right for the
+ * first and, for the second, produced a button that appeared to do nothing at
+ * all. That is exactly how it was reported, twice.
+ *
+ * Nobody dismisses a sheet in under a second, because nobody has seen it yet.
+ */
+private const val HUMAN_DISMISS_FLOOR_MS = 900L
 
 /**
  * Raised when Credential Manager has nothing to offer: usually no Google account
@@ -64,6 +79,7 @@ class GoogleCredentialClient @Inject constructor() {
             .addCredentialOption(GetSignInWithGoogleOption.Builder(serverClientId).build())
             .build()
 
+        val startedAt = SystemClock.elapsedRealtime()
         val response = try {
             // A backstop, not a deadline. Choosing an account is a human
             // action and three minutes is far longer than anyone needs; what
@@ -77,6 +93,15 @@ class GoogleCredentialClient @Inject constructor() {
                 IllegalStateException("Credential Manager did not answer in 3 minutes")
             )
         } catch (cancelled: GetCredentialCancellationException) {
+            val elapsed = SystemClock.elapsedRealtime() - startedAt
+            if (elapsed < HUMAN_DISMISS_FLOOR_MS) {
+                throw GoogleSignInUnavailable(
+                    IllegalStateException(
+                        "closed itself after ${elapsed}ms — this app is probably" +
+                            " not authorised for the OAuth client"
+                    )
+                )
+            }
             throw GoogleSignInCancelled()
         } catch (missing: NoCredentialException) {
             throw GoogleSignInUnavailable(missing)
