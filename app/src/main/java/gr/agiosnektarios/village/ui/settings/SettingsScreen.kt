@@ -34,11 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.BuildConfig
+import gr.agiosnektarios.village.data.auth.SigningFingerprint
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.data.settings.AppLanguage
 import gr.agiosnektarios.village.data.settings.SettingsRepository
@@ -277,6 +279,25 @@ fun SettingsScreen(
                         onClick = onVersionTap,
                     )
                     .padding(horizontal = Space.page),
+            )
+
+            // Which app this is, and which certificate signed it.
+            //
+            // These two lines are the whole answer to "why does Google sign-in
+            // work on the build I installed by hand and not on the one from
+            // Play". They are different applications to Google — different
+            // package, different certificate — and until now the only way to
+            // see the second was to make sign-in fail in exactly the right way.
+            //
+            // Neither is secret: the package name is on the store page and the
+            // certificate is inside every copy of the app.
+            val context = LocalContext.current
+            val identity = remember(context) { SigningFingerprint.describe(context) }
+            Text(
+                text = identity,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Space.page, vertical = 6.dp),
             )
         }
     }
