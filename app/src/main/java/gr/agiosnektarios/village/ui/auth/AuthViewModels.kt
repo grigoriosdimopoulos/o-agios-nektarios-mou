@@ -104,14 +104,20 @@ class SignInViewModel @Inject constructor(
                     errorMessage = error
                         ?.takeUnless { e -> e is GoogleSignInCancelled || e is GoogleSignInUnavailable }
                         ?.let(::friendlyMessage),
-                    googleDiagnostics = (error as? GoogleSignInUnavailable)?.let { failure ->
-                        val cause = failure.cause
-                        val kind = cause?.let { c ->
-                            listOfNotNull(
-                                c::class.java.simpleName,
-                                c.message?.takeIf { m -> m.isNotBlank() },
-                            ).joinToString(": ")
-                        } ?: "—"
+                    // Set for *every* Google failure, cancellation included.
+                    //
+                    // A dismissal stays silent in the red line above, which is
+                    // right — but it is also the shape a refused certificate
+                    // arrives in, and while that is unresolved the small grey
+                    // identity line has to appear either way or there is
+                    // nothing to look at. It says what this build is; it does
+                    // not accuse anyone of an error.
+                    googleDiagnostics = error?.let { failure ->
+                        val cause = (failure as? GoogleSignInUnavailable)?.cause ?: failure
+                        val kind = listOfNotNull(
+                            cause::class.java.simpleName,
+                            cause.message?.takeIf { m -> m.isNotBlank() },
+                        ).joinToString(": ")
                         "${SigningFingerprint.describe(activityContext)}\n$kind"
                     },
                 )
