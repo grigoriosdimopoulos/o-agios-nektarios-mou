@@ -10,7 +10,7 @@ import gr.agiosnektarios.village.core.validation.Validators
 import gr.agiosnektarios.village.data.auth.AuthRepository
 import gr.agiosnektarios.village.data.auth.GoogleCredentialClient
 import gr.agiosnektarios.village.data.auth.GoogleSignInCancelled
-import gr.agiosnektarios.village.data.auth.SigningFingerprint
+import gr.agiosnektarios.village.data.auth.SignInDiagnostics
 import gr.agiosnektarios.village.data.auth.GoogleSignInUnavailable
 import gr.agiosnektarios.village.data.user.UserRepository
 import javax.inject.Inject
@@ -113,12 +113,12 @@ class SignInViewModel @Inject constructor(
                     // nothing to look at. It says what this build is; it does
                     // not accuse anyone of an error.
                     googleDiagnostics = error?.let { failure ->
-                        val cause = (failure as? GoogleSignInUnavailable)?.cause ?: failure
-                        val kind = listOfNotNull(
-                            cause::class.java.simpleName,
-                            cause.message?.takeIf { m -> m.isNotBlank() },
-                        ).joinToString(": ")
-                        "${SigningFingerprint.describe(activityContext)}\n$kind"
+                        SignInDiagnostics.report(
+                            context = activityContext,
+                            failure = failure,
+                            elapsedMs = (failure as? GoogleSignInUnavailable)?.elapsedMs
+                                ?: (failure as? GoogleSignInCancelled)?.elapsedMs,
+                        )
                     },
                 )
             }

@@ -40,7 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.BuildConfig
-import gr.agiosnektarios.village.data.auth.SigningFingerprint
+import gr.agiosnektarios.village.data.auth.SignInDiagnostics
+import gr.agiosnektarios.village.ui.components.DiagnosticsBlock
 import gr.agiosnektarios.village.R
 import gr.agiosnektarios.village.data.settings.AppLanguage
 import gr.agiosnektarios.village.data.settings.SettingsRepository
@@ -292,11 +293,11 @@ fun SettingsScreen(
             // Neither is secret: the package name is on the store page and the
             // certificate is inside every copy of the app.
             val context = LocalContext.current
-            val identity = remember(context) { SigningFingerprint.describe(context) }
-            Text(
+            val identity = remember(context) {
+                SignInDiagnostics.report(context, failure = null, elapsedMs = null)
+            }
+            DiagnosticsBlock(
                 text = identity,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Space.page, vertical = 6.dp),
             )
         }

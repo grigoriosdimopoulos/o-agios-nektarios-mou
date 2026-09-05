@@ -18,7 +18,8 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
 /** Raised when the resident dismissed the Google sheet — not an error worth showing. */
-class GoogleSignInCancelled : Exception("Google sign-in cancelled")
+class GoogleSignInCancelled(val elapsedMs: Long? = null) :
+    Exception("Google sign-in cancelled")
 
 /**
  * Below this, a "cancellation" was not a person.
@@ -39,7 +40,7 @@ private const val HUMAN_DISMISS_FLOOR_MS = 900L
  * on the device, or the app's signing certificate is not registered against the
  * Firebase project's OAuth client.
  */
-class GoogleSignInUnavailable(cause: Throwable?) :
+class GoogleSignInUnavailable(cause: Throwable?, val elapsedMs: Long? = null) :
     Exception("No Google account available to sign in with", cause)
 
 /**
@@ -97,14 +98,15 @@ class GoogleCredentialClient @Inject constructor() {
             if (elapsed < HUMAN_DISMISS_FLOOR_MS) {
                 throw GoogleSignInUnavailable(
                     IllegalStateException(
-                        "closed itself after ${elapsed}ms — this app is probably" +
-                            " not authorised for the OAuth client"
-                    )
+                        "closed itself immediately — this app is probably not" +
+                            " authorised for the OAuth client"
+                    ),
+                    elapsed,
                 )
             }
-            throw GoogleSignInCancelled()
+            throw GoogleSignInCancelled(elapsed)
         } catch (missing: NoCredentialException) {
-            throw GoogleSignInUnavailable(missing)
+            throw GoogleSignInUnavailable(missing, SystemClock.elapsedRealtime() - startedAt)
         } catch (other: GetCredentialException) {
             // Everything else Credential Manager can raise —
             // GetCredentialUnknownException, provider configuration failures,
@@ -114,7 +116,7 @@ class GoogleCredentialClient @Inject constructor() {
             // `localizedMessage`. Several of them carry a blank one, so a
             // misconfigured OAuth client produced an empty red line and no
             // information at all. The type is the part worth reading.
-            throw GoogleSignInUnavailable(other)
+            throw GoogleSignInUnavailable(other, SystemClock.elapsedRealtime() - startedAt)
         }
 
         val credential = response.credential

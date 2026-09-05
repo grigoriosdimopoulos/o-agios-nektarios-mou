@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import gr.agiosnektarios.village.R
+import gr.agiosnektarios.village.ui.components.DiagnosticsBlock
 import gr.agiosnektarios.village.ui.components.PrimaryButton
 import gr.agiosnektarios.village.ui.components.SecondaryButton
 import gr.agiosnektarios.village.ui.components.VillagePasswordField
@@ -65,18 +66,11 @@ fun SignInScreen(
             // Only after a Google failure, and deliberately in small print: it
             // is addressed to whoever set the project up, not to the resident,
             // who has already been told what to do in the line above.
+            //
+            // Copyable, because the useful part is a SHA-1 and half of these
+            // rounds were spent reading one off a photograph of a screen.
             state.googleDiagnostics?.let { details ->
-                val parts = details.split("\n", limit = 2)
-                Text(
-                    text = stringResource(
-                        R.string.error_google_details,
-                        parts.getOrElse(0) { "" },
-                        parts.getOrElse(1) { "" },
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                DiagnosticsBlock(text = details, modifier = Modifier.fillMaxWidth())
             }
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
